@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -41,6 +42,7 @@ const columns: ColumnDef<PVC>[] = [
 ];
 
 export default function PersistentVolumeClaims() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawPVC, PVC>(
     '/api/v1/persistentvolumeclaims',
     (item) => ({
@@ -66,6 +68,7 @@ export default function PersistentVolumeClaims() {
       createLabel="Create PVC"
       statusField="status"
       nameField="name"
+      onRowClick={(item) => navigate(`/storage/persistentvolumeclaims/${item.namespace}/${item.name}`)}
     />
   );
 }

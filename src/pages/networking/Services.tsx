@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import StatusIndicator from '@/components/StatusIndicator';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -45,6 +46,7 @@ function formatPorts(ports: RawServicePort[] | undefined): string {
 }
 
 export default function Services() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawService, ServiceItem>(
     '/api/v1/services',
     (item) => ({
@@ -68,6 +70,7 @@ export default function Services() {
       getRowKey={(s) => `${s.namespace}-${s.name}`}
       createLabel="Create Service"
       nameField="name"
+      onRowClick={(item) => navigate(`/networking/services/${item.namespace}/${item.name}`)}
     />
   );
 }

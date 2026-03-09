@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -37,6 +38,7 @@ function deriveJobStatus(item: RawJob): string {
 }
 
 export default function Jobs() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawJob, Job>(
     '/apis/batch/v1/jobs',
     (item) => ({
@@ -60,6 +62,7 @@ export default function Jobs() {
       createLabel="Create Job"
       statusField="status"
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/jobs/${item.namespace}/${item.name}`)}
     />
   );
 }

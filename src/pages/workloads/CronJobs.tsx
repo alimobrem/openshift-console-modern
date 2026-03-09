@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { Label } from '@patternfly/react-core';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -30,6 +31,7 @@ const columns: ColumnDef<CronJob>[] = [
 ];
 
 export default function CronJobs() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawCronJob, CronJob>(
     '/apis/batch/v1/cronjobs',
     (item) => ({
@@ -53,6 +55,7 @@ export default function CronJobs() {
       getRowKey={(c) => `${c.namespace}-${c.name}`}
       createLabel="Create CronJob"
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/cronjobs/${item.namespace}/${item.name}`)}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 import { Label } from '@patternfly/react-core';
@@ -45,6 +46,7 @@ const columns: ColumnDef<Route>[] = [
 ];
 
 export default function RoutesPage() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawRoute, Route>(
     '/apis/route.openshift.io/v1/routes',
     (item) => ({
@@ -68,6 +70,7 @@ export default function RoutesPage() {
       getRowKey={(r) => `${r.namespace}-${r.name}`}
       createLabel="Create Route"
       nameField="name"
+      onRowClick={(item) => navigate(`/networking/routes/${item.namespace}/${item.name}`)}
     />
   );
 }

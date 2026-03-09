@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -34,6 +35,7 @@ const columns: ColumnDef<LimitRange>[] = [
 ];
 
 export default function LimitRanges() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawLimitRange, LimitRange>(
     '/api/v1/limitranges',
     (item) => {
@@ -60,6 +62,7 @@ export default function LimitRanges() {
       loading={loading}
       getRowKey={(lr) => `${lr.namespace}-${lr.name}`}
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/limitranges/${item.namespace}/${item.name}`)}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 import { Label } from '@patternfly/react-core';
@@ -33,6 +34,7 @@ const columns: ColumnDef<CustomResourceDefinition>[] = [
 ];
 
 export default function CustomResourceDefinitions() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawCRD, CustomResourceDefinition>(
     '/apis/apiextensions.k8s.io/v1/customresourcedefinitions',
     (item) => ({
@@ -53,6 +55,7 @@ export default function CustomResourceDefinitions() {
       loading={loading}
       getRowKey={(crd) => crd.name}
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/crds/${item.name}`)}
     />
   );
 }

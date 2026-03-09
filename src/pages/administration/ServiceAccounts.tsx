@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -20,6 +21,7 @@ const columns: ColumnDef<ServiceAccount>[] = [
 ];
 
 export default function ServiceAccounts() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawServiceAccount, ServiceAccount>(
     '/api/v1/serviceaccounts',
     (item) => ({
@@ -40,6 +42,7 @@ export default function ServiceAccounts() {
       getRowKey={(sa) => `${sa.namespace}-${sa.name}`}
       createLabel="Create Service Account"
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/serviceaccounts/${item.namespace}/${item.name}`)}
       filterFn={(sa, s) => {
         const q = s.toLowerCase();
         return sa.name.toLowerCase().includes(q) || sa.namespace.toLowerCase().includes(q);

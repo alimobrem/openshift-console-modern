@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import StatusIndicator from '@/components/StatusIndicator';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -37,6 +38,7 @@ const columns: ColumnDef<DaemonSet>[] = [
 ];
 
 export default function DaemonSets() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawDaemonSet, DaemonSet>(
     '/apis/apps/v1/daemonsets',
     (item) => ({
@@ -61,6 +63,7 @@ export default function DaemonSets() {
       getRowKey={(ds) => `${ds.namespace}-${ds.name}`}
       createLabel="Create DaemonSet"
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/daemonsets/${item.namespace}/${item.name}`)}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { Label } from '@patternfly/react-core';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -35,6 +36,7 @@ function formatPodSelector(labels: Record<string, string> | undefined): string {
 }
 
 export default function NetworkPolicies() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawNetworkPolicy, NetworkPolicy>(
     '/apis/networking.k8s.io/v1/networkpolicies',
     (item) => ({
@@ -56,6 +58,7 @@ export default function NetworkPolicies() {
       getRowKey={(n) => `${n.namespace}-${n.name}`}
       createLabel="Create Network Policy"
       nameField="name"
+      onRowClick={(item) => navigate(`/networking/networkpolicies/${item.namespace}/${item.name}`)}
     />
   );
 }

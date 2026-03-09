@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -38,6 +39,7 @@ const columns: ColumnDef<Build>[] = [
 ];
 
 export default function Builds() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawBuild, Build>(
     '/apis/build.openshift.io/v1/builds',
     (item) => ({
@@ -60,6 +62,7 @@ export default function Builds() {
       getRowKey={(b) => `${b.namespace}-${b.name}`}
       statusField="status"
       nameField="name"
+      onRowClick={(item) => navigate(`/builds/builds/${item.namespace}/${item.name}`)}
     />
   );
 }

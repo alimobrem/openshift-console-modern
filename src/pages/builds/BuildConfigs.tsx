@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 import { Label } from '@patternfly/react-core';
@@ -40,6 +41,7 @@ const columns: ColumnDef<BuildConfig>[] = [
 ];
 
 export default function BuildConfigs() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawBuildConfig, BuildConfig>(
     '/apis/build.openshift.io/v1/buildconfigs',
     (item) => ({
@@ -64,6 +66,7 @@ export default function BuildConfigs() {
       createLabel="Create Build Config"
       statusField="status"
       nameField="name"
+      onRowClick={(item) => navigate(`/builds/buildconfigs/${item.namespace}/${item.name}`)}
     />
   );
 }

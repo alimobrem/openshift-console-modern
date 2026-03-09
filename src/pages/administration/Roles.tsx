@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 import { Label } from '@patternfly/react-core';
@@ -35,6 +36,7 @@ function transformRole(item: RawRole): Role {
 }
 
 export default function Roles() {
+  const navigate = useNavigate();
   const clusterRoles = useK8sResource<RawRole, Role>(
     '/apis/rbac.authorization.k8s.io/v1/clusterroles',
     transformRole,
@@ -60,6 +62,7 @@ export default function Roles() {
       getRowKey={(r) => `${r.kind}-${r.namespace}-${r.name}`}
       createLabel="Create Role"
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/roles/${item.namespace}/${item.name}`)}
       filterFn={(r, s) => {
         const q = s.toLowerCase();
         return r.name.toLowerCase().includes(q) || r.namespace.toLowerCase().includes(q);

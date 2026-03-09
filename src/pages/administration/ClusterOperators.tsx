@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 import StatusIndicator from '@/components/StatusIndicator';
@@ -47,6 +48,7 @@ const columns: ColumnDef<ClusterOperator>[] = [
 ];
 
 export default function ClusterOperators() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawClusterOperator, ClusterOperator>(
     '/apis/config.openshift.io/v1/clusteroperators',
     (item) => {
@@ -70,6 +72,7 @@ export default function ClusterOperators() {
       loading={loading}
       getRowKey={(op) => op.name}
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/clusteroperators/${item.name}`)}
     />
   );
 }

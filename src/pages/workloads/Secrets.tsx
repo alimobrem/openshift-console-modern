@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { Label } from '@patternfly/react-core';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -32,6 +33,7 @@ const columns: ColumnDef<Secret>[] = [
 ];
 
 export default function Secrets() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawSecret, Secret>(
     '/api/v1/secrets',
     (item) => ({
@@ -53,6 +55,7 @@ export default function Secrets() {
       getRowKey={(s) => `${s.namespace}-${s.name}`}
       createLabel="Create Secret"
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/secrets/${item.namespace}/${item.name}`)}
     />
   );
 }

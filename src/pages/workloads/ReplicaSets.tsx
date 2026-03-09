@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -25,6 +26,7 @@ const columns: ColumnDef<ReplicaSet>[] = [
 ];
 
 export default function ReplicaSets() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawReplicaSet, ReplicaSet>(
     '/apis/apps/v1/replicasets',
     (item) => ({
@@ -46,6 +48,7 @@ export default function ReplicaSets() {
       loading={loading}
       getRowKey={(rs) => `${rs.namespace}-${rs.name}`}
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/replicasets/${item.namespace}/${item.name}`)}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 import { Label } from '@patternfly/react-core';
@@ -30,6 +31,7 @@ const columns: ColumnDef<ImageStream>[] = [
 ];
 
 export default function ImageStreams() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawImageStream, ImageStream>(
     '/apis/image.openshift.io/v1/imagestreams',
     (item) => ({
@@ -52,6 +54,7 @@ export default function ImageStreams() {
       getRowKey={(is) => `${is.namespace}-${is.name}`}
       createLabel="Create Image Stream"
       nameField="name"
+      onRowClick={(item) => navigate(`/builds/imagestreams/${item.namespace}/${item.name}`)}
     />
   );
 }

@@ -17,13 +17,53 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon, InProgressIcon } from '@patternfly/react-icons';
 import { useUIStore } from '@/store/useUIStore';
+import { useK8sResource, type K8sMeta } from '@/hooks/useK8sResource';
 import '@/openshift-components.css';
+
+interface RawClusterVersion extends K8sMeta {
+  status?: {
+    desired?: { version: string };
+    history?: { version: string; state: string }[];
+    conditions?: { type: string; status: string; message?: string }[];
+    availableUpdates?: { version: string }[];
+  };
+  spec?: { channel?: string; clusterID?: string };
+}
+
+interface RawInfrastructure extends K8sMeta {
+  status?: {
+    platform?: string;
+    platformStatus?: { type?: string; aws?: { region?: string } };
+    apiServerURL?: string;
+    controlPlaneTopology?: string;
+  };
+}
 
 export default function ClusterSettings() {
   const addToast = useUIStore((s) => s.addToast);
   const [upgrading, setUpgrading] = React.useState(false);
   const [upgradeProgress, setUpgradeProgress] = React.useState(0);
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const { data: clusterVersions } = useK8sResource<RawClusterVersion, RawClusterVersion>(
+    '/apis/config.openshift.io/v1/clusterversions',
+    (item) => item,
+  );
+
+  const { data: infras } = useK8sResource<RawInfrastructure, RawInfrastructure>(
+    '/apis/config.openshift.io/v1/infrastructures',
+    (item) => item,
+  );
+
+  const cv = clusterVersions[0];
+  const infra = infras[0];
+  const currentVersion = cv?.status?.history?.[0]?.version ?? cv?.status?.desired?.version ?? '-';
+  const channel = cv?.spec?.channel ?? '-';
+  const clusterID = cv?.spec?.clusterID ?? '-';
+  const platform = infra?.status?.platformStatus?.type ?? infra?.status?.platform ?? '-';
+  const region = infra?.status?.platformStatus?.aws?.region ?? '-';
+  const apiServer = infra?.status?.apiServerURL ?? '-';
+  const availableUpdate = cv?.status?.availableUpdates?.[0]?.version;
 
   React.useEffect(() => {
     return () => {
@@ -32,16 +72,17 @@ export default function ClusterSettings() {
   }, []);
 
   const startUpgrade = () => {
+    if (!availableUpdate) return;
     setUpgrading(true);
     setUpgradeProgress(0);
-    addToast({ type: 'info', title: 'Cluster upgrade started', description: 'Upgrading to OpenShift 4.15.1...' });
+    addToast({ type: 'info', title: 'Cluster upgrade started', description: `Upgrading to ${availableUpdate}...` });
     intervalRef.current = setInterval(() => {
       setUpgradeProgress((prev) => {
         if (prev >= 100) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           intervalRef.current = null;
           setUpgrading(false);
-          addToast({ type: 'success', title: 'Cluster upgrade complete', description: 'Now running OpenShift 4.15.1' });
+          addToast({ type: 'success', title: 'Cluster upgrade complete', description: `Now running ${availableUpdate}` });
           return 100;
         }
         return prev + 5;
@@ -59,20 +100,22 @@ export default function ClusterSettings() {
       </PageSection>
 
       <PageSection>
-        {/* Upgrade Card */}
         <Card className="os-cluster-settings__card--spaced">
           <CardBody>
             <div className="os-cluster-settings__upgrade-header">
               <div>
                 <Title headingLevel="h3" size="lg">Cluster Update</Title>
                 <p className="os-cluster-settings__upgrade-version">
-                  Current version: <Label color="blue">4.14.8</Label>
+                  Current version: <Label color="blue">{currentVersion}</Label>
                 </p>
               </div>
-              {!upgrading && upgradeProgress < 100 && (
+              {!upgrading && upgradeProgress < 100 && availableUpdate && (
                 <Button variant="primary" onClick={startUpgrade}>
-                  Update to 4.15.1
+                  Update to {availableUpdate}
                 </Button>
+              )}
+              {!availableUpdate && !upgrading && upgradeProgress < 100 && (
+                <Label color="green" icon={<CheckCircleIcon />}>Up to date</Label>
               )}
               {upgradeProgress >= 100 && (
                 <Label color="green" icon={<CheckCircleIcon />}>Up to date</Label>
@@ -90,13 +133,13 @@ export default function ClusterSettings() {
                 </div>
               </div>
             )}
-            {!upgrading && upgradeProgress < 100 && (
+            {!upgrading && upgradeProgress < 100 && availableUpdate && (
               <div className="os-cluster-settings__update-info">
                 <div className="os-cluster-settings__update-available">
-                  <strong>Available update:</strong> OpenShift 4.15.1
+                  <strong>Available update:</strong> {availableUpdate}
                 </div>
                 <div className="os-cluster-settings__update-channel">
-                  Channel: stable-4.14 &bull; Architecture: amd64 &bull; Risk: Low
+                  Channel: {channel}
                 </div>
               </div>
             )}
@@ -110,32 +153,24 @@ export default function ClusterSettings() {
                 <Title headingLevel="h3" size="lg" className="os-detail__section-title">Cluster Information</Title>
                 <DescriptionList isCompact>
                   <DescriptionListGroup>
-                    <DescriptionListTerm>Cluster Name</DescriptionListTerm>
-                    <DescriptionListDescription>production-cluster</DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
                     <DescriptionListTerm>Cluster ID</DescriptionListTerm>
-                    <DescriptionListDescription className="os-cluster-settings__cluster-id">abc123def456</DescriptionListDescription>
+                    <DescriptionListDescription className="os-cluster-settings__cluster-id">{clusterID}</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Version</DescriptionListTerm>
-                    <DescriptionListDescription><Label color="blue">{upgradeProgress >= 100 ? '4.15.1' : '4.14.8'}</Label></DescriptionListDescription>
+                    <DescriptionListDescription><Label color="blue">{currentVersion}</Label></DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Platform</DescriptionListTerm>
-                    <DescriptionListDescription>AWS (us-east-1)</DescriptionListDescription>
+                    <DescriptionListDescription>{platform} {region !== '-' ? `(${region})` : ''}</DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Channel</DescriptionListTerm>
+                    <DescriptionListDescription>{channel}</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>API Server</DescriptionListTerm>
-                    <DescriptionListDescription><code>https://api.cluster.example.com:6443</code></DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Console URL</DescriptionListTerm>
-                    <DescriptionListDescription><code>https://console-openshift-console.apps.cluster.example.com</code></DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Created</DescriptionListTerm>
-                    <DescriptionListDescription>2023-09-15</DescriptionListDescription>
+                    <DescriptionListDescription><code>{apiServer}</code></DescriptionListDescription>
                   </DescriptionListGroup>
                 </DescriptionList>
               </CardBody>
@@ -147,14 +182,6 @@ export default function ClusterSettings() {
               <CardBody>
                 <Title headingLevel="h3" size="lg" className="os-detail__section-title">Network Configuration</Title>
                 <DescriptionList isCompact>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Cluster Network</DescriptionListTerm>
-                    <DescriptionListDescription><code>10.128.0.0/14</code></DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Service Network</DescriptionListTerm>
-                    <DescriptionListDescription><code>172.30.0.0/16</code></DescriptionListDescription>
-                  </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Network Type</DescriptionListTerm>
                     <DescriptionListDescription>OVNKubernetes</DescriptionListDescription>
@@ -174,14 +201,6 @@ export default function ClusterSettings() {
                   <DescriptionListGroup>
                     <DescriptionListTerm>Provider</DescriptionListTerm>
                     <DescriptionListDescription>htpasswd</DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Identity Providers</DescriptionListTerm>
-                    <DescriptionListDescription>2</DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Session Timeout</DescriptionListTerm>
-                    <DescriptionListDescription>24h</DescriptionListDescription>
                   </DescriptionListGroup>
                 </DescriptionList>
               </CardBody>

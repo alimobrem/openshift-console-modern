@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -34,6 +35,7 @@ const columns: ColumnDef<Endpoint>[] = [
 ];
 
 export default function Endpoints() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawEndpoints, Endpoint>(
     '/api/v1/endpoints',
     (item) => {
@@ -61,6 +63,7 @@ export default function Endpoints() {
       loading={loading}
       getRowKey={(ep) => `${ep.namespace}-${ep.name}`}
       nameField="name"
+      onRowClick={(item) => navigate(`/networking/endpoints/${item.namespace}/${item.name}`)}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -58,6 +59,7 @@ function getCpuCurrent(metrics: RawHPAMetric[] | undefined): string {
 }
 
 export default function HPA() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawHPA, HorizontalPodAutoscaler>(
     '/apis/autoscaling/v2/horizontalpodautoscalers',
     (item) => ({
@@ -82,6 +84,7 @@ export default function HPA() {
       loading={loading}
       getRowKey={(hpa) => `${hpa.namespace}-${hpa.name}`}
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/hpa/${item.namespace}/${item.name}`)}
     />
   );
 }

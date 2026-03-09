@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { Label } from '@patternfly/react-core';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -30,6 +31,7 @@ const columns: ColumnDef<IngressItem>[] = [
 ];
 
 export default function Ingress() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawIngress, IngressItem>(
     '/apis/networking.k8s.io/v1/ingresses',
     (item) => {
@@ -57,6 +59,7 @@ export default function Ingress() {
       getRowKey={(i) => `${i.namespace}-${i.name}`}
       createLabel="Create Ingress"
       nameField="name"
+      onRowClick={(item) => navigate(`/networking/ingress/${item.namespace}/${item.name}`)}
     />
   );
 }

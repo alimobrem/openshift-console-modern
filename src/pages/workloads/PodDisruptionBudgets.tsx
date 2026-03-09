@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -35,6 +36,7 @@ const columns: ColumnDef<PodDisruptionBudget>[] = [
 ];
 
 export default function PodDisruptionBudgets() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawPDB, PodDisruptionBudget>(
     '/apis/policy/v1/poddisruptionbudgets',
     (item) => ({
@@ -58,6 +60,7 @@ export default function PodDisruptionBudgets() {
       loading={loading}
       getRowKey={(pdb) => `${pdb.namespace}-${pdb.name}`}
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/poddisruptionbudgets/${item.namespace}/${item.name}`)}
     />
   );
 }

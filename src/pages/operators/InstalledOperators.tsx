@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -30,6 +31,7 @@ const columns: ColumnDef<InstalledOperator>[] = [
 ];
 
 export default function InstalledOperators() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawCSV, InstalledOperator>(
     '/apis/operators.coreos.com/v1alpha1/clusterserviceversions',
     (item) => ({
@@ -52,6 +54,7 @@ export default function InstalledOperators() {
       getRowKey={(op) => `${op.namespace}-${op.name}`}
       statusField="status"
       nameField="name"
+      onRowClick={(item) => navigate(`/operators/installed/${item.namespace}/${item.name}`)}
     />
   );
 }

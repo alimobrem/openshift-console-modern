@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dropdown, DropdownList, DropdownItem, MenuToggle, Divider, Label } from '@patternfly/react-core';
 import { EllipsisVIcon } from '@patternfly/react-icons';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
@@ -90,6 +91,7 @@ const columns: ColumnDef<NS>[] = [
 ];
 
 export default function Namespaces() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawNamespace, NS>(
     '/api/v1/namespaces',
     (item) => ({
@@ -111,6 +113,7 @@ export default function Namespaces() {
       createLabel="Create Namespace"
       statusField="status"
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/namespaces/${item.name}`)}
     />
   );
 }

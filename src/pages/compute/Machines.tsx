@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 import StatusIndicator from '@/components/StatusIndicator';
@@ -40,6 +41,7 @@ const columns: ColumnDef<Machine>[] = [
 ];
 
 export default function Machines() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawMachine, Machine>(
     '/apis/machine.openshift.io/v1beta1/machines',
     (item) => ({
@@ -62,6 +64,7 @@ export default function Machines() {
       loading={loading}
       getRowKey={(m) => m.name}
       nameField="name"
+      onRowClick={(item) => navigate(`/compute/machines/${item.namespace}/${item.name}`)}
     />
   );
 }

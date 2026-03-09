@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dropdown, DropdownList, DropdownItem, MenuToggle, Divider, Label } from '@patternfly/react-core';
 import { EllipsisVIcon } from '@patternfly/react-icons';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
@@ -98,6 +99,7 @@ function transformRoleBinding(item: RawRoleBinding): RoleBinding {
 }
 
 export default function RoleBindings() {
+  const navigate = useNavigate();
   const clusterBindings = useK8sResource<RawRoleBinding, RoleBinding>(
     '/apis/rbac.authorization.k8s.io/v1/clusterrolebindings',
     transformRoleBinding,
@@ -123,6 +125,7 @@ export default function RoleBindings() {
       getRowKey={(rb) => `${rb.kind}-${rb.namespace}-${rb.name}`}
       createLabel="Create RoleBinding"
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/rolebindings/${item.namespace}/${item.name}`)}
       filterFn={(rb, s) => {
         const q = s.toLowerCase();
         return rb.name.toLowerCase().includes(q) || rb.subjects.toLowerCase().includes(q) || rb.roleRef.toLowerCase().includes(q);

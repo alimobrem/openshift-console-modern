@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { Label } from '@patternfly/react-core';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -36,6 +37,7 @@ const columns: ColumnDef<StorageClass>[] = [
 ];
 
 export default function StorageClasses() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawStorageClass, StorageClass>(
     '/apis/storage.k8s.io/v1/storageclasses',
     (item) => ({
@@ -59,6 +61,7 @@ export default function StorageClasses() {
       getRowKey={(sc) => sc.name}
       createLabel="Create Storage Class"
       nameField="name"
+      onRowClick={(item) => navigate(`/storage/storageclasses/${item.name}`)}
     />
   );
 }

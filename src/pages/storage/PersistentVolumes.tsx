@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -42,6 +43,7 @@ const accessModeShort: Record<string, string> = {
 };
 
 export default function PersistentVolumes() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawPV, PV>(
     '/api/v1/persistentvolumes',
     (item) => {
@@ -72,6 +74,7 @@ export default function PersistentVolumes() {
       createLabel="Create Persistent Volume"
       statusField="status"
       nameField="name"
+      onRowClick={(item) => navigate(`/storage/persistentvolumes/${item.name}`)}
     />
   );
 }

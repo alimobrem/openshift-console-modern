@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -30,6 +31,7 @@ const columns: ColumnDef<ResourceQuota>[] = [
 ];
 
 export default function ResourceQuotas() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawResourceQuota, ResourceQuota>(
     '/api/v1/resourcequotas',
     (item) => ({
@@ -54,6 +56,7 @@ export default function ResourceQuotas() {
       loading={loading}
       getRowKey={(rq) => `${rq.namespace}-${rq.name}`}
       nameField="name"
+      onRowClick={(item) => navigate(`/administration/resourcequotas/${item.namespace}/${item.name}`)}
     />
   );
 }

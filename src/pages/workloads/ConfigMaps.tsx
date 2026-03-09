@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
@@ -20,6 +21,7 @@ const columns: ColumnDef<ConfigMap>[] = [
 ];
 
 export default function ConfigMaps() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawConfigMap, ConfigMap>(
     '/api/v1/configmaps',
     (item) => ({
@@ -40,6 +42,7 @@ export default function ConfigMaps() {
       getRowKey={(c) => `${c.namespace}-${c.name}`}
       createLabel="Create ConfigMap"
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/configmaps/${item.namespace}/${item.name}`)}
     />
   );
 }

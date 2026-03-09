@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
 import { Label } from '@patternfly/react-core';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
@@ -28,6 +29,7 @@ const columns: ColumnDef<StatefulSet>[] = [
 ];
 
 export default function StatefulSets() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawStatefulSet, StatefulSet>(
     '/apis/apps/v1/statefulsets',
     (item) => ({
@@ -49,6 +51,7 @@ export default function StatefulSets() {
       getRowKey={(s) => `${s.namespace}-${s.name}`}
       createLabel="Create StatefulSet"
       nameField="name"
+      onRowClick={(item) => navigate(`/workloads/statefulsets/${item.namespace}/${item.name}`)}
     />
   );
 }
