@@ -1,6 +1,7 @@
 import { create } from 'zustand';
+import * as k8s from '@/lib/k8s';
 
-interface Node {
+export interface Node {
   name: string;
   status: 'Ready' | 'NotReady';
   cpu: number;
@@ -9,14 +10,14 @@ interface Node {
   version: string;
 }
 
-interface Pod {
+export interface Pod {
   name: string;
   namespace: string;
   status: 'Running' | 'Pending' | 'Failed';
   restarts: number;
 }
 
-interface Deployment {
+export interface Deployment {
   name: string;
   namespace: string;
   replicas: number;
@@ -24,28 +25,28 @@ interface Deployment {
   status: 'Available' | 'Progressing' | 'Failed';
 }
 
-interface Service {
+export interface Service {
   name: string;
   namespace: string;
   type: 'ClusterIP' | 'NodePort' | 'LoadBalancer';
   clusterIP: string;
 }
 
-interface PersistentVolume {
+export interface PersistentVolume {
   name: string;
   capacity: string;
   status: 'Bound' | 'Available' | 'Released';
   storageClass: string;
 }
 
-interface Namespace {
+export interface Namespace {
   name: string;
   status: 'Active' | 'Terminating';
   podCount: number;
   age: string;
 }
 
-interface Event {
+export interface Event {
   type: 'Warning' | 'Error' | 'Normal';
   reason: string;
   message: string;
@@ -53,7 +54,7 @@ interface Event {
   namespace: string;
 }
 
-interface ClusterInfo {
+export interface ClusterInfo {
   version: string;
   kubernetesVersion: string;
   platform: string;
@@ -63,14 +64,14 @@ interface ClusterInfo {
   updateChannel: string;
 }
 
-interface ResourceMetrics {
+export interface ResourceMetrics {
   timestamp: string;
   cpu: number;
   memory: number;
   pods: number;
 }
 
-interface StorageInfo {
+export interface StorageInfo {
   totalCapacity: string;
   used: string;
   available: string;
@@ -89,11 +90,25 @@ interface ClusterStore {
   metrics: ResourceMetrics[];
   storageInfo: StorageInfo | null;
   selectedNamespace: string;
+  isLoading: boolean;
+  error: string | null;
+  pollingInterval: ReturnType<typeof setInterval> | null;
+  pendingTimers: ReturnType<typeof setTimeout>[];
   setSelectedNamespace: (namespace: string) => void;
   fetchClusterData: () => Promise<void>;
+  startPolling: () => void;
+  stopPolling: () => void;
+  // Admin actions
+  scaleDeployment: (namespace: string, name: string, replicas: number) => void;
+  deletePod: (namespace: string, name: string) => void;
+  restartPod: (namespace: string, name: string) => void;
+  addNamespace: (name: string) => void;
+  deleteNamespace: (name: string) => void;
+  addDeployment: (name: string, namespace: string, image: string, replicas: number) => void;
 }
 
-export const useClusterStore = create<ClusterStore>((set) => ({
+
+export const useClusterStore = create<ClusterStore>((set, get) => ({
   nodes: [],
   pods: [],
   deployments: [],
@@ -103,150 +118,198 @@ export const useClusterStore = create<ClusterStore>((set) => ({
   events: [],
   clusterInfo: null,
   metrics: [],
+  isLoading: false,
+  error: null,
+  pendingTimers: [],
   storageInfo: null,
   selectedNamespace: 'all',
+  pollingInterval: null,
 
   setSelectedNamespace: (namespace) => set({ selectedNamespace: namespace }),
 
   fetchClusterData: async () => {
-    // Mock data for demonstration
-    // In a real app, this would fetch from Kubernetes API via /api/kubernetes proxy
-    const now = new Date();
+    set({ isLoading: true, error: null });
 
+    // Try real cluster first
+    const connected = await k8s.checkClusterConnection();
+    if (connected) {
+      try {
+        const [nodes, pods, deployments, services, namespaces, events, pvs] = await Promise.all([
+          k8s.fetchNodes(),
+          k8s.fetchPods(),
+          k8s.fetchDeployments(),
+          k8s.fetchServices(),
+          k8s.fetchNamespaces(),
+          k8s.fetchEvents(),
+          k8s.fetchPersistentVolumes(),
+        ]);
+        set({
+          nodes, pods, deployments, services, namespaces, events,
+          persistentVolumes: pvs,
+          clusterInfo: { version: 'OpenShift (live)', kubernetesVersion: nodes[0]?.version ?? '', platform: 'Live Cluster', region: '-', consoleURL: window.location.origin, apiURL: 'via kubectl proxy', updateChannel: '-' },
+          metrics: [{ timestamp: new Date().toISOString(), cpu: 0, memory: 0, pods: pods.length }],
+          storageInfo: { totalCapacity: '-', used: '-', available: '-', storageClasses: 0 },
+          isLoading: false,
+        });
+        return;
+      } catch (err) {
+        set({ error: `Cluster API error: ${err instanceof Error ? err.message : String(err)}` });
+      }
+    }
+
+    // No cluster connection available
     set({
-      nodes: [
-        { name: 'master-0', status: 'Ready', cpu: 45, memory: 62, role: 'control-plane,master', version: 'v1.28.3' },
-        { name: 'worker-0', status: 'Ready', cpu: 78, memory: 85, role: 'worker', version: 'v1.28.3' },
-        { name: 'worker-1', status: 'Ready', cpu: 52, memory: 71, role: 'worker', version: 'v1.28.3' },
-        { name: 'worker-2', status: 'Ready', cpu: 34, memory: 58, role: 'worker', version: 'v1.28.3' },
-      ],
-      pods: [
-        {
-          name: 'frontend-7d8c9f-xk2pl',
-          namespace: 'default',
-          status: 'Running',
-          restarts: 0,
-        },
-        {
-          name: 'backend-5f6b8c-pl9mn',
-          namespace: 'default',
-          status: 'Running',
-          restarts: 1,
-        },
-        {
-          name: 'database-9k3j2-vc8xs',
-          namespace: 'production',
-          status: 'Running',
-          restarts: 0,
-        },
-        {
-          name: 'redis-cache-4k8j9-mn3pl',
-          namespace: 'production',
-          status: 'Running',
-          restarts: 2,
-        },
-        {
-          name: 'nginx-ingress-7d9k2-pl8xs',
-          namespace: 'ingress-nginx',
-          status: 'Running',
-          restarts: 0,
-        },
-        {
-          name: 'prometheus-server-8h2j4-xk9pl',
-          namespace: 'monitoring',
-          status: 'Running',
-          restarts: 0,
-        },
-        {
-          name: 'grafana-6f3k8-mn7xs',
-          namespace: 'monitoring',
-          status: 'Running',
-          restarts: 0,
-        },
-      ],
-      deployments: [
-        { name: 'frontend', namespace: 'default', replicas: 3, ready: 3, status: 'Available' },
-        { name: 'backend', namespace: 'default', replicas: 2, ready: 2, status: 'Available' },
-        { name: 'database', namespace: 'production', replicas: 1, ready: 1, status: 'Available' },
-        { name: 'redis-cache', namespace: 'production', replicas: 2, ready: 2, status: 'Available' },
-        { name: 'nginx-ingress', namespace: 'ingress-nginx', replicas: 2, ready: 2, status: 'Available' },
-        { name: 'prometheus-server', namespace: 'monitoring', replicas: 1, ready: 1, status: 'Available' },
-        { name: 'grafana', namespace: 'monitoring', replicas: 1, ready: 1, status: 'Available' },
-      ],
-      services: [
-        { name: 'frontend', namespace: 'default', type: 'LoadBalancer', clusterIP: '10.96.12.45' },
-        { name: 'backend', namespace: 'default', type: 'ClusterIP', clusterIP: '10.96.15.78' },
-        { name: 'database', namespace: 'production', type: 'ClusterIP', clusterIP: '10.96.8.23' },
-        { name: 'redis', namespace: 'production', type: 'ClusterIP', clusterIP: '10.96.9.41' },
-        { name: 'nginx-ingress', namespace: 'ingress-nginx', type: 'LoadBalancer', clusterIP: '10.96.1.10' },
-      ],
-      persistentVolumes: [
-        { name: 'pv-data-001', capacity: '100Gi', status: 'Bound', storageClass: 'standard' },
-        { name: 'pv-data-002', capacity: '50Gi', status: 'Bound', storageClass: 'fast' },
-        { name: 'pv-data-003', capacity: '200Gi', status: 'Bound', storageClass: 'standard' },
-        { name: 'pv-data-004', capacity: '100Gi', status: 'Available', storageClass: 'standard' },
-      ],
-      namespaces: [
-        { name: 'default', status: 'Active', podCount: 5, age: '45d' },
-        { name: 'production', status: 'Active', podCount: 12, age: '30d' },
-        { name: 'staging', status: 'Active', podCount: 8, age: '25d' },
-        { name: 'monitoring', status: 'Active', podCount: 6, age: '40d' },
-        { name: 'ingress-nginx', status: 'Active', podCount: 3, age: '42d' },
-        { name: 'kube-system', status: 'Active', podCount: 15, age: '45d' },
-      ],
-      events: [
-        {
-          type: 'Warning',
-          reason: 'BackOff',
-          message: 'Back-off restarting failed container',
-          timestamp: new Date(now.getTime() - 5 * 60000).toISOString(),
-          namespace: 'production',
-        },
-        {
-          type: 'Normal',
-          reason: 'Scheduled',
-          message: 'Successfully assigned pod to worker-1',
-          timestamp: new Date(now.getTime() - 10 * 60000).toISOString(),
-          namespace: 'default',
-        },
-        {
-          type: 'Warning',
-          reason: 'FailedMount',
-          message: 'Unable to mount volumes',
-          timestamp: new Date(now.getTime() - 15 * 60000).toISOString(),
-          namespace: 'staging',
-        },
-        {
-          type: 'Normal',
-          reason: 'Pulled',
-          message: 'Container image pulled successfully',
-          timestamp: new Date(now.getTime() - 20 * 60000).toISOString(),
-          namespace: 'default',
-        },
-      ],
-      clusterInfo: {
-        version: 'OpenShift 4.14.5',
-        kubernetesVersion: 'v1.28.3',
-        platform: 'AWS',
-        region: 'us-east-1',
-        consoleURL: 'https://console.openshift.example.com',
-        apiURL: 'https://api.openshift.example.com:6443',
-        updateChannel: 'stable-4.14',
-      },
-      metrics: [
-        { timestamp: new Date(now.getTime() - 60 * 60000).toISOString(), cpu: 42, memory: 68, pods: 45 },
-        { timestamp: new Date(now.getTime() - 50 * 60000).toISOString(), cpu: 48, memory: 71, pods: 46 },
-        { timestamp: new Date(now.getTime() - 40 * 60000).toISOString(), cpu: 55, memory: 74, pods: 47 },
-        { timestamp: new Date(now.getTime() - 30 * 60000).toISOString(), cpu: 51, memory: 72, pods: 48 },
-        { timestamp: new Date(now.getTime() - 20 * 60000).toISOString(), cpu: 47, memory: 70, pods: 49 },
-        { timestamp: new Date(now.getTime() - 10 * 60000).toISOString(), cpu: 52, memory: 73, pods: 49 },
-      ],
-      storageInfo: {
-        totalCapacity: '1000Gi',
-        used: '450Gi',
-        available: '550Gi',
-        storageClasses: 3,
-      },
+      isLoading: false,
+      error: 'Cannot connect to cluster. Run: oc proxy --port=8001',
+      nodes: [],
+      pods: [],
+      deployments: [],
+      services: [],
+      persistentVolumes: [],
+      namespaces: [],
+      events: [],
+      clusterInfo: null,
+      metrics: [],
+      storageInfo: null,
     });
+  },
+
+  startPolling: () => {
+    const existing = get().pollingInterval;
+    if (existing) return;
+
+    const interval = setInterval(async () => {
+      // Re-fetch live data from cluster
+      try {
+        const [pods, events, nodes] = await Promise.all([
+          k8s.fetchPods(),
+          k8s.fetchEvents(),
+          k8s.fetchNodes(),
+        ]);
+        const now = new Date();
+        set((state) => {
+          const newMetric: ResourceMetrics = {
+            timestamp: now.toISOString(),
+            cpu: 0,
+            memory: 0,
+            pods: pods.length,
+          };
+          return {
+            pods,
+            events,
+            nodes,
+            metrics: [...state.metrics.slice(-11), newMetric],
+          };
+        });
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 10000);
+
+    set({ pollingInterval: interval });
+  },
+
+  stopPolling: () => {
+    const interval = get().pollingInterval;
+    if (interval) {
+      clearInterval(interval);
+      set({ pollingInterval: null });
+    }
+  },
+
+  scaleDeployment: (namespace, name, replicas) => {
+    set((state) => ({
+      deployments: state.deployments.map((d) =>
+        d.namespace === namespace && d.name === name
+          ? { ...d, replicas, ready: Math.min(d.ready, replicas) }
+          : d
+      ),
+    }));
+    // Simulate ready catching up after 2s
+    const timer1 = setTimeout(() => {
+      set((state) => ({
+        deployments: state.deployments.map((d) =>
+          d.namespace === namespace && d.name === name
+            ? { ...d, ready: d.replicas }
+            : d
+        ),
+      }));
+    }, 2000);
+    set((s) => ({ pendingTimers: [...s.pendingTimers, timer1] }));
+  },
+
+  deletePod: (namespace, name) => {
+    set((state) => ({
+      pods: state.pods.filter((p) => !(p.namespace === namespace && p.name === name)),
+      events: [
+        { type: 'Normal' as const, reason: 'Killing', message: `Stopping container in pod ${name}`, timestamp: new Date().toISOString(), namespace },
+        ...state.events.slice(0, 19),
+      ],
+    }));
+  },
+
+  restartPod: (namespace, name) => {
+    set((state) => ({
+      pods: state.pods.map((p) =>
+        p.namespace === namespace && p.name === name
+          ? { ...p, restarts: p.restarts + 1, status: 'Pending' as const }
+          : p
+      ),
+      events: [
+        { type: 'Normal' as const, reason: 'Restarting', message: `Restarting pod ${name}`, timestamp: new Date().toISOString(), namespace },
+        ...state.events.slice(0, 19),
+      ],
+    }));
+    // Simulate restart completing after 3s
+    setTimeout(() => {
+      set((state) => ({
+        pods: state.pods.map((p) =>
+          p.namespace === namespace && p.name === name
+            ? { ...p, status: 'Running' as const }
+            : p
+        ),
+      }));
+    }, 3000);
+  },
+
+  addNamespace: (name) => {
+    set((state) => ({
+      namespaces: [...state.namespaces, { name, status: 'Active' as const, podCount: 0, age: '0d' }],
+    }));
+  },
+
+  deleteNamespace: (name) => {
+    set((state) => ({
+      namespaces: state.namespaces.filter((ns) => ns.name !== name),
+    }));
+  },
+
+  addDeployment: (name, namespace, _image, replicas) => {
+    set((state) => ({
+      deployments: [...state.deployments, { name, namespace, replicas, ready: 0, status: 'Progressing' as const }],
+      events: [
+        { type: 'Normal' as const, reason: 'ScalingReplicaSet', message: `Scaled up replica set ${name} to ${replicas}`, timestamp: new Date().toISOString(), namespace },
+        ...state.events.slice(0, 19),
+      ],
+    }));
+    // Simulate pods becoming ready
+    setTimeout(() => {
+      set((state) => ({
+        deployments: state.deployments.map((d) =>
+          d.namespace === namespace && d.name === name
+            ? { ...d, ready: d.replicas, status: 'Available' as const }
+            : d
+        ),
+        pods: [
+          ...state.pods,
+          ...Array.from({ length: replicas }, () => ({
+            name: `${name}-${Math.random().toString(36).slice(2, 7)}-${Math.random().toString(36).slice(2, 7)}`,
+            namespace,
+            status: 'Running' as const,
+            restarts: 0,
+          })),
+        ],
+      }));
+    }, 3000);
   },
 }));

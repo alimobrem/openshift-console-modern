@@ -4,16 +4,17 @@ import {
   Title,
   Card,
   CardBody,
+  Gallery,
+  GalleryItem,
+  Label,
+  Button,
+  SearchInput,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
-  SearchInput,
-  Gallery,
-  GalleryItem,
-  CardTitle,
-  Label,
-  Button,
 } from '@patternfly/react-core';
+import { useUIStore } from '@/store/useUIStore';
+import '@/openshift-components.css';
 
 interface Operator {
   name: string;
@@ -23,145 +24,97 @@ interface Operator {
   version: string;
   category: string;
   installed: boolean;
+  icon: string;
 }
 
-const mockOperators: Operator[] = [
-  {
-    name: 'prometheus',
-    displayName: 'Prometheus Operator',
-    provider: 'Red Hat',
-    description: 'Manages Prometheus instances for monitoring',
-    version: '0.68.0',
-    category: 'Monitoring',
-    installed: true,
-  },
-  {
-    name: 'elasticsearch',
-    displayName: 'Elasticsearch Operator',
-    provider: 'Elastic',
-    description: 'Manages Elasticsearch clusters',
-    version: '2.10.0',
-    category: 'Logging',
-    installed: false,
-  },
-  {
-    name: 'cert-manager',
-    displayName: 'Cert Manager Operator',
-    provider: 'Jetstack',
-    description: 'Automates certificate management',
-    version: '1.14.0',
-    category: 'Security',
-    installed: false,
-  },
-  {
-    name: 'argocd',
-    displayName: 'Argo CD Operator',
-    provider: 'Argo Project',
-    description: 'GitOps continuous delivery tool',
-    version: '2.10.0',
-    category: 'CI/CD',
-    installed: false,
-  },
-  {
-    name: 'vault',
-    displayName: 'Vault Operator',
-    provider: 'HashiCorp',
-    description: 'Manages HashiCorp Vault instances',
-    version: '1.16.0',
-    category: 'Security',
-    installed: false,
-  },
-  {
-    name: 'kafka',
-    displayName: 'Kafka Operator',
-    provider: 'Strimzi',
-    description: 'Manages Apache Kafka clusters',
-    version: '0.39.0',
-    category: 'Messaging',
-    installed: false,
-  },
+const operators: Operator[] = [
+  { name: 'prometheus', displayName: 'Prometheus Operator', provider: 'Red Hat', description: 'Manages Prometheus clusters atop Kubernetes.', version: 'v0.65.1', category: 'Monitoring', installed: true, icon: 'P' },
+  { name: 'elasticsearch', displayName: 'Elasticsearch Operator', provider: 'Red Hat', description: 'Manages Elasticsearch clusters for logging.', version: 'v5.8.1', category: 'Logging', installed: false, icon: 'E' },
+  { name: 'cert-manager', displayName: 'cert-manager', provider: 'Community', description: 'Automates TLS certificate management.', version: 'v1.13.0', category: 'Security', installed: false, icon: 'C' },
+  { name: 'argocd', displayName: 'Argo CD', provider: 'Community', description: 'Declarative GitOps continuous delivery tool.', version: 'v2.9.0', category: 'CI/CD', installed: false, icon: 'A' },
+  { name: 'vault', displayName: 'Vault Operator', provider: 'HashiCorp', description: 'Manages HashiCorp Vault on Kubernetes.', version: 'v0.25.0', category: 'Security', installed: true, icon: 'V' },
+  { name: 'kafka', displayName: 'Strimzi Kafka', provider: 'Community', description: 'Run Apache Kafka on Kubernetes.', version: 'v0.38.0', category: 'Streaming', installed: false, icon: 'K' },
 ];
+
+const categoryColors: Record<string, 'blue' | 'purple' | 'teal' | 'orange' | 'green'> = {
+  Monitoring: 'blue',
+  Logging: 'purple',
+  Security: 'teal',
+  'CI/CD': 'orange',
+  Streaming: 'green',
+};
 
 export default function OperatorHub() {
   const [searchValue, setSearchValue] = React.useState('');
+  const addToast = useUIStore((s) => s.addToast);
 
-  const filteredOperators = mockOperators.filter(
-    (op) =>
-      op.displayName.toLowerCase().includes(searchValue.toLowerCase()) ||
-      op.description.toLowerCase().includes(searchValue.toLowerCase()) ||
-      op.category.toLowerCase().includes(searchValue.toLowerCase())
+  const filtered = operators.filter((op) =>
+    op.displayName.toLowerCase().includes(searchValue.toLowerCase()) ||
+    op.category.toLowerCase().includes(searchValue.toLowerCase())
   );
 
   return (
     <>
       <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          OperatorHub
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Discover and install operators from the catalog
+        <Title headingLevel="h1" size="2xl">OperatorHub</Title>
+        <p className="os-operatorhub__description">
+          Discover and install operators to extend your cluster capabilities
         </p>
       </PageSection>
 
       <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="operatorhub-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search operators..."
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
+        <Toolbar id="operatorhub-toolbar" className="os-operatorhub__toolbar">
+          <ToolbarContent>
+            <ToolbarItem className="os-operatorhub__toolbar-search">
+              <SearchInput
+                placeholder="Search operators by name or category..."
+                value={searchValue}
+                onChange={(_e, v) => setSearchValue(v)}
+                onClear={() => setSearchValue('')}
+              />
+            </ToolbarItem>
+          </ToolbarContent>
+        </Toolbar>
 
-            <Gallery hasGutter minWidths={{ default: '280px' }} style={{ marginTop: '16px' }}>
-              {filteredOperators.map((operator) => (
-                <GalleryItem key={operator.name}>
-                  <Card isFullHeight>
-                    <CardTitle>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                        <strong>{operator.displayName}</strong>
-                        {operator.installed && (
-                          <Label color="green" isCompact>
-                            Installed
-                          </Label>
-                        )}
-                      </div>
-                    </CardTitle>
-                    <CardBody>
-                      <div style={{ marginBottom: '12px' }}>
-                        <Label color="blue" isCompact>{operator.category}</Label>
-                        <span style={{ marginLeft: '8px', fontSize: '0.875rem', color: 'var(--pf-v6-global--Color--200)' }}>
-                          {operator.provider}
-                        </span>
-                      </div>
-                      <p style={{ fontSize: '0.875rem', marginBottom: '12px', color: 'var(--pf-v6-global--Color--100)' }}>
-                        {operator.description}
-                      </p>
-                      <div style={{ fontSize: '0.875rem', color: 'var(--pf-v6-global--Color--200)', marginBottom: '12px' }}>
-                        Version: {operator.version}
-                      </div>
-                      <Button variant={operator.installed ? 'secondary' : 'primary'} size="sm" isBlock>
-                        {operator.installed ? 'View Details' : 'Install'}
+        <Gallery hasGutter minWidths={{ default: '100%', sm: '280px', md: '300px' }}>
+          {filtered.map((op) => (
+            <GalleryItem key={op.name}>
+              <Card isFullHeight className="os-operatorhub__card">
+                <CardBody>
+                  <div className="os-operatorhub__card-header">
+                    <div className="os-operatorhub__icon">
+                      {op.icon}
+                    </div>
+                    <div className="os-operatorhub__info">
+                      <div className="os-operatorhub__name">{op.displayName}</div>
+                      <div className="os-operatorhub__provider">by {op.provider}</div>
+                    </div>
+                  </div>
+                  <p className="os-operatorhub__card-desc">
+                    {op.description}
+                  </p>
+                  <div className="os-operatorhub__card-footer">
+                    <div className="os-operatorhub__label-group">
+                      <Label color={categoryColors[op.category] ?? 'grey'}>{op.category}</Label>
+                      <Label color="grey">{op.version}</Label>
+                    </div>
+                    {op.installed ? (
+                      <Label color="green">Installed</Label>
+                    ) : (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => addToast({ type: 'success', title: `Installing ${op.displayName}`, description: 'Operator will be available shortly' })}
+                      >
+                        Install
                       </Button>
-                    </CardBody>
-                  </Card>
-                </GalleryItem>
-              ))}
-            </Gallery>
-
-            {filteredOperators.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px', color: 'var(--pf-v6-global--Color--200)' }}>
-                No operators found matching your search
-              </div>
-            )}
-          </CardBody>
-        </Card>
+                    )}
+                  </div>
+                </CardBody>
+              </Card>
+            </GalleryItem>
+          ))}
+        </Gallery>
       </PageSection>
     </>
   );

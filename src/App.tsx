@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import CompassLayout from './components/CompassLayout';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Home
 import Overview from './pages/home/Overview';
 import Search from './pages/home/Search';
 import Events from './pages/home/Events';
+import Topology from './pages/home/Topology';
 
 // Operators
 import OperatorHub from './pages/operators/OperatorHub';
@@ -17,16 +19,20 @@ import Deployments from './pages/workloads/Deployments';
 import DeploymentDetail from './pages/workloads/DeploymentDetail';
 import StatefulSets from './pages/workloads/StatefulSets';
 import DaemonSets from './pages/workloads/DaemonSets';
+import ReplicaSets from './pages/workloads/ReplicaSets';
 import Jobs from './pages/workloads/Jobs';
 import CronJobs from './pages/workloads/CronJobs';
 import Secrets from './pages/workloads/Secrets';
 import ConfigMaps from './pages/workloads/ConfigMaps';
+import HPA from './pages/workloads/HPA';
+import PodDisruptionBudgets from './pages/workloads/PodDisruptionBudgets';
 
 // Networking
 import Services from './pages/networking/Services';
 import RoutesPage from './pages/networking/Routes';
 import Ingress from './pages/networking/Ingress';
 import NetworkPolicies from './pages/networking/NetworkPolicies';
+import Endpoints from './pages/networking/Endpoints';
 
 // Storage
 import PersistentVolumes from './pages/storage/PersistentVolumes';
@@ -51,9 +57,18 @@ import Machines from './pages/compute/Machines';
 // Administration
 import ClusterSettings from './pages/administration/ClusterSettings';
 import Namespaces from './pages/administration/Namespaces';
+import Roles from './pages/administration/Roles';
+import RoleBindings from './pages/administration/RoleBindings';
+import ServiceAccounts from './pages/administration/ServiceAccounts';
+import ResourceQuotas from './pages/administration/ResourceQuotas';
+import LimitRanges from './pages/administration/LimitRanges';
+import CustomResourceDefinitions from './pages/administration/CustomResourceDefinitions';
+import ClusterOperators from './pages/administration/ClusterOperators';
+import OAuth from './pages/administration/OAuth';
 
 function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<CompassLayout />}>
@@ -64,6 +79,7 @@ function App() {
             <Route path="overview" element={<Overview />} />
             <Route path="search" element={<Search />} />
             <Route path="events" element={<Events />} />
+            <Route path="topology" element={<Topology />} />
           </Route>
 
           {/* Operators */}
@@ -79,7 +95,10 @@ function App() {
             <Route path="deployments" element={<Deployments />} />
             <Route path="deployments/:namespace/:name" element={<DeploymentDetail />} />
             <Route path="statefulsets" element={<StatefulSets />} />
+            <Route path="replicasets" element={<ReplicaSets />} />
             <Route path="daemonsets" element={<DaemonSets />} />
+            <Route path="hpa" element={<HPA />} />
+            <Route path="poddisruptionbudgets" element={<PodDisruptionBudgets />} />
             <Route path="jobs" element={<Jobs />} />
             <Route path="cronjobs" element={<CronJobs />} />
             <Route path="secrets" element={<Secrets />} />
@@ -92,6 +111,7 @@ function App() {
             <Route path="routes" element={<RoutesPage />} />
             <Route path="ingress" element={<Ingress />} />
             <Route path="networkpolicies" element={<NetworkPolicies />} />
+            <Route path="endpoints" element={<Endpoints />} />
           </Route>
 
           {/* Storage */}
@@ -126,10 +146,19 @@ function App() {
           <Route path="administration">
             <Route path="cluster-settings" element={<ClusterSettings />} />
             <Route path="namespaces" element={<Namespaces />} />
+            <Route path="roles" element={<Roles />} />
+            <Route path="rolebindings" element={<RoleBindings />} />
+            <Route path="serviceaccounts" element={<ServiceAccounts />} />
+            <Route path="resourcequotas" element={<ResourceQuotas />} />
+            <Route path="limitranges" element={<LimitRanges />} />
+            <Route path="crds" element={<CustomResourceDefinitions />} />
+            <Route path="clusteroperators" element={<ClusterOperators />} />
+            <Route path="oauth" element={<OAuth />} />
           </Route>
         </Route>
       </Routes>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

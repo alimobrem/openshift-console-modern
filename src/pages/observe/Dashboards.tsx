@@ -5,107 +5,86 @@ import {
   CardBody,
   Gallery,
   GalleryItem,
-  CardTitle,
   Label,
   Button,
 } from '@patternfly/react-core';
-import { ExternalLinkAltIcon } from '@patternfly/react-icons';
+import { useUIStore } from '@/store/useUIStore';
+import '@/openshift-components.css';
 
 interface Dashboard {
   name: string;
   description: string;
   category: string;
   panels: number;
-  url: string;
 }
 
-const mockDashboards: Dashboard[] = [
-  {
-    name: 'Kubernetes / Compute Resources / Cluster',
-    description: 'Cluster-wide compute resource utilization',
-    category: 'Kubernetes',
-    panels: 12,
-    url: '/grafana/d/cluster',
-  },
-  {
-    name: 'Kubernetes / Compute Resources / Namespace (Pods)',
-    description: 'Pod compute resources by namespace',
-    category: 'Kubernetes',
-    panels: 8,
-    url: '/grafana/d/namespace-pods',
-  },
-  {
-    name: 'Node Exporter / Nodes',
-    description: 'Node-level system metrics',
-    category: 'Infrastructure',
-    panels: 16,
-    url: '/grafana/d/nodes',
-  },
-  {
-    name: 'Etcd',
-    description: 'Etcd cluster health and performance',
-    category: 'Infrastructure',
-    panels: 10,
-    url: '/grafana/d/etcd',
-  },
-  {
-    name: 'API Server',
-    description: 'Kubernetes API server metrics',
-    category: 'Control Plane',
-    panels: 14,
-    url: '/grafana/d/apiserver',
-  },
-  {
-    name: 'Prometheus',
-    description: 'Prometheus metrics and performance',
-    category: 'Monitoring',
-    panels: 9,
-    url: '/grafana/d/prometheus',
-  },
+const dashboards: Dashboard[] = [
+  { name: 'Kubernetes / Compute Resources', description: 'CPU, memory, and network for pods and nodes', category: 'Kubernetes', panels: 12 },
+  { name: 'Node Exporter / Full', description: 'Hardware and OS metrics exposed by Node Exporter', category: 'Infrastructure', panels: 24 },
+  { name: 'Etcd', description: 'Etcd cluster performance and health', category: 'Kubernetes', panels: 8 },
+  { name: 'API Server', description: 'Kubernetes API server request latency and throughput', category: 'Kubernetes', panels: 10 },
+  { name: 'Prometheus', description: 'Prometheus server metrics and targets', category: 'Monitoring', panels: 6 },
+  { name: 'Cluster Overview', description: 'High-level cluster health and resource usage', category: 'Kubernetes', panels: 16 },
 ];
 
 export default function Dashboards() {
+  const addToast = useUIStore((s) => s.addToast);
+
   return (
     <>
       <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Dashboards
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          View Grafana monitoring dashboards
+        <Title headingLevel="h1" size="2xl">Dashboards</Title>
+        <p className="os-dashboards__description">
+          Pre-built monitoring dashboards for cluster observability
         </p>
       </PageSection>
 
       <PageSection>
-        <Gallery hasGutter minWidths={{ default: '320px' }}>
-          {mockDashboards.map((dashboard) => (
-            <GalleryItem key={dashboard.name}>
-              <Card isFullHeight>
-                <CardTitle>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '8px' }}>
-                    <strong style={{ flex: 1 }}>{dashboard.name}</strong>
-                    <Label color="blue" isCompact>{dashboard.category}</Label>
-                  </div>
-                </CardTitle>
+        <Gallery hasGutter minWidths={{ default: '100%', sm: '280px', md: '320px' }}>
+          {dashboards.map((dash) => (
+            <GalleryItem key={dash.name}>
+              <Card isFullHeight className="os-dashboards__card">
                 <CardBody>
-                  <p style={{ fontSize: '0.875rem', marginBottom: '12px', color: 'var(--pf-v6-global--Color--100)' }}>
-                    {dashboard.description}
-                  </p>
-                  <div style={{ fontSize: '0.875rem', color: 'var(--pf-v6-global--Color--200)', marginBottom: '16px' }}>
-                    {dashboard.panels} panels
+                  <div className="os-dashboards__card-header">
+                    <div className="os-dashboards__card-title">{dash.name}</div>
+                    <p className="os-dashboards__card-desc">
+                      {dash.description}
+                    </p>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    isBlock
-                    icon={<ExternalLinkAltIcon />}
-                    iconPosition="end"
-                    component="a"
-                    href={dashboard.url}
-                    target="_blank"
-                  >
-                    View Dashboard
-                  </Button>
+                  {/* Mini chart preview */}
+                  <div className="os-dashboards__chart-preview">
+                    <svg width="100%" height="48" viewBox="0 0 300 48" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id={`dash-${dash.panels}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="rgba(251, 146, 60, 0.3)" />
+                          <stop offset="100%" stopColor="rgba(251, 146, 60, 0)" />
+                        </linearGradient>
+                      </defs>
+                      <path
+                        d={`M0,40 Q30,${20 + Math.random() * 20} 75,${15 + Math.random() * 25} T150,${10 + Math.random() * 30} T225,${20 + Math.random() * 20} T300,${15 + Math.random() * 25} V48 H0 Z`}
+                        fill={`url(#dash-${dash.panels})`}
+                      />
+                      <path
+                        d={`M0,40 Q30,${20 + Math.random() * 20} 75,${15 + Math.random() * 25} T150,${10 + Math.random() * 30} T225,${20 + Math.random() * 20} T300,${15 + Math.random() * 25}`}
+                        fill="none"
+                        stroke="rgba(251, 146, 60, 0.6)"
+                        strokeWidth="2"
+                      />
+                    </svg>
+                  </div>
+                  <div className="os-dashboards__card-footer">
+                    <div className="os-dashboards__label-group">
+                      <Label color="blue">{dash.category}</Label>
+                      <Label color="grey">{dash.panels} panels</Label>
+                    </div>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => addToast({ type: 'info', title: `Opening ${dash.name}` })}
+                    >
+                      View
+                    </Button>
+                  </div>
                 </CardBody>
               </Card>
             </GalleryItem>

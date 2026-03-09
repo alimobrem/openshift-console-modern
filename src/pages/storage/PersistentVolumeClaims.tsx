@@ -1,196 +1,71 @@
-import React from 'react';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Button,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { PlusCircleIcon } from '@patternfly/react-icons';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
-interface PersistentVolumeClaim {
+interface PVC {
   name: string;
   namespace: string;
-  status: 'Bound' | 'Pending' | 'Lost';
+  status: string;
   volume: string;
   capacity: string;
-  accessModes: string[];
+  accessModes: string;
   storageClass: string;
   age: string;
 }
 
-const mockPVCs: PersistentVolumeClaim[] = [
-  {
-    name: 'data-pvc',
-    namespace: 'default',
-    status: 'Bound',
-    volume: 'pv-data-001',
-    capacity: '100Gi',
-    accessModes: ['RWO'],
-    storageClass: 'fast-ssd',
-    age: '60d',
-  },
-  {
-    name: 'logs-pvc',
-    namespace: 'logging',
-    status: 'Bound',
-    volume: 'pv-logs-001',
-    capacity: '50Gi',
-    accessModes: ['RWO'],
-    storageClass: 'standard',
-    age: '45d',
-  },
-  {
-    name: 'shared-pvc',
-    namespace: 'default',
-    status: 'Bound',
-    volume: 'pv-shared-001',
-    capacity: '200Gi',
-    accessModes: ['RWX'],
-    storageClass: 'nfs',
-    age: '90d',
-  },
-  {
-    name: 'database-pvc',
-    namespace: 'database',
-    status: 'Bound',
-    volume: 'pv-db-001',
-    capacity: '150Gi',
-    accessModes: ['RWO'],
-    storageClass: 'fast-ssd',
-    age: '75d',
-  },
-  {
-    name: 'pending-pvc',
-    namespace: 'default',
-    status: 'Pending',
-    volume: '-',
-    capacity: '-',
-    accessModes: ['RWO'],
-    storageClass: 'slow-hdd',
-    age: '5m',
-  },
+interface RawPVC extends K8sMeta {
+  spec: {
+    storageClassName?: string;
+    resources?: { requests?: { storage?: string } };
+    volumeName?: string;
+    accessModes?: string[];
+  };
+  status: { phase?: string };
+}
+
+const accessModeShort: Record<string, string> = {
+  ReadWriteOnce: 'RWO',
+  ReadOnlyMany: 'ROX',
+  ReadWriteMany: 'RWX',
+  ReadWriteOncePod: 'RWOP',
+};
+
+const columns: ColumnDef<PVC>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Namespace', key: 'namespace' },
+  { title: 'Status', key: 'status' },
+  { title: 'Volume', key: 'volume' },
+  { title: 'Capacity', key: 'capacity' },
+  { title: 'Access Modes', key: 'accessModes' },
+  { title: 'Storage Class', key: 'storageClass' },
+  { title: 'Age', key: 'age' },
 ];
 
 export default function PersistentVolumeClaims() {
-  const [searchValue, setSearchValue] = React.useState('');
-
-  const filteredPVCs = mockPVCs.filter(
-    (pvc) =>
-      pvc.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      pvc.namespace.toLowerCase().includes(searchValue.toLowerCase())
+  const { data, loading } = useK8sResource<RawPVC, PVC>(
+    '/api/v1/persistentvolumeclaims',
+    (item) => ({
+      name: item.metadata.name,
+      namespace: item.metadata.namespace ?? '',
+      status: item.status.phase ?? '-',
+      volume: item.spec.volumeName ?? '-',
+      capacity: item.spec.resources?.requests?.storage ?? '-',
+      accessModes: (item.spec.accessModes ?? []).map((m) => accessModeShort[m] ?? m).join(', '),
+      storageClass: item.spec.storageClassName ?? '-',
+      age: ageFromTimestamp(item.metadata.creationTimestamp),
+    }),
   );
 
-  const getStatusColor = (status: PersistentVolumeClaim['status']) => {
-    switch (status) {
-      case 'Bound':
-        return 'green';
-      case 'Pending':
-        return 'orange';
-      case 'Lost':
-        return 'red';
-      default:
-        return 'grey';
-    }
-  };
-
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Persistent Volume Claims
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Manage storage requests from applications
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="persistent-volume-claims-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search by name or namespace"
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button variant="primary" icon={<PlusCircleIcon />}>
-                    Create PVC
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="Persistent Volume Claims table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Namespace</Th>
-                  <Th>Status</Th>
-                  <Th>Volume</Th>
-                  <Th>Capacity</Th>
-                  <Th>Access Modes</Th>
-                  <Th>Storage Class</Th>
-                  <Th>Age</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredPVCs.length > 0 ? (
-                  filteredPVCs.map((pvc) => (
-                    <Tr key={`${pvc.namespace}-${pvc.name}`}>
-                      <Td dataLabel="Name">
-                        <strong>{pvc.name}</strong>
-                      </Td>
-                      <Td dataLabel="Namespace">{pvc.namespace}</Td>
-                      <Td dataLabel="Status">
-                        <Label color={getStatusColor(pvc.status)}>{pvc.status}</Label>
-                      </Td>
-                      <Td dataLabel="Volume">
-                        {pvc.volume === '-' ? (
-                          <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>-</span>
-                        ) : (
-                          pvc.volume
-                        )}
-                      </Td>
-                      <Td dataLabel="Capacity">{pvc.capacity}</Td>
-                      <Td dataLabel="Access Modes">
-                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                          {pvc.accessModes.map((mode) => (
-                            <Label key={mode} color="teal">
-                              {mode}
-                            </Label>
-                          ))}
-                        </div>
-                      </Td>
-                      <Td dataLabel="Storage Class">{pvc.storageClass}</Td>
-                      <Td dataLabel="Age">{pvc.age}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={8} style={{ textAlign: 'center' }}>
-                      {searchValue
-                        ? 'No Persistent Volume Claims found matching your search'
-                        : 'No Persistent Volume Claims found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Persistent Volume Claims"
+      description="Manage storage claims for your workloads"
+      columns={columns}
+      data={data}
+      loading={loading}
+      getRowKey={(pvc) => `${pvc.namespace}-${pvc.name}`}
+      createLabel="Create PVC"
+      statusField="status"
+      nameField="name"
+    />
   );
 }

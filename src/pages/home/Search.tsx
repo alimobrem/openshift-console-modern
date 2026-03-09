@@ -1,20 +1,9 @@
-import React from 'react';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Select,
-  SelectOption,
-  MenuToggle,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { SearchIcon } from '@patternfly/react-icons';
+import React, { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import { Label, ToolbarItem, Select, SelectOption, MenuToggle } from '@patternfly/react-core';
+import { useClusterStore } from '@/store/useClusterStore';
+import '@/openshift-components.css';
 
 interface SearchResult {
   name: string;
@@ -24,166 +13,96 @@ interface SearchResult {
   created: string;
 }
 
-const allResources: SearchResult[] = [
-  { name: 'frontend', kind: 'Pod', namespace: 'default', status: 'Running', created: '2d' },
-  { name: 'backend-api', kind: 'Deployment', namespace: 'default', status: 'Available', created: '25d' },
-  { name: 'database', kind: 'Service', namespace: 'database', status: 'Active', created: '60d' },
-  { name: 'master-0', kind: 'Node', namespace: '-', status: 'Ready', created: '120d' },
-  { name: 'data-pvc', kind: 'PersistentVolumeClaim', namespace: 'default', status: 'Bound', created: '60d' },
-  { name: 'mongodb', kind: 'StatefulSet', namespace: 'default', status: 'Running', created: '15d' },
-  { name: 'frontend', kind: 'Route', namespace: 'default', status: 'Admitted', created: '30d' },
-  { name: 'database-credentials', kind: 'Secret', namespace: 'default', status: '-', created: '60d' },
-  { name: 'app-config', kind: 'ConfigMap', namespace: 'default', status: '-', created: '60d' },
-  { name: 'backup-daily', kind: 'CronJob', namespace: 'default', status: 'Active', created: '90d' },
+const kindColors: Record<string, 'blue' | 'purple' | 'teal' | 'orange' | 'green' | 'grey'> = {
+  Pod: 'blue',
+  Deployment: 'purple',
+  Service: 'teal',
+  Node: 'orange',
+  PersistentVolume: 'green',
+  Namespace: 'grey',
+};
+
+const kindRoutes: Record<string, string> = {
+  Pod: '/workloads/pods',
+  Deployment: '/workloads/deployments',
+  Service: '/networking/services',
+  Node: '/compute/nodes',
+};
+
+const resourceTypes = ['All Resources', 'Pods', 'Deployments', 'Services', 'Nodes', 'Namespaces', 'PersistentVolumes'];
+
+const columns: ColumnDef<SearchResult>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Kind', key: 'kind', render: (r) => <Label color={kindColors[r.kind] ?? 'grey'}>{r.kind}</Label> },
+  { title: 'Namespace', key: 'namespace', render: (r) => r.namespace === '-' ? <span className="os-search__ns-empty">-</span> : r.namespace },
+  { title: 'Status', key: 'status' },
+  { title: 'Created', key: 'created' },
 ];
 
 export default function Search() {
-  const [searchValue, setSearchValue] = React.useState('');
+  const navigate = useNavigate();
+  const { pods, deployments, services, nodes, namespaces, persistentVolumes } = useClusterStore();
   const [resourceFilter, setResourceFilter] = React.useState('All Resources');
   const [isSelectOpen, setIsSelectOpen] = React.useState(false);
 
-  const resourceTypes = [
-    'All Resources',
-    'Pods',
-    'Deployments',
-    'Services',
-    'Nodes',
-    'PersistentVolumeClaims',
-    'StatefulSets',
-    'Routes',
-    'Secrets',
-    'ConfigMaps',
-    'CronJobs',
-  ];
+  const allResources = useMemo<SearchResult[]>(() => [
+    ...pods.map((p) => ({ name: p.name, kind: 'Pod', namespace: p.namespace, status: p.status, created: '-' })),
+    ...deployments.map((d) => ({ name: d.name, kind: 'Deployment', namespace: d.namespace, status: d.status, created: '-' })),
+    ...services.map((s) => ({ name: s.name, kind: 'Service', namespace: s.namespace, status: s.type, created: '-' })),
+    ...nodes.map((n) => ({ name: n.name, kind: 'Node', namespace: '-', status: n.status, created: '-' })),
+    ...namespaces.map((ns) => ({ name: ns.name, kind: 'Namespace', namespace: '-', status: ns.status, created: ns.age })),
+    ...persistentVolumes.map((pv) => ({ name: pv.name, kind: 'PersistentVolume', namespace: '-', status: pv.status, created: '-' })),
+  ], [pods, deployments, services, nodes, namespaces, persistentVolumes]);
 
-  const filteredResults = allResources.filter((resource) => {
-    const matchesSearch =
-      resource.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      resource.kind.toLowerCase().includes(searchValue.toLowerCase()) ||
-      resource.namespace.toLowerCase().includes(searchValue.toLowerCase());
+  const filtered = resourceFilter === 'All Resources'
+    ? allResources
+    : allResources.filter((r) => {
+        const singular = resourceFilter.endsWith('s') ? resourceFilter.slice(0, -1) : resourceFilter;
+        return r.kind === singular || r.kind === resourceFilter;
+      });
 
-    const matchesFilter =
-      resourceFilter === 'All Resources' ||
-      (resourceFilter.endsWith('s') && resource.kind === resourceFilter.slice(0, -1)) ||
-      resource.kind === resourceFilter;
-
-    return matchesSearch && matchesFilter;
-  });
-
-  const getKindColor = (kind: string): 'blue' | 'purple' | 'teal' | 'orange' | 'green' | 'grey' => {
-    const colors = {
-      Pod: 'blue',
-      Deployment: 'purple',
-      Service: 'teal',
-      Node: 'orange',
-      PersistentVolumeClaim: 'green',
-      StatefulSet: 'purple',
-      Route: 'teal',
-      Secret: 'grey',
-      ConfigMap: 'grey',
-      CronJob: 'blue',
-    } as const;
-    return colors[kind as keyof typeof colors] || 'grey';
+  const handleRowClick = (r: SearchResult) => {
+    const base = kindRoutes[r.kind];
+    if (base && r.kind === 'Node') {
+      navigate(`${base}/${r.name}`);
+    } else if (base) {
+      navigate(base);
+    }
   };
 
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Search
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Search and discover all resources across your cluster
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="search-toolbar">
-              <ToolbarContent>
-                <ToolbarItem style={{ flexGrow: 1 }}>
-                  <SearchInput
-                    placeholder="Search resources by name, kind, or namespace..."
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Select
-                    id="resource-type-select"
-                    isOpen={isSelectOpen}
-                    selected={resourceFilter}
-                    onSelect={(_event, selection) => {
-                      setResourceFilter(selection as string);
-                      setIsSelectOpen(false);
-                    }}
-                    onOpenChange={(isOpen) => setIsSelectOpen(isOpen)}
-                    toggle={(toggleRef) => (
-                      <MenuToggle ref={toggleRef} onClick={() => setIsSelectOpen(!isSelectOpen)}>
-                        {resourceFilter}
-                      </MenuToggle>
-                    )}
-                  >
-                    {resourceTypes.map((type) => (
-                      <SelectOption key={type} value={type}>
-                        {type}
-                      </SelectOption>
-                    ))}
-                  </Select>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="Search results table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Kind</Th>
-                  <Th>Namespace</Th>
-                  <Th>Status</Th>
-                  <Th>Created</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredResults.length > 0 ? (
-                  filteredResults.map((resource, idx) => (
-                    <Tr key={`${resource.kind}-${resource.namespace}-${resource.name}-${idx}`}>
-                      <Td dataLabel="Name">
-                        <strong>{resource.name}</strong>
-                      </Td>
-                      <Td dataLabel="Kind">
-                        <Label color={getKindColor(resource.kind)}>{resource.kind}</Label>
-                      </Td>
-                      <Td dataLabel="Namespace">
-                        {resource.namespace === '-' ? (
-                          <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>-</span>
-                        ) : (
-                          resource.namespace
-                        )}
-                      </Td>
-                      <Td dataLabel="Status">{resource.status}</Td>
-                      <Td dataLabel="Created">{resource.created}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
-                      <SearchIcon style={{ marginBottom: '12px', color: 'var(--pf-v6-global--Color--200)', width: '24px', height: '24px' }} />
-                      <div>
-                        {searchValue
-                          ? `No resources found matching "${searchValue}"`
-                          : 'Enter a search term to find resources'}
-                      </div>
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Search"
+      description="Search and discover all resources across your cluster"
+      columns={columns}
+      data={filtered}
+      getRowKey={(r) => `${r.kind}-${r.namespace}-${r.name}`}
+      onRowClick={handleRowClick}
+      nameField="name"
+      filterFn={(r, s) => {
+        const q = s.toLowerCase();
+        return r.name.toLowerCase().includes(q) || r.kind.toLowerCase().includes(q) || r.namespace.toLowerCase().includes(q);
+      }}
+      toolbarExtra={
+        <ToolbarItem>
+          <Select
+            id="resource-type-select"
+            isOpen={isSelectOpen}
+            selected={resourceFilter}
+            onSelect={(_event, selection) => { setResourceFilter(selection as string); setIsSelectOpen(false); }}
+            onOpenChange={(isOpen) => setIsSelectOpen(isOpen)}
+            toggle={(toggleRef) => (
+              <MenuToggle ref={toggleRef} onClick={() => setIsSelectOpen(!isSelectOpen)}>
+                {resourceFilter}
+              </MenuToggle>
+            )}
+          >
+            {resourceTypes.map((type) => (
+              <SelectOption key={type} value={type}>{type}</SelectOption>
+            ))}
+          </Select>
+        </ToolbarItem>
+      }
+    />
   );
 }

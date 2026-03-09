@@ -1,155 +1,57 @@
-import React from 'react';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Button,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { PlusCircleIcon } from '@patternfly/react-icons';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
+import { Label } from '@patternfly/react-core';
 
 interface ImageStream {
   name: string;
   namespace: string;
   tags: number;
-  updated: string;
   dockerRepo: string;
+  updated: string;
   age: string;
 }
 
-const mockImageStreams: ImageStream[] = [
-  {
-    name: 'frontend',
-    namespace: 'default',
-    tags: 5,
-    updated: '10m',
-    dockerRepo: 'image-registry.openshift.io/default/frontend',
-    age: '30d',
-  },
-  {
-    name: 'backend-api',
-    namespace: 'default',
-    tags: 8,
-    updated: '1h',
-    dockerRepo: 'image-registry.openshift.io/default/backend-api',
-    age: '25d',
-  },
-  {
-    name: 'nodejs',
-    namespace: 'openshift',
-    tags: 12,
-    updated: '7d',
-    dockerRepo: 'image-registry.openshift.io/openshift/nodejs',
-    age: '120d',
-  },
-  {
-    name: 'nginx',
-    namespace: 'openshift',
-    tags: 6,
-    updated: '14d',
-    dockerRepo: 'image-registry.openshift.io/openshift/nginx',
-    age: '120d',
-  },
-  {
-    name: 'database-migration',
-    namespace: 'database',
-    tags: 3,
-    updated: '2h',
-    dockerRepo: 'image-registry.openshift.io/database/database-migration',
-    age: '60d',
-  },
+interface RawImageStream extends K8sMeta {
+  status?: {
+    tags?: { tag: string }[];
+    dockerImageRepository?: string;
+  };
+}
+
+const columns: ColumnDef<ImageStream>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Namespace', key: 'namespace' },
+  { title: 'Tags', key: 'tags', render: (is) => <Label color="blue">{is.tags}</Label> },
+  { title: 'Docker Repository', key: 'dockerRepo', render: (is) => (
+    <code className="os-imagestreams__repo">{is.dockerRepo}</code>
+  )},
+  { title: 'Updated', key: 'updated' },
+  { title: 'Age', key: 'age' },
 ];
 
 export default function ImageStreams() {
-  const [searchValue, setSearchValue] = React.useState('');
-
-  const filteredImageStreams = mockImageStreams.filter(
-    (is) =>
-      is.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      is.namespace.toLowerCase().includes(searchValue.toLowerCase())
+  const { data, loading } = useK8sResource<RawImageStream, ImageStream>(
+    '/apis/image.openshift.io/v1/imagestreams',
+    (item) => ({
+      name: item.metadata.name,
+      namespace: item.metadata.namespace ?? '',
+      tags: item.status?.tags?.length ?? 0,
+      dockerRepo: item.status?.dockerImageRepository ?? '-',
+      updated: ageFromTimestamp(item.metadata.creationTimestamp),
+      age: ageFromTimestamp(item.metadata.creationTimestamp),
+    }),
   );
 
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Image Streams
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Manage container image streams and tags
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="imagestreams-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search by name or namespace"
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button variant="primary" icon={<PlusCircleIcon />}>
-                    Create ImageStream
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="Image Streams table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Namespace</Th>
-                  <Th>Tags</Th>
-                  <Th>Docker Repository</Th>
-                  <Th>Updated</Th>
-                  <Th>Age</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredImageStreams.length > 0 ? (
-                  filteredImageStreams.map((is) => (
-                    <Tr key={`${is.namespace}-${is.name}`}>
-                      <Td dataLabel="Name">
-                        <strong>{is.name}</strong>
-                      </Td>
-                      <Td dataLabel="Namespace">{is.namespace}</Td>
-                      <Td dataLabel="Tags">
-                        <Label color="blue">{is.tags} tags</Label>
-                      </Td>
-                      <Td dataLabel="Docker Repository">
-                        <code style={{ fontSize: '0.75rem' }}>{is.dockerRepo}</code>
-                      </Td>
-                      <Td dataLabel="Updated">{is.updated}</Td>
-                      <Td dataLabel="Age">{is.age}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={6} style={{ textAlign: 'center' }}>
-                      {searchValue
-                        ? 'No Image Streams found matching your search'
-                        : 'No Image Streams found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Image Streams"
+      description="Manage image streams and container image references"
+      columns={columns}
+      data={data}
+      loading={loading}
+      getRowKey={(is) => `${is.namespace}-${is.name}`}
+      createLabel="Create Image Stream"
+      nameField="name"
+    />
   );
 }

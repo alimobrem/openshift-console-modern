@@ -1,10 +1,4 @@
-import React from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
-  PageSection,
-  Title,
-  Breadcrumb,
-  BreadcrumbItem,
   Card,
   CardBody,
   Grid,
@@ -14,25 +8,18 @@ import {
   DescriptionListTerm,
   DescriptionListDescription,
   Label,
-  Tabs,
-  Tab,
-  TabTitleText,
-  Button,
-  CodeBlock,
-  CodeBlockCode,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
+  Title,
   Progress,
   ProgressVariant,
 } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { TrashIcon, EditIcon } from '@patternfly/react-icons';
+import { useParams } from 'react-router-dom';
+import ResourceDetailPage from '@/components/ResourceDetailPage';
+import StatusIndicator from '@/components/StatusIndicator';
+import '@/openshift-components.css';
 
 export default function NodeDetail() {
   const { name } = useParams();
-  const navigate = useNavigate();
-  const [activeTabKey, setActiveTabKey] = React.useState<string | number>(0);
 
   const node = {
     name: name || 'worker-0',
@@ -55,11 +42,11 @@ export default function NodeDetail() {
       'topology.kubernetes.io/zone': 'us-east-1a',
     },
     conditions: [
-      { type: 'Ready', status: 'True', reason: 'KubeletReady', message: 'kubelet is posting ready status' },
-      { type: 'MemoryPressure', status: 'False', reason: 'KubeletHasSufficientMemory', message: 'kubelet has sufficient memory available' },
-      { type: 'DiskPressure', status: 'False', reason: 'KubeletHasNoDiskPressure', message: 'kubelet has no disk pressure' },
-      { type: 'PIDPressure', status: 'False', reason: 'KubeletHasSufficientPID', message: 'kubelet has sufficient PID available' },
-      { type: 'NetworkUnavailable', status: 'False', reason: 'RouteCreated', message: 'RouteController created a route' },
+      { type: 'Ready', status: 'True', message: 'kubelet is posting ready status' },
+      { type: 'MemoryPressure', status: 'False', message: 'kubelet has sufficient memory available' },
+      { type: 'DiskPressure', status: 'False', message: 'kubelet has no disk pressure' },
+      { type: 'PIDPressure', status: 'False', message: 'kubelet has sufficient PID available' },
+      { type: 'NetworkUnavailable', status: 'False', message: 'RouteController created a route' },
     ],
     pods: [
       { name: 'frontend-7d8f9b5c4d-x7k2m', namespace: 'default', status: 'Running', cpu: '10m', memory: '128Mi' },
@@ -92,256 +79,138 @@ status:
     kernelVersion: ${node.kernelVersion}
     containerRuntimeVersion: ${node.containerRuntime}`;
 
+  const getProgressVariant = (v: number) =>
+    v > 80 ? ProgressVariant.danger : v > 60 ? ProgressVariant.warning : ProgressVariant.success;
+
+  const detailsTab = (
+    <Grid hasGutter>
+      <GridItem md={6}>
+        <Card>
+          <CardBody>
+            <Title headingLevel="h3" size="lg" className="os-detail__section-title">Node Information</Title>
+            <DescriptionList>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Name</DescriptionListTerm>
+                <DescriptionListDescription><strong>{node.name}</strong></DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Status</DescriptionListTerm>
+                <DescriptionListDescription><StatusIndicator status={node.status} /></DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Role</DescriptionListTerm>
+                <DescriptionListDescription><Label color="blue">{node.role}</Label></DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Kubernetes Version</DescriptionListTerm>
+                <DescriptionListDescription><code>{node.version}</code></DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Internal IP</DescriptionListTerm>
+                <DescriptionListDescription><code>{node.internalIP}</code></DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>External IP</DescriptionListTerm>
+                <DescriptionListDescription><code>{node.externalIP}</code></DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Hostname</DescriptionListTerm>
+                <DescriptionListDescription>{node.hostname}</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>OS Image</DescriptionListTerm>
+                <DescriptionListDescription>{node.osImage}</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Container Runtime</DescriptionListTerm>
+                <DescriptionListDescription><code>{node.containerRuntime}</code></DescriptionListDescription>
+              </DescriptionListGroup>
+            </DescriptionList>
+          </CardBody>
+        </Card>
+      </GridItem>
+      <GridItem md={6}>
+        <Card>
+          <CardBody>
+            <Title headingLevel="h3" size="lg" className="os-detail__section-title">Resource Utilization</Title>
+            <div className="os-node__resource-section">
+              <div className="os-node__resource-header">
+                <strong>CPU Usage</strong><span>{node.cpu.usage}%</span>
+              </div>
+              <Progress value={node.cpu.usage} title="CPU" variant={getProgressVariant(node.cpu.usage)} />
+              <div className="os-node__resource-detail">
+                Allocatable: {node.cpu.allocatable} / Capacity: {node.cpu.capacity}
+              </div>
+            </div>
+            <div className="os-node__resource-section">
+              <div className="os-node__resource-header">
+                <strong>Memory Usage</strong><span>{node.memory.usage}%</span>
+              </div>
+              <Progress value={node.memory.usage} title="Memory" variant={getProgressVariant(node.memory.usage)} />
+              <div className="os-node__resource-detail">
+                Allocatable: {node.memory.allocatable} / Capacity: {node.memory.capacity}
+              </div>
+            </div>
+            <div>
+              <div className="os-node__resource-header">
+                <strong>Pod Usage</strong><span>{node.podCapacity.current} / {node.podCapacity.capacity}</span>
+              </div>
+              <Progress value={(node.podCapacity.current / node.podCapacity.capacity) * 100} title="Pods" variant={ProgressVariant.success} />
+            </div>
+          </CardBody>
+        </Card>
+        <Card className="os-detail__card--spaced">
+          <CardBody>
+            <Title headingLevel="h3" size="lg" className="os-detail__section-title">Conditions</Title>
+            {node.conditions.map((c) => (
+              <div key={c.type} className="os-node__condition">
+                <div className="os-node__condition-header">
+                  <strong>{c.type}</strong>
+                  <StatusIndicator status={c.status} />
+                </div>
+                <div className="os-node__condition-message">{c.message}</div>
+              </div>
+            ))}
+          </CardBody>
+        </Card>
+      </GridItem>
+    </Grid>
+  );
+
+  const podsTab = (
+    <Card>
+      <CardBody>
+        <Table aria-label="Pods table" variant="compact">
+          <Thead><Tr><Th>Name</Th><Th>Namespace</Th><Th>Status</Th><Th>CPU</Th><Th>Memory</Th></Tr></Thead>
+          <Tbody>
+            {node.pods.map((p) => (
+              <Tr key={p.name}>
+                <Td><strong>{p.name}</strong></Td>
+                <Td>{p.namespace}</Td>
+                <Td><StatusIndicator status={p.status} /></Td>
+                <Td>{p.cpu}</Td>
+                <Td>{p.memory}</Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </Table>
+      </CardBody>
+    </Card>
+  );
+
   return (
-    <>
-      <PageSection variant="default">
-        <Breadcrumb>
-          <BreadcrumbItem to="#" onClick={() => navigate('/compute/nodes')}>
-            Nodes
-          </BreadcrumbItem>
-          <BreadcrumbItem isActive>{node.name}</BreadcrumbItem>
-        </Breadcrumb>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px' }}>
-          <div>
-            <Title headingLevel="h1" size="2xl">
-              {node.name}
-            </Title>
-            <div style={{ marginTop: '8px' }}>
-              <Label color="green">{node.status}</Label>
-              <Label color="blue" style={{ marginLeft: '8px' }}>
-                {node.role}
-              </Label>
-            </div>
-          </div>
-          <Toolbar>
-            <ToolbarContent>
-              <ToolbarItem>
-                <Button variant="secondary" icon={<EditIcon />}>
-                  Edit
-                </Button>
-              </ToolbarItem>
-              <ToolbarItem>
-                <Button variant="danger" icon={<TrashIcon />}>
-                  Delete
-                </Button>
-              </ToolbarItem>
-            </ToolbarContent>
-          </Toolbar>
-        </div>
-      </PageSection>
-
-      <PageSection>
-        <Tabs activeKey={activeTabKey} onSelect={(_, tabIndex) => setActiveTabKey(tabIndex)}>
-          <Tab eventKey={0} title={<TabTitleText>Details</TabTitleText>}>
-            <div style={{ marginTop: '24px' }}>
-              <Grid hasGutter>
-                <GridItem md={6}>
-                  <Card>
-                    <CardBody>
-                      <Title headingLevel="h3" size="lg" style={{ marginBottom: '16px' }}>
-                        Node Information
-                      </Title>
-                      <DescriptionList>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Name</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <strong>{node.name}</strong>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Status</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <Label color="green">{node.status}</Label>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Role</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <Label color="blue">{node.role}</Label>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Kubernetes Version</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <code>{node.version}</code>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Internal IP</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <code>{node.internalIP}</code>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>External IP</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <code>{node.externalIP}</code>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Hostname</DescriptionListTerm>
-                          <DescriptionListDescription>{node.hostname}</DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>OS Image</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            {node.osImage}
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Kernel Version</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <code>{node.kernelVersion}</code>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                        <DescriptionListGroup>
-                          <DescriptionListTerm>Container Runtime</DescriptionListTerm>
-                          <DescriptionListDescription>
-                            <code>{node.containerRuntime}</code>
-                          </DescriptionListDescription>
-                        </DescriptionListGroup>
-                      </DescriptionList>
-                    </CardBody>
-                  </Card>
-                </GridItem>
-
-                <GridItem md={6}>
-                  <Card>
-                    <CardBody>
-                      <Title headingLevel="h3" size="lg" style={{ marginBottom: '16px' }}>
-                        Resource Utilization
-                      </Title>
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <strong>CPU Usage</strong>
-                          <span style={{ float: 'right' }}>{node.cpu.usage}%</span>
-                        </div>
-                        <Progress
-                          value={node.cpu.usage}
-                          title="CPU"
-                          variant={
-                            node.cpu.usage > 80
-                              ? ProgressVariant.danger
-                              : node.cpu.usage > 60
-                              ? ProgressVariant.warning
-                              : ProgressVariant.success
-                          }
-                        />
-                        <div style={{ fontSize: '0.875rem', color: 'var(--pf-v6-global--Color--200)', marginTop: '4px' }}>
-                          Allocatable: {node.cpu.allocatable} / Capacity: {node.cpu.capacity}
-                        </div>
-                      </div>
-
-                      <div style={{ marginBottom: '24px' }}>
-                        <div style={{ marginBottom: '8px' }}>
-                          <strong>Memory Usage</strong>
-                          <span style={{ float: 'right' }}>{node.memory.usage}%</span>
-                        </div>
-                        <Progress
-                          value={node.memory.usage}
-                          title="Memory"
-                          variant={
-                            node.memory.usage > 80
-                              ? ProgressVariant.danger
-                              : node.memory.usage > 60
-                              ? ProgressVariant.warning
-                              : ProgressVariant.success
-                          }
-                        />
-                        <div style={{ fontSize: '0.875rem', color: 'var(--pf-v6-global--Color--200)', marginTop: '4px' }}>
-                          Allocatable: {node.memory.allocatable} / Capacity: {node.memory.capacity}
-                        </div>
-                      </div>
-
-                      <div>
-                        <div style={{ marginBottom: '8px' }}>
-                          <strong>Pod Usage</strong>
-                          <span style={{ float: 'right' }}>
-                            {node.podCapacity.current} / {node.podCapacity.capacity}
-                          </span>
-                        </div>
-                        <Progress
-                          value={(node.podCapacity.current / node.podCapacity.capacity) * 100}
-                          title="Pods"
-                          variant={ProgressVariant.success}
-                        />
-                      </div>
-                    </CardBody>
-                  </Card>
-
-                  <Card style={{ marginTop: '24px' }}>
-                    <CardBody>
-                      <Title headingLevel="h3" size="lg" style={{ marginBottom: '16px' }}>
-                        Conditions
-                      </Title>
-                      {node.conditions.map((condition) => (
-                        <div key={condition.type} style={{ marginBottom: '12px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                            <strong>{condition.type}</strong>
-                            <Label color={condition.status === 'True' ? 'green' : condition.status === 'False' ? 'grey' : 'orange'}>
-                              {condition.status}
-                            </Label>
-                          </div>
-                          <div style={{ fontSize: '0.875rem', color: 'var(--pf-v6-global--Color--200)' }}>
-                            {condition.message}
-                          </div>
-                        </div>
-                      ))}
-                    </CardBody>
-                  </Card>
-                </GridItem>
-              </Grid>
-            </div>
-          </Tab>
-
-          <Tab eventKey={1} title={<TabTitleText>Pods</TabTitleText>}>
-            <div style={{ marginTop: '24px' }}>
-              <Card>
-                <CardBody>
-                  <Table aria-label="Pods table" variant="compact">
-                    <Thead>
-                      <Tr>
-                        <Th>Name</Th>
-                        <Th>Namespace</Th>
-                        <Th>Status</Th>
-                        <Th>CPU</Th>
-                        <Th>Memory</Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {node.pods.map((pod) => (
-                        <Tr key={pod.name}>
-                          <Td>
-                            <strong>{pod.name}</strong>
-                          </Td>
-                          <Td>{pod.namespace}</Td>
-                          <Td>
-                            <Label color="green">{pod.status}</Label>
-                          </Td>
-                          <Td>{pod.cpu}</Td>
-                          <Td>{pod.memory}</Td>
-                        </Tr>
-                      ))}
-                    </Tbody>
-                  </Table>
-                </CardBody>
-              </Card>
-            </div>
-          </Tab>
-
-          <Tab eventKey={2} title={<TabTitleText>YAML</TabTitleText>}>
-            <div style={{ marginTop: '24px' }}>
-              <Card>
-                <CardBody>
-                  <CodeBlock>
-                    <CodeBlockCode>{yamlContent}</CodeBlockCode>
-                  </CodeBlock>
-                </CardBody>
-              </Card>
-            </div>
-          </Tab>
-        </Tabs>
-      </PageSection>
-    </>
+    <ResourceDetailPage
+      kind="Node"
+      name={node.name}
+      status={node.status}
+      statusExtra={<Label color="blue">{node.role}</Label>}
+      backPath="/compute/nodes"
+      backLabel="Nodes"
+      yaml={yamlContent}
+      tabs={[
+        { title: 'Details', content: detailsTab },
+        { title: 'Pods', content: podsTab },
+      ]}
+    />
   );
 }

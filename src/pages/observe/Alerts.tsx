@@ -1,211 +1,74 @@
 import React from 'react';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Select,
-  SelectOption,
-  MenuToggle,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
+import { Button } from '@patternfly/react-core';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import StatusIndicator from '@/components/StatusIndicator';
+import { useUIStore } from '@/store/useUIStore';
+import '@/openshift-components.css';
 
 interface Alert {
   name: string;
-  severity: 'critical' | 'warning' | 'info';
-  state: 'firing' | 'pending' | 'inactive';
+  severity: string;
+  state: string;
   message: string;
   source: string;
   activeSince: string;
 }
 
-const mockAlerts: Alert[] = [
-  {
-    name: 'HighPodMemoryUsage',
-    severity: 'warning',
-    state: 'firing',
-    message: 'Pod memory usage is above 90%',
-    source: 'prometheus',
-    activeSince: '15m',
-  },
-  {
-    name: 'NodeDiskPressure',
-    severity: 'critical',
-    state: 'firing',
-    message: 'Node is experiencing disk pressure',
-    source: 'kubelet',
-    activeSince: '5m',
-  },
-  {
-    name: 'PodCrashLooping',
-    severity: 'warning',
-    state: 'firing',
-    message: 'Pod is crash looping',
-    source: 'kube-state-metrics',
-    activeSince: '30m',
-  },
-  {
-    name: 'APIServerLatency',
-    severity: 'info',
-    state: 'pending',
-    message: 'API server request latency is elevated',
-    source: 'prometheus',
-    activeSince: '2m',
-  },
-  {
-    name: 'EtcdHighCommitDuration',
-    severity: 'warning',
-    state: 'firing',
-    message: 'Etcd commit duration is high',
-    source: 'prometheus',
-    activeSince: '10m',
-  },
+const initialData: Alert[] = [
+  { name: 'HighPodMemoryUsage', severity: 'warning', state: 'firing', message: 'Pod memory usage is above 90%', source: 'prometheus', activeSince: '2h' },
+  { name: 'NodeDiskPressure', severity: 'critical', state: 'firing', message: 'Node disk usage is above 95%', source: 'node-exporter', activeSince: '30m' },
+  { name: 'PodCrashLooping', severity: 'critical', state: 'pending', message: 'Pod is crash looping', source: 'prometheus', activeSince: '15m' },
+  { name: 'APIServerLatency', severity: 'warning', state: 'inactive', message: 'API server latency is high', source: 'kube-apiserver', activeSince: '-' },
+  { name: 'EtcdHighCommitDuration', severity: 'info', state: 'inactive', message: 'Etcd commit duration is elevated', source: 'etcd', activeSince: '-' },
 ];
 
-export default function Alerts() {
-  const [searchValue, setSearchValue] = React.useState('');
-  const [severityFilter, setSeverityFilter] = React.useState('All Severities');
-  const [isSelectOpen, setIsSelectOpen] = React.useState(false);
+function AlertActions({ alert, onSilence }: { alert: Alert; onSilence: (name: string) => void }) {
+  const addToast = useUIStore((s) => s.addToast);
 
-  const severityOptions = ['All Severities', 'critical', 'warning', 'info'];
-
-  const filteredAlerts = mockAlerts.filter((alert) => {
-    const matchesSearch =
-      alert.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      alert.message.toLowerCase().includes(searchValue.toLowerCase());
-
-    const matchesSeverity =
-      severityFilter === 'All Severities' || alert.severity === severityFilter;
-
-    return matchesSearch && matchesSeverity;
-  });
-
-  const getSeverityColor = (severity: Alert['severity']) => {
-    switch (severity) {
-      case 'critical':
-        return 'red';
-      case 'warning':
-        return 'orange';
-      case 'info':
-        return 'blue';
-      default:
-        return 'grey';
-    }
-  };
-
-  const getStateColor = (state: Alert['state']) => {
-    switch (state) {
-      case 'firing':
-        return 'red';
-      case 'pending':
-        return 'orange';
-      case 'inactive':
-        return 'grey';
-      default:
-        return 'grey';
-    }
-  };
+  if (alert.state === 'inactive') return <span className="os-alerts__inactive">-</span>;
 
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Alerts
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          View and manage Prometheus alerts
-        </p>
-      </PageSection>
+    <span className="os-alerts__actions" onClick={(e) => e.stopPropagation()}>
+      <Button
+        variant="secondary"
+        size="sm"
+        onClick={() => {
+          onSilence(alert.name);
+          addToast({ type: 'success', title: `Alert silenced`, description: `${alert.name} has been silenced for 2 hours` });
+        }}
+      >
+        Silence
+      </Button>
+    </span>
+  );
+}
 
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="alerts-toolbar">
-              <ToolbarContent>
-                <ToolbarItem style={{ flexGrow: 1 }}>
-                  <SearchInput
-                    placeholder="Search alerts by name or message..."
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Select
-                    id="severity-select"
-                    isOpen={isSelectOpen}
-                    selected={severityFilter}
-                    onSelect={(_event, selection) => {
-                      setSeverityFilter(selection as string);
-                      setIsSelectOpen(false);
-                    }}
-                    onOpenChange={(isOpen) => setIsSelectOpen(isOpen)}
-                    toggle={(toggleRef) => (
-                      <MenuToggle ref={toggleRef} onClick={() => setIsSelectOpen(!isSelectOpen)}>
-                        {severityFilter}
-                      </MenuToggle>
-                    )}
-                  >
-                    {severityOptions.map((option) => (
-                      <SelectOption key={option} value={option}>
-                        {option}
-                      </SelectOption>
-                    ))}
-                  </Select>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
+export default function Alerts() {
+  const [data, setData] = React.useState(initialData);
 
-            <Table aria-label="Alerts table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Alert</Th>
-                  <Th>Severity</Th>
-                  <Th>State</Th>
-                  <Th>Message</Th>
-                  <Th>Source</Th>
-                  <Th>Active Since</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredAlerts.length > 0 ? (
-                  filteredAlerts.map((alert, idx) => (
-                    <Tr key={`${alert.name}-${idx}`}>
-                      <Td dataLabel="Alert">
-                        <strong>{alert.name}</strong>
-                      </Td>
-                      <Td dataLabel="Severity">
-                        <Label color={getSeverityColor(alert.severity)}>
-                          {alert.severity.toUpperCase()}
-                        </Label>
-                      </Td>
-                      <Td dataLabel="State">
-                        <Label color={getStateColor(alert.state)}>{alert.state}</Label>
-                      </Td>
-                      <Td dataLabel="Message" style={{ maxWidth: '400px' }}>
-                        {alert.message}
-                      </Td>
-                      <Td dataLabel="Source">{alert.source}</Td>
-                      <Td dataLabel="Active Since">{alert.activeSince}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={6} style={{ textAlign: 'center' }}>
-                      {searchValue ? 'No alerts found matching your search' : 'No alerts found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+  const handleSilence = (name: string) => {
+    setData((prev) => prev.map((a) =>
+      a.name === name ? { ...a, state: 'inactive' } : a
+    ));
+  };
+
+  const columns: ColumnDef<Alert>[] = [
+    { title: 'Alert', key: 'name' },
+    { title: 'Severity', key: 'severity', render: (a) => <StatusIndicator status={a.severity} /> },
+    { title: 'State', key: 'state', render: (a) => <StatusIndicator status={a.state} /> },
+    { title: 'Message', key: 'message' },
+    { title: 'Source', key: 'source' },
+    { title: 'Actions', key: 'actions', render: (a) => <AlertActions alert={a} onSilence={handleSilence} />, sortable: false },
+  ];
+
+  return (
+    <ResourceListPage
+      title="Alerts"
+      description="View and manage cluster alerting rules"
+      columns={columns}
+      data={data}
+      getRowKey={(a) => a.name}
+      nameField="name"
+    />
   );
 }

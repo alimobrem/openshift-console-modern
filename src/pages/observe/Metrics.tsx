@@ -1,124 +1,143 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   PageSection,
   Title,
   Card,
   CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
   Button,
-  TextInput,
-  CodeBlock,
-  CodeBlockCode,
+  Grid,
+  GridItem,
 } from '@patternfly/react-core';
 import { PlayIcon } from '@patternfly/react-icons';
+import { useClusterStore } from '@/store/useClusterStore';
+import '@/openshift-components.css';
+
+const exampleQueries = [
+  { label: 'CPU Usage', query: 'rate(container_cpu_usage_seconds_total[5m])' },
+  { label: 'Memory Usage', query: 'container_memory_working_set_bytes' },
+  { label: 'Pod Count', query: 'count(kube_pod_info)' },
+  { label: 'Node Load', query: 'node_load1' },
+  { label: 'Network I/O', query: 'rate(node_network_receive_bytes_total[5m])' },
+  { label: 'Disk Usage', query: 'node_filesystem_avail_bytes' },
+];
+
+function MiniChart({ data, color }: { data: number[]; color: string }) {
+  if (data.length < 2) return null;
+  const min = Math.min(...data) - 5;
+  const max = Math.max(...data) + 5;
+  const w = 400;
+  const h = 120;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / (max - min)) * h;
+    return `${x},${y}`;
+  });
+  const areaPoints = [...points, `${w},${h}`, `0,${h}`];
+  return (
+    <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" className="os-minichart">
+      <defs>
+        <linearGradient id={`metricGrad-${color.replace(/[^a-z0-9]/g, '')}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0.02" />
+        </linearGradient>
+      </defs>
+      <polygon points={areaPoints.join(' ')} fill={`url(#metricGrad-${color.replace(/[^a-z0-9]/g, '')})`} />
+      <polyline points={points.join(' ')} fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
 
 export default function Metrics() {
-  const [query, setQuery] = React.useState('');
-  const [hasQueried, setHasQueried] = React.useState(false);
+  const [queryValue, setQueryValue] = React.useState('');
+  const [activeQuery, setActiveQuery] = React.useState('');
+  const { metrics, fetchClusterData, startPolling, stopPolling } = useClusterStore();
 
-  const exampleQueries = [
-    'node_cpu_seconds_total',
-    'container_memory_usage_bytes',
-    'kube_pod_status_phase',
-    'node_filesystem_avail_bytes',
-    'up',
-  ];
+  useEffect(() => {
+    fetchClusterData();
+    startPolling();
+    return () => stopPolling();
+  }, [fetchClusterData, startPolling, stopPolling]);
 
-  const handleRunQuery = () => {
-    if (query.trim()) {
-      setHasQueried(true);
-    }
+  const runQuery = (q: string) => {
+    setQueryValue(q);
+    setActiveQuery(q);
   };
-
-  const mockResults = `# TYPE node_cpu_seconds_total counter
-node_cpu_seconds_total{cpu="0",mode="idle"} 892346.12
-node_cpu_seconds_total{cpu="0",mode="system"} 34521.45
-node_cpu_seconds_total{cpu="0",mode="user"} 87634.23
-node_cpu_seconds_total{cpu="1",mode="idle"} 891234.56
-node_cpu_seconds_total{cpu="1",mode="system"} 35432.12
-node_cpu_seconds_total{cpu="1",mode="user"} 88765.34`;
 
   return (
     <>
       <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Metrics
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Query Prometheus metrics using PromQL
+        <Title headingLevel="h1" size="2xl">Metrics</Title>
+        <p className="os-metrics__description">
+          Query and visualize cluster metrics with PromQL
         </p>
       </PageSection>
 
       <PageSection>
         <Card>
           <CardBody>
-            <Toolbar id="metrics-toolbar">
-              <ToolbarContent>
-                <ToolbarItem style={{ flexGrow: 1 }}>
-                  <TextInput
-                    id="query-input"
-                    type="text"
-                    placeholder="Enter PromQL query (e.g., node_cpu_seconds_total)"
-                    value={query}
-                    onChange={(_event, value) => setQuery(value)}
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        handleRunQuery();
-                      }
-                    }}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button
-                    variant="primary"
-                    icon={<PlayIcon />}
-                    onClick={handleRunQuery}
-                    isDisabled={!query.trim()}
-                  >
-                    Run Query
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <div style={{ marginTop: '24px' }}>
-              <Title headingLevel="h4" size="md" style={{ marginBottom: '12px' }}>
-                Example Queries
-              </Title>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                {exampleQueries.map((example) => (
-                  <Button
-                    key={example}
-                    variant="link"
-                    onClick={() => setQuery(example)}
-                    style={{ padding: '4px 8px' }}
-                  >
-                    <code style={{ fontSize: '0.875rem' }}>{example}</code>
-                  </Button>
-                ))}
-              </div>
+            <div className="os-metrics__query-row">
+              <input
+                className="os-metrics__query-input"
+                placeholder="Enter PromQL query..."
+                value={queryValue}
+                onChange={(e) => setQueryValue(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && setActiveQuery(queryValue)}
+              />
+              <Button variant="primary" icon={<PlayIcon />} onClick={() => setActiveQuery(queryValue)}>
+                Run Query
+              </Button>
             </div>
 
-            {hasQueried && query && (
-              <div style={{ marginTop: '24px' }}>
-                <Title headingLevel="h4" size="md" style={{ marginBottom: '12px' }}>
-                  Results for: <code>{query}</code>
-                </Title>
-                <CodeBlock>
-                  <CodeBlockCode>{mockResults}</CodeBlockCode>
-                </CodeBlock>
-              </div>
-            )}
+            <div className="os-metrics__quick-actions">
+              {exampleQueries.map((eq) => (
+                <button
+                  key={eq.label}
+                  className="compass-quick-action os-metrics__quick-action-btn"
+                  onClick={() => runQuery(eq.query)}
+                >
+                  {eq.label}
+                </button>
+              ))}
+            </div>
 
-            {!hasQueried && (
-              <div style={{ marginTop: '40px', textAlign: 'center', color: 'var(--pf-v6-global--Color--200)' }}>
-                Enter a PromQL query above and click "Run Query" to view results
+            {activeQuery && (
+              <div className="os-metrics__results">
+                <div className="os-metrics__results-label">
+                  Results for: <code>{activeQuery}</code>
+                </div>
+                <MiniChart data={metrics.map((m) => m.cpu)} color="rgba(251, 146, 60, 0.8)" />
               </div>
             )}
           </CardBody>
         </Card>
+      </PageSection>
+
+      <PageSection>
+        <Title headingLevel="h3" className="os-metrics__live-title">Live Cluster Metrics</Title>
+        <Grid hasGutter>
+          <GridItem md={6}>
+            <Card>
+              <CardBody>
+                <div className="os-metrics__chart-title">CPU Utilization (%)</div>
+                <MiniChart data={metrics.map((m) => m.cpu)} color="rgba(59, 130, 246, 0.8)" />
+                <div className="os-metrics__chart-latest">
+                  Latest: {metrics[metrics.length - 1]?.cpu ?? 0}%
+                </div>
+              </CardBody>
+            </Card>
+          </GridItem>
+          <GridItem md={6}>
+            <Card>
+              <CardBody>
+                <div className="os-metrics__chart-title">Memory Utilization (%)</div>
+                <MiniChart data={metrics.map((m) => m.memory)} color="rgba(34, 197, 94, 0.8)" />
+                <div className="os-metrics__chart-latest">
+                  Latest: {metrics[metrics.length - 1]?.memory ?? 0}%
+                </div>
+              </CardBody>
+            </Card>
+          </GridItem>
+        </Grid>
       </PageSection>
     </>
   );

@@ -1,111 +1,61 @@
-import React from 'react';
+import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Button,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { PlusCircleIcon } from '@patternfly/react-icons';
+import { Button } from '@patternfly/react-core';
+import { MinusIcon, PlusIcon } from '@patternfly/react-icons';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import { useClusterStore, type Deployment } from '@/store/useClusterStore';
+import { useUIStore } from '@/store/useUIStore';
+import '@/openshift-components.css';
+
+function ScaleInline({ deployment }: { deployment: Deployment }) {
+  const scaleDeployment = useClusterStore((s) => s.scaleDeployment);
+  const addToast = useUIStore((s) => s.addToast);
+
+  const handleScale = (delta: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const next = Math.max(0, deployment.replicas + delta);
+    scaleDeployment(deployment.namespace, deployment.name, next);
+    addToast({ type: 'success', title: `Scaled ${deployment.name}`, description: `Replicas set to ${next}` });
+  };
+
+  return (
+    <span className="os-deployments__scale-inline" onClick={(e) => e.stopPropagation()}>
+      <Button variant="plain" size="sm" isDisabled={deployment.replicas <= 0} onClick={(e) => handleScale(-1, e)} aria-label="Scale down" className="os-deployments__scale-btn">
+        <MinusIcon />
+      </Button>
+      <span className="os-deployments__scale-value">{deployment.ready}/{deployment.replicas}</span>
+      <Button variant="plain" size="sm" onClick={(e) => handleScale(1, e)} aria-label="Scale up" className="os-deployments__scale-btn">
+        <PlusIcon />
+      </Button>
+    </span>
+  );
+}
+
+const columns: ColumnDef<Deployment>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Namespace', key: 'namespace' },
+  { title: 'Status', key: 'status' },
+  { title: 'Replicas', key: 'replicas', render: (d) => <ScaleInline deployment={d} />, sortable: false },
+];
 
 export default function Deployments() {
   const navigate = useNavigate();
-  const [searchValue, setSearchValue] = React.useState('');
+  const { deployments, fetchClusterData } = useClusterStore();
 
-  const mockDeployments = [
-    { name: 'frontend', namespace: 'default', replicas: '3/3', available: 3, updated: true },
-    { name: 'backend-api', namespace: 'default', replicas: '2/2', available: 2, updated: true },
-    { name: 'database', namespace: 'production', replicas: '1/1', available: 1, updated: true },
-    { name: 'cache', namespace: 'production', replicas: '2/2', available: 2, updated: true },
-  ];
-
-  const filteredDeployments = mockDeployments.filter((deployment) =>
-    deployment.name.toLowerCase().includes(searchValue.toLowerCase())
-  );
+  useEffect(() => { fetchClusterData(); }, [fetchClusterData]);
 
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Deployments
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Manage deployment resources across your cluster
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="deployments-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search by name"
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button variant="primary" icon={<PlusCircleIcon />}>
-                    Create Deployment
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="Deployments table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Namespace</Th>
-                  <Th>Status</Th>
-                  <Th>Replicas</Th>
-                  <Th>Available</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredDeployments.length > 0 ? (
-                  filteredDeployments.map((deployment) => (
-                    <Tr
-                      key={deployment.name}
-                      isClickable
-                      onRowClick={() => navigate(`/workloads/deployments/${deployment.namespace}/${deployment.name}`)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <Td dataLabel="Name">
-                        <strong>{deployment.name}</strong>
-                      </Td>
-                      <Td dataLabel="Namespace">{deployment.namespace}</Td>
-                      <Td dataLabel="Status">
-                        <Label color={deployment.updated ? 'green' : 'orange'}>
-                          {deployment.updated ? 'Up to date' : 'Updating'}
-                        </Label>
-                      </Td>
-                      <Td dataLabel="Replicas">{deployment.replicas}</Td>
-                      <Td dataLabel="Available">{deployment.available}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={5} style={{ textAlign: 'center' }}>
-                      {searchValue ? 'No deployments found matching your search' : 'No deployments found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Deployments"
+      description="Manage deployment resources across your cluster"
+      columns={columns}
+      data={deployments}
+      getRowKey={(d) => `${d.namespace}-${d.name}`}
+      onRowClick={(d) => navigate(`/workloads/deployments/${d.namespace}/${d.name}`)}
+      createLabel="Create Deployment"
+      statusField="status"
+      nameField="name"
+      filterFn={(d, s) => d.name.toLowerCase().includes(s.toLowerCase()) || d.namespace.toLowerCase().includes(s.toLowerCase())}
+    />
   );
 }

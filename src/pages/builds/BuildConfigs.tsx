@@ -1,196 +1,69 @@
-import React from 'react';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Button,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { PlusCircleIcon } from '@patternfly/react-icons';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
+import { Label } from '@patternfly/react-core';
 
 interface BuildConfig {
   name: string;
   namespace: string;
-  type: 'Source' | 'Docker' | 'Custom' | 'JenkinsPipeline';
-  gitRepository: string;
+  type: string;
+  gitRepo: string;
   lastBuild: string;
-  status: 'Success' | 'Failed' | 'Running' | '-';
+  status: string;
   age: string;
 }
 
-const mockBuildConfigs: BuildConfig[] = [
-  {
-    name: 'frontend',
-    namespace: 'default',
-    type: 'Source',
-    gitRepository: 'https://github.com/example/frontend.git',
-    lastBuild: 'frontend-1',
-    status: 'Success',
-    age: '30d',
-  },
-  {
-    name: 'backend-api',
-    namespace: 'default',
-    type: 'Docker',
-    gitRepository: 'https://github.com/example/backend.git',
-    lastBuild: 'backend-api-3',
-    status: 'Running',
-    age: '25d',
-  },
-  {
-    name: 'database-migration',
-    namespace: 'database',
-    type: 'Source',
-    gitRepository: 'https://github.com/example/db-migration.git',
-    lastBuild: 'database-migration-2',
-    status: 'Success',
-    age: '60d',
-  },
-  {
-    name: 'ci-pipeline',
-    namespace: 'ci-cd',
-    type: 'JenkinsPipeline',
-    gitRepository: 'https://github.com/example/ci-pipeline.git',
-    lastBuild: '-',
-    status: '-',
-    age: '15d',
-  },
+interface RawBuildConfig extends K8sMeta {
+  spec: {
+    strategy: { type: string };
+    source?: { git?: { uri: string } };
+  };
+  status: {
+    lastVersion?: number;
+  };
+}
+
+const typeColors: Record<string, 'blue' | 'teal' | 'purple' | 'orange'> = {
+  Source: 'blue',
+  Docker: 'teal',
+  Custom: 'purple',
+  JenkinsPipeline: 'orange',
+};
+
+const columns: ColumnDef<BuildConfig>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Namespace', key: 'namespace' },
+  { title: 'Type', key: 'type', render: (bc) => <Label color={typeColors[bc.type] ?? 'grey'}>{bc.type}</Label> },
+  { title: 'Git Repository', key: 'gitRepo', render: (bc) => <code>{bc.gitRepo}</code> },
+  { title: 'Last Build', key: 'lastBuild' },
+  { title: 'Status', key: 'status' },
+  { title: 'Age', key: 'age' },
 ];
 
 export default function BuildConfigs() {
-  const [searchValue, setSearchValue] = React.useState('');
-
-  const filteredBuildConfigs = mockBuildConfigs.filter(
-    (bc) =>
-      bc.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      bc.namespace.toLowerCase().includes(searchValue.toLowerCase())
+  const { data, loading } = useK8sResource<RawBuildConfig, BuildConfig>(
+    '/apis/build.openshift.io/v1/buildconfigs',
+    (item) => ({
+      name: item.metadata.name,
+      namespace: item.metadata.namespace ?? '',
+      type: item.spec.strategy.type,
+      gitRepo: item.spec.source?.git?.uri ?? '-',
+      lastBuild: item.status.lastVersion ? `#${item.status.lastVersion}` : '-',
+      status: '-',
+      age: ageFromTimestamp(item.metadata.creationTimestamp),
+    }),
   );
 
-  const getStatusColor = (status: BuildConfig['status']) => {
-    switch (status) {
-      case 'Success':
-        return 'green';
-      case 'Running':
-        return 'blue';
-      case 'Failed':
-        return 'red';
-      default:
-        return 'grey';
-    }
-  };
-
-  const getTypeColor = (type: BuildConfig['type']) => {
-    switch (type) {
-      case 'Source':
-        return 'blue';
-      case 'Docker':
-        return 'teal';
-      case 'Custom':
-        return 'purple';
-      case 'JenkinsPipeline':
-        return 'orange';
-      default:
-        return 'grey';
-    }
-  };
-
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Build Configs
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Manage build configuration templates
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="buildconfigs-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search by name or namespace"
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button variant="primary" icon={<PlusCircleIcon />}>
-                    Create BuildConfig
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="BuildConfigs table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Namespace</Th>
-                  <Th>Type</Th>
-                  <Th>Git Repository</Th>
-                  <Th>Last Build</Th>
-                  <Th>Status</Th>
-                  <Th>Age</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredBuildConfigs.length > 0 ? (
-                  filteredBuildConfigs.map((bc) => (
-                    <Tr key={`${bc.namespace}-${bc.name}`}>
-                      <Td dataLabel="Name">
-                        <strong>{bc.name}</strong>
-                      </Td>
-                      <Td dataLabel="Namespace">{bc.namespace}</Td>
-                      <Td dataLabel="Type">
-                        <Label color={getTypeColor(bc.type)}>{bc.type}</Label>
-                      </Td>
-                      <Td dataLabel="Git Repository">
-                        <code style={{ fontSize: '0.75rem' }}>
-                          {bc.gitRepository.replace('https://github.com/', '')}
-                        </code>
-                      </Td>
-                      <Td dataLabel="Last Build">
-                        {bc.lastBuild === '-' ? (
-                          <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>-</span>
-                        ) : (
-                          bc.lastBuild
-                        )}
-                      </Td>
-                      <Td dataLabel="Status">
-                        {bc.status === '-' ? (
-                          <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>-</span>
-                        ) : (
-                          <Label color={getStatusColor(bc.status)}>{bc.status}</Label>
-                        )}
-                      </Td>
-                      <Td dataLabel="Age">{bc.age}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={7} style={{ textAlign: 'center' }}>
-                      {searchValue
-                        ? 'No BuildConfigs found matching your search'
-                        : 'No BuildConfigs found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Build Configs"
+      description="Manage build configuration templates"
+      columns={columns}
+      data={data}
+      loading={loading}
+      getRowKey={(bc) => `${bc.namespace}-${bc.name}`}
+      createLabel="Create Build Config"
+      statusField="status"
+      nameField="name"
+    />
   );
 }

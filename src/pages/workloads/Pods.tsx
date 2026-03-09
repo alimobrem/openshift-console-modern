@@ -1,121 +1,94 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Button,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { Label } from '@patternfly/react-core';
-import { PlusCircleIcon } from '@patternfly/react-icons';
-import { useClusterStore } from '@/store/useClusterStore';
+import { Dropdown, DropdownList, DropdownItem, MenuToggle, Divider } from '@patternfly/react-core';
+import { EllipsisVIcon } from '@patternfly/react-icons';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import { useClusterStore, type Pod } from '@/store/useClusterStore';
+import { useUIStore } from '@/store/useUIStore';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import '@/openshift-components.css';
+
+function PodActions({ pod }: { pod: Pod }) {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [deleteOpen, setDeleteOpen] = React.useState(false);
+  const restartPod = useClusterStore((s) => s.restartPod);
+  const deletePod = useClusterStore((s) => s.deletePod);
+  const addToast = useUIStore((s) => s.addToast);
+
+  return (
+    <span onClick={(e) => e.stopPropagation()}>
+      <Dropdown
+        isOpen={menuOpen}
+        onOpenChange={setMenuOpen}
+        toggle={(toggleRef) => (
+          <MenuToggle ref={toggleRef} variant="plain" onClick={() => setMenuOpen(!menuOpen)} aria-label="Actions">
+            <EllipsisVIcon />
+          </MenuToggle>
+        )}
+        popperProps={{ position: 'right' }}
+      >
+        <DropdownList>
+          <DropdownItem onClick={() => {
+            setMenuOpen(false);
+            restartPod(pod.namespace, pod.name);
+            addToast({ type: 'info', title: `Restarting ${pod.name}`, description: 'Pod will restart shortly' });
+          }}>
+            Restart Pod
+          </DropdownItem>
+          <DropdownItem onClick={() => {
+            setMenuOpen(false);
+            addToast({ type: 'info', title: 'View Logs', description: `Opening logs for ${pod.name}` });
+          }}>
+            View Logs
+          </DropdownItem>
+          <Divider />
+          <DropdownItem onClick={() => { setMenuOpen(false); setDeleteOpen(true); }} className="os-pods__delete-action">
+            Delete Pod
+          </DropdownItem>
+        </DropdownList>
+      </Dropdown>
+      <ConfirmDialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        onConfirm={() => {
+          setDeleteOpen(false);
+          deletePod(pod.namespace, pod.name);
+          addToast({ type: 'success', title: `Pod deleted`, description: `${pod.name} has been removed` });
+        }}
+        title="Delete Pod"
+        description={`Are you sure you want to delete pod "${pod.name}" in namespace "${pod.namespace}"? This action cannot be undone.`}
+      />
+    </span>
+  );
+}
+
+const columns: ColumnDef<Pod>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Namespace', key: 'namespace' },
+  { title: 'Status', key: 'status' },
+  { title: 'Restarts', key: 'restarts' },
+  { title: 'Age', key: 'age', render: () => '2h', sortable: false },
+  { title: '', key: 'actions', render: (p) => <PodActions pod={p} />, sortable: false },
+];
 
 export default function Pods() {
   const navigate = useNavigate();
   const { pods, fetchClusterData } = useClusterStore();
-  const [searchValue, setSearchValue] = React.useState('');
 
-  useEffect(() => {
-    fetchClusterData();
-  }, [fetchClusterData]);
-
-  const filteredPods = pods.filter((pod) =>
-    pod.name.toLowerCase().includes(searchValue.toLowerCase())
-  );
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Running':
-        return 'green';
-      case 'Pending':
-        return 'orange';
-      case 'Failed':
-        return 'red';
-      default:
-        return 'grey';
-    }
-  };
+  useEffect(() => { fetchClusterData(); }, [fetchClusterData]);
 
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Pods
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          View and manage pod instances across all namespaces
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="pods-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search by name"
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button variant="primary" icon={<PlusCircleIcon />}>
-                    Create Pod
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="Pods table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Namespace</Th>
-                  <Th>Status</Th>
-                  <Th>Restarts</Th>
-                  <Th>Age</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredPods.length > 0 ? (
-                  filteredPods.map((pod) => (
-                    <Tr
-                      key={pod.name}
-                      isClickable
-                      onRowClick={() => navigate(`/workloads/pods/${pod.namespace}/${pod.name}`)}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <Td dataLabel="Name">
-                        <strong>{pod.name}</strong>
-                      </Td>
-                      <Td dataLabel="Namespace">{pod.namespace}</Td>
-                      <Td dataLabel="Status">
-                        <Label color={getStatusColor(pod.status)}>{pod.status}</Label>
-                      </Td>
-                      <Td dataLabel="Restarts">{pod.restarts}</Td>
-                      <Td dataLabel="Age">2h</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={5} style={{ textAlign: 'center' }}>
-                      {searchValue ? 'No pods found matching your search' : 'No pods found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Pods"
+      description="View and manage pod instances across all namespaces"
+      columns={columns}
+      data={pods}
+      getRowKey={(p) => `${p.namespace}-${p.name}`}
+      onRowClick={(p) => navigate(`/workloads/pods/${p.namespace}/${p.name}`)}
+      createLabel="Create Pod"
+      statusField="status"
+      nameField="name"
+      filterFn={(p, s) => p.name.toLowerCase().includes(s.toLowerCase()) || p.namespace.toLowerCase().includes(s.toLowerCase())}
+    />
   );
 }

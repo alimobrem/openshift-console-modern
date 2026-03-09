@@ -87,19 +87,14 @@ body::after,
   border-left: 3px solid var(--theme-glass-border) !important;
 }
 
-/* Update title gradients */
-.pf-v6-c-title {
-  background: linear-gradient(135deg, var(--theme-color-1), var(--theme-color-3)) !important;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-h1 {
-  background: linear-gradient(135deg, var(--theme-color-1), var(--theme-color-3)) !important;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/* Title styling — solid readable color, no gradient fill */
+.pf-v6-c-title,
+h1, h2, h3, h4, h5, h6 {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  background-clip: unset !important;
+  color: hsl(var(--foreground)) !important;
 }
 
 /* Update masthead and sidebar shadows */

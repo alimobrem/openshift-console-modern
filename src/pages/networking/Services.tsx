@@ -1,20 +1,8 @@
-import React from 'react';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Button,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { PlusCircleIcon } from '@patternfly/react-icons';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import StatusIndicator from '@/components/StatusIndicator';
+import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
-interface Service {
+interface ServiceItem {
   name: string;
   namespace: string;
   type: 'ClusterIP' | 'NodePort' | 'LoadBalancer' | 'ExternalName';
@@ -24,161 +12,62 @@ interface Service {
   age: string;
 }
 
-const mockServices: Service[] = [
-  {
-    name: 'frontend',
-    namespace: 'default',
-    type: 'LoadBalancer',
-    clusterIP: '10.96.0.1',
-    externalIP: '203.0.113.1',
-    ports: '80/TCP, 443/TCP',
-    age: '30d',
-  },
-  {
-    name: 'backend-api',
-    namespace: 'default',
-    type: 'ClusterIP',
-    clusterIP: '10.96.1.5',
-    externalIP: '<none>',
-    ports: '8080/TCP',
-    age: '25d',
-  },
-  {
-    name: 'database',
-    namespace: 'database',
-    type: 'ClusterIP',
-    clusterIP: '10.96.2.10',
-    externalIP: '<none>',
-    ports: '5432/TCP',
-    age: '60d',
-  },
-  {
-    name: 'redis',
-    namespace: 'cache',
-    type: 'ClusterIP',
-    clusterIP: '10.96.3.15',
-    externalIP: '<none>',
-    ports: '6379/TCP',
-    age: '45d',
-  },
-  {
-    name: 'monitoring',
-    namespace: 'monitoring',
-    type: 'NodePort',
-    clusterIP: '10.96.4.20',
-    externalIP: '<none>',
-    ports: '9090:30090/TCP',
-    age: '90d',
-  },
+interface RawServicePort {
+  port: number;
+  nodePort?: number;
+  protocol?: string;
+}
+
+interface RawService extends K8sMeta {
+  spec: {
+    type?: string;
+    clusterIP?: string;
+    ports?: RawServicePort[];
+  };
+}
+
+const columns: ColumnDef<ServiceItem>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Namespace', key: 'namespace' },
+  { title: 'Type', key: 'type', render: (s) => <StatusIndicator status={s.type} /> },
+  { title: 'Cluster IP', key: 'clusterIP', render: (s) => <code>{s.clusterIP}</code> },
+  { title: 'External IP', key: 'externalIP' },
+  { title: 'Ports', key: 'ports', render: (s) => <code>{s.ports}</code> },
+  { title: 'Age', key: 'age' },
 ];
 
-export default function Services() {
-  const [searchValue, setSearchValue] = React.useState('');
+function formatPorts(ports: RawServicePort[] | undefined): string {
+  if (!ports || ports.length === 0) return '<none>';
+  return ports.map((p) => {
+    const proto = p.protocol ?? 'TCP';
+    return p.nodePort ? `${p.port}:${p.nodePort}/${proto}` : `${p.port}/${proto}`;
+  }).join(', ');
+}
 
-  const filteredServices = mockServices.filter(
-    (svc) =>
-      svc.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      svc.namespace.toLowerCase().includes(searchValue.toLowerCase())
+export default function Services() {
+  const { data, loading } = useK8sResource<RawService, ServiceItem>(
+    '/api/v1/services',
+    (item) => ({
+      name: item.metadata.name,
+      namespace: item.metadata.namespace ?? '',
+      type: (item.spec.type ?? 'ClusterIP') as ServiceItem['type'],
+      clusterIP: item.spec.clusterIP ?? '<none>',
+      externalIP: '<none>',
+      ports: formatPorts(item.spec.ports),
+      age: ageFromTimestamp(item.metadata.creationTimestamp),
+    }),
   );
 
-  const getTypeColor = (type: Service['type']) => {
-    switch (type) {
-      case 'LoadBalancer':
-        return 'purple';
-      case 'NodePort':
-        return 'blue';
-      case 'ClusterIP':
-        return 'green';
-      case 'ExternalName':
-        return 'teal';
-      default:
-        return 'grey';
-    }
-  };
-
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Services
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Manage service discovery and load balancing
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="services-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search by name or namespace"
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button variant="primary" icon={<PlusCircleIcon />}>
-                    Create Service
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="Services table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Namespace</Th>
-                  <Th>Type</Th>
-                  <Th>Cluster IP</Th>
-                  <Th>External IP</Th>
-                  <Th>Ports</Th>
-                  <Th>Age</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredServices.length > 0 ? (
-                  filteredServices.map((svc) => (
-                    <Tr key={`${svc.namespace}-${svc.name}`}>
-                      <Td dataLabel="Name">
-                        <strong>{svc.name}</strong>
-                      </Td>
-                      <Td dataLabel="Namespace">{svc.namespace}</Td>
-                      <Td dataLabel="Type">
-                        <Label color={getTypeColor(svc.type)}>{svc.type}</Label>
-                      </Td>
-                      <Td dataLabel="Cluster IP">
-                        <code style={{ fontSize: '0.875rem' }}>{svc.clusterIP}</code>
-                      </Td>
-                      <Td dataLabel="External IP">
-                        {svc.externalIP === '<none>' ? (
-                          <span style={{ color: 'var(--pf-v6-global--Color--200)' }}>
-                            {svc.externalIP}
-                          </span>
-                        ) : (
-                          <code style={{ fontSize: '0.875rem' }}>{svc.externalIP}</code>
-                        )}
-                      </Td>
-                      <Td dataLabel="Ports">{svc.ports}</Td>
-                      <Td dataLabel="Age">{svc.age}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={7} style={{ textAlign: 'center' }}>
-                      {searchValue ? 'No Services found matching your search' : 'No Services found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Services"
+      description="Manage service endpoints and load balancing"
+      columns={columns}
+      data={data}
+      loading={loading}
+      getRowKey={(s) => `${s.namespace}-${s.name}`}
+      createLabel="Create Service"
+      nameField="name"
+    />
   );
 }

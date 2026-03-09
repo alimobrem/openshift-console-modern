@@ -1,284 +1,303 @@
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import QuickDeployDialog from '@/components/QuickDeployDialog';
 import {
   PageSection,
   Title,
   Card,
-  CardTitle,
   CardBody,
-  Gallery,
-  GalleryItem,
-  Grid,
-  GridItem,
-  Stack,
-  StackItem,
+  Label,
+  Button,
   Flex,
   FlexItem,
-  Label,
-  Progress,
-  ProgressVariant,
+  DescriptionList,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  DescriptionListDescription,
 } from '@patternfly/react-core';
 import {
   CheckCircleIcon,
-  ExclamationCircleIcon,
-  CubeIcon,
-  ServerIcon,
+  ExclamationTriangleIcon,
 } from '@patternfly/react-icons';
 import { useClusterStore } from '@/store/useClusterStore';
+import '@/openshift-components.css';
 
-export default function OverviewPF() {
-  const { nodes, pods, fetchClusterData } = useClusterStore();
+function getGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 18) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function Sparkline({ data, color = '#0066cc' }: { data: number[]; color?: string }) {
+  if (data.length < 2) return null;
+  const min = Math.min(...data) - 5;
+  const max = Math.max(...data) + 5;
+  const w = 160;
+  const h = 24;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * w;
+    const y = h - ((v - min) / (max - min)) * h;
+    return `${x},${y}`;
+  });
+  return (
+    <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} className="os-sparkline">
+      <polyline points={points.join(' ')} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export default function Overview() {
+  const navigate = useNavigate();
+  const { nodes, pods, events, metrics, clusterInfo, fetchClusterData, startPolling, stopPolling } = useClusterStore();
 
   useEffect(() => {
     fetchClusterData();
-  }, [fetchClusterData]);
+    startPolling();
+    return () => stopPolling();
+  }, [fetchClusterData, startPolling, stopPolling]);
 
-  const stats = {
-    totalNodes: nodes.length,
-    readyNodes: nodes.filter((n) => n.status === 'Ready').length,
-    totalPods: pods.length,
-    runningPods: pods.filter((p) => p.status === 'Running').length,
-    failedPods: pods.filter((p) => p.status === 'Failed').length,
-  };
+  const [deployOpen, setDeployOpen] = React.useState(false);
+  const avgCpu = nodes.length > 0 ? Math.round(nodes.reduce((s, n) => s + n.cpu, 0) / nodes.length) : 0;
+  const avgMem = nodes.length > 0 ? Math.round(nodes.reduce((s, n) => s + n.memory, 0) / nodes.length) : 0;
 
-  const clusterHealth = stats.failedPods === 0 ? 'Healthy' : 'Degraded';
+  const statusItems = [
+    { label: 'Cluster', ok: true },
+    { label: 'Control Plane', ok: true },
+    { label: 'Operators', ok: true },
+    { label: 'Dynamic Plugins', ok: true },
+    { label: 'Insights', ok: true },
+  ];
 
   return (
     <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Cluster Overview
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Monitor your OpenShift cluster health and resources
-        </p>
+      {/* Greeting */}
+      <PageSection className="os-overview__greeting">
+        <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsMd' }}>
+          <FlexItem>
+            <span className="os-overview__greeting-icon">&#x1f319;</span>
+          </FlexItem>
+          <FlexItem>
+            <Title headingLevel="h1" size="xl">{getGreeting()}</Title>
+          </FlexItem>
+        </Flex>
       </PageSection>
 
       <PageSection>
-        <Gallery hasGutter minWidths={{ default: '100%', md: '250px' }}>
-          {/* Total Nodes Card */}
-          <GalleryItem className="compass-stat-card">
-            <Card isFullHeight>
-              <CardTitle>
-                <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                  <FlexItem>
-                    <ServerIcon />
-                  </FlexItem>
-                  <FlexItem>Total Nodes</FlexItem>
-                </Flex>
-              </CardTitle>
-              <CardBody>
-                <Stack hasGutter>
-                  <StackItem>
-                    <Title headingLevel="h2" size="3xl">
-                      {stats.totalNodes}
-                    </Title>
-                  </StackItem>
-                  <StackItem>
-                    <span style={{ fontSize: '14px', color: 'var(--pf-v6-global--Color--200)' }}>
-                      {stats.readyNodes} ready
-                    </span>
-                  </StackItem>
-                </Stack>
-              </CardBody>
-            </Card>
-          </GalleryItem>
+        <div className="os-overview__grid">
 
-          {/* Running Pods Card */}
-          <GalleryItem className="compass-stat-card">
-            <Card isFullHeight>
-              <CardTitle>
-                <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                  <FlexItem>
-                    <CubeIcon />
-                  </FlexItem>
-                  <FlexItem>Running Pods</FlexItem>
-                </Flex>
-              </CardTitle>
+          {/* LEFT COLUMN: Details + Cluster Inventory */}
+          <div className="os-overview__column">
+            <Card>
               <CardBody>
-                <Stack hasGutter>
-                  <StackItem>
-                    <Title headingLevel="h2" size="3xl">
-                      {stats.runningPods}
-                    </Title>
-                  </StackItem>
-                  <StackItem>
-                    <span style={{ fontSize: '14px', color: 'var(--pf-v6-global--Color--200)' }}>
-                      of {stats.totalPods} total
-                    </span>
-                  </StackItem>
-                </Stack>
+                <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }} className="os-overview__section-header">
+                  <FlexItem><strong className="os-overview__section-title">Details</strong></FlexItem>
+                  <FlexItem>
+                    <span className="os-overview__link" onClick={() => navigate('/administration/cluster-settings')}>View settings</span>
+                  </FlexItem>
+                </Flex>
+                <Button variant="primary" size="sm" onClick={() => setDeployOpen(true)} className="os-overview__deploy-btn">
+                  + Deploy Workload
+                </Button>
+                <DescriptionList isCompact>
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Cluster API address</DescriptionListTerm>
+                    <DescriptionListDescription className="os-overview__desc-sm">
+                      {clusterInfo?.apiURL ?? 'https://api.cluster.example.com:6443'}
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Cluster ID</DescriptionListTerm>
+                    <DescriptionListDescription className="os-overview__desc-mono">
+                      03242ee9-8986-4f0f-acc0-65aad26ba6a5
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Infrastructure provider</DescriptionListTerm>
+                    <DescriptionListDescription>
+                      <strong className="os-overview__provider-value">{clusterInfo?.platform ?? 'AWS'}</strong>
+                    </DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>OpenShift version</DescriptionListTerm>
+                    <DescriptionListDescription>{clusterInfo?.version ?? 'OpenShift 4.14.5'}</DescriptionListDescription>
+                  </DescriptionListGroup>
+                  <DescriptionListGroup>
+                    <DescriptionListTerm>Update channel</DescriptionListTerm>
+                    <DescriptionListDescription>{clusterInfo?.updateChannel ?? 'stable-4.14'}</DescriptionListDescription>
+                  </DescriptionListGroup>
+                </DescriptionList>
               </CardBody>
             </Card>
-          </GalleryItem>
 
-          {/* Failed Pods Card */}
-          <GalleryItem className="compass-stat-card">
-            <Card isFullHeight>
-              <CardTitle>
-                <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                  <FlexItem>
-                    <ExclamationCircleIcon color="var(--pf-v6-global--danger-color--100)" />
-                  </FlexItem>
-                  <FlexItem>Failed Pods</FlexItem>
-                </Flex>
-              </CardTitle>
+            <Card>
               <CardBody>
-                <Stack hasGutter>
-                  <StackItem>
-                    <Title headingLevel="h2" size="3xl" style={{ color: stats.failedPods > 0 ? 'var(--pf-v6-global--danger-color--100)' : 'inherit' }}>
-                      {stats.failedPods}
-                    </Title>
-                  </StackItem>
-                  <StackItem>
-                    <span style={{ fontSize: '14px', color: 'var(--pf-v6-global--Color--200)' }}>
-                      {stats.failedPods > 0 ? 'Requires attention' : 'No issues'}
+                <strong className="os-overview__inventory-title">Cluster inventory</strong>
+                {[
+                  { label: 'Nodes', count: nodes.length, color: '#0066cc', abbr: 'N', href: '/compute/nodes' },
+                  { label: 'Pods', count: pods.length, color: '#009596', abbr: 'P', href: '/workloads/pods' },
+                  { label: 'StorageClasses', count: 3, color: '#5752d1', abbr: 'SC', href: '/storage/storageclasses' },
+                  { label: 'PersistentVolumeClaims', count: 4, color: '#f4c145', abbr: 'PVC', href: '/storage/persistentvolumeclaims' },
+                ].map((item) => (
+                  <div
+                    key={item.label}
+                    className="os-overview__inventory-row"
+                    onClick={() => navigate(item.href)}
+                  >
+                    <span className="os-overview__inventory-badge" style={{ '--os-badge-bg': item.color } as React.CSSProperties}>
+                      {item.abbr}
                     </span>
-                  </StackItem>
-                </Stack>
+                    <span className="os-overview__inventory-label">{item.label}</span>
+                    <span className="os-overview__inventory-count">{item.count}</span>
+                  </div>
+                ))}
               </CardBody>
             </Card>
-          </GalleryItem>
+          </div>
 
-          {/* Cluster Health Card */}
-          <GalleryItem className="compass-stat-card">
-            <Card isFullHeight>
-              <CardTitle>
-                <Flex alignItems={{ default: 'alignItemsCenter' }}>
-                  <FlexItem>
-                    <CheckCircleIcon color="var(--pf-v6-global--success-color--100)" />
-                  </FlexItem>
-                  <FlexItem>Cluster Health</FlexItem>
-                </Flex>
-              </CardTitle>
+          {/* CENTER COLUMN: Status + Cluster Utilization */}
+          <div className="os-overview__column">
+            <Card>
               <CardBody>
-                <Stack hasGutter>
-                  <StackItem>
-                    <Title
-                      headingLevel="h2"
-                      size="3xl"
-                      style={{ color: clusterHealth === 'Healthy' ? 'var(--pf-v6-global--success-color--100)' : 'var(--pf-v6-global--warning-color--100)' }}
-                    >
-                      {clusterHealth}
-                    </Title>
-                  </StackItem>
-                  <StackItem>
-                    <span style={{ fontSize: '14px', color: 'var(--pf-v6-global--Color--200)' }}>
-                      {clusterHealth === 'Healthy' ? 'All systems operational' : 'Some issues detected'}
+                <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }} className="os-overview__section-header">
+                  <FlexItem><strong className="os-overview__section-title">Status</strong></FlexItem>
+                  <FlexItem>
+                    <span className="os-overview__link" onClick={() => navigate('/observe/alerts')}>
+                      View alerts
                     </span>
-                  </StackItem>
-                </Stack>
+                  </FlexItem>
+                </Flex>
+                <Flex spaceItems={{ default: 'spaceItemsLg' }} className="os-overview__status-row">
+                  {statusItems.map((s) => (
+                    <FlexItem key={s.label}>
+                      <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
+                        <FlexItem>
+                          <CheckCircleIcon color="var(--os-accent-green, #3e8635)" />
+                        </FlexItem>
+                        <FlexItem><span className="os-overview__status-label">{s.label}</span></FlexItem>
+                      </Flex>
+                    </FlexItem>
+                  ))}
+                </Flex>
+
+                {/* Alerts */}
+                {events.filter((e) => e.type === 'Warning').slice(0, 2).map((alert, i) => (
+                  <div key={i} className="os-overview__alert-item">
+                    <Flex alignItems={{ default: 'alignItemsFlexStart' }} spaceItems={{ default: 'spaceItemsSm' }}>
+                      <FlexItem><ExclamationTriangleIcon color="var(--os-accent-yellow, #f0ab00)" /></FlexItem>
+                      <FlexItem className="os-overview__alert-body">
+                        <div className="os-overview__alert-reason">{alert.reason}</div>
+                        <div className="os-overview__alert-time">
+                          {new Date(alert.timestamp).toLocaleDateString()} {new Date(alert.timestamp).toLocaleTimeString()}
+                        </div>
+                        <div className="os-overview__alert-message">
+                          {alert.message}
+                        </div>
+                      </FlexItem>
+                    </Flex>
+                  </div>
+                ))}
               </CardBody>
             </Card>
-          </GalleryItem>
-        </Gallery>
+
+            <Card>
+              <CardBody>
+                <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }} className="os-overview__section-header">
+                  <FlexItem><strong className="os-overview__section-title">Cluster utilization</strong></FlexItem>
+                  <FlexItem className="os-overview__filter-group">
+                    <Label color="grey">Filter by Node type</Label>
+                    <Label color="grey">1 hour</Label>
+                  </FlexItem>
+                </Flex>
+
+                <div className="os-overview__utilization-header">
+                  <span>Resource</span><span>Usage</span><span></span>
+                </div>
+
+                {/* CPU */}
+                <div className="os-overview__utilization-row">
+                  <div>
+                    <div className="os-overview__utilization-label">CPU</div>
+                    <div className="os-overview__utilization-sublabel">{avgCpu}% of {nodes.length * 4} cores</div>
+                  </div>
+                  <div className="os-overview__utilization-value">{(avgCpu / 100 * nodes.length * 4).toFixed(1)}</div>
+                  <div><Sparkline data={metrics.map((m) => m.cpu)} color="#0066cc" /></div>
+                </div>
+
+                {/* Memory */}
+                <div className="os-overview__utilization-row">
+                  <div>
+                    <div className="os-overview__utilization-label">Memory</div>
+                    <div className="os-overview__utilization-sublabel">{(avgMem / 100 * 64).toFixed(1)} GiB / 64 GiB</div>
+                  </div>
+                  <div className="os-overview__utilization-value">{(avgMem / 100 * 64).toFixed(1)} GiB</div>
+                  <div><Sparkline data={metrics.map((m) => m.memory)} color="#009596" /></div>
+                </div>
+
+                {/* Filesystem */}
+                <div className="os-overview__utilization-row">
+                  <div>
+                    <div className="os-overview__utilization-label">Filesystem</div>
+                    <div className="os-overview__utilization-sublabel">610 GiB / 718.7 GiB</div>
+                  </div>
+                  <div className="os-overview__utilization-value">108.6 GiB</div>
+                  <div>
+                    <div className="os-overview__fs-bar-track">
+                      <div className="os-overview__fs-bar-fill" />
+                    </div>
+                  </div>
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+
+          {/* RIGHT COLUMN: Activity */}
+          <Card>
+            <CardBody>
+              <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }} className="os-overview__activity-header">
+                <FlexItem><strong className="os-overview__section-title">Activity</strong></FlexItem>
+                <FlexItem>
+                  <span className="os-overview__link" onClick={() => navigate('/home/events')}>
+                    View all events
+                  </span>
+                </FlexItem>
+              </Flex>
+
+              <div className="os-overview__ongoing-section">
+                <div className="os-overview__ongoing-title">Ongoing</div>
+                <div className="os-overview__ongoing-empty">There are no ongoing activities.</div>
+              </div>
+
+              <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsCenter' }} className="os-overview__recent-header">
+                <FlexItem><span className="os-overview__recent-title">Recent events</span></FlexItem>
+                <FlexItem><span className="os-overview__recent-pause">Pause</span></FlexItem>
+              </Flex>
+
+              <div className="os-overview__event-scroll">
+                {events.slice(0, 15).map((event, i) => {
+                  const badgeColor = event.type === 'Warning' ? '#f0ab00' : event.type === 'Error' ? '#c9190b' : '#009596';
+                  const abbr = event.namespace === 'default' ? 'P' : event.namespace === 'production' ? 'P' : 'J';
+                  return (
+                    <div key={`${event.timestamp}-${i}`} className="os-overview__event-row">
+                      <span className="os-overview__event-time">
+                        {new Date(event.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                      <span className="os-overview__event-badge" style={{ '--os-badge-bg': badgeColor } as React.CSSProperties}>
+                        {abbr}
+                      </span>
+                      <span className="os-overview__event-message">
+                        {event.message}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardBody>
+          </Card>
+        </div>
       </PageSection>
 
-      <PageSection>
-        <Grid hasGutter>
-          {/* Nodes Card */}
-          <GridItem md={6}>
-            <Card>
-              <CardTitle>
-                <Title headingLevel="h3">Nodes</Title>
-              </CardTitle>
-              <CardBody>
-                <p style={{ marginBottom: '16px', color: 'var(--pf-v6-global--Color--200)' }}>
-                  Cluster node status and utilization
-                </p>
-                <Stack hasGutter>
-                  {nodes.map((node) => (
-                    <StackItem key={node.name}>
-                      <Flex
-                        justifyContent={{ default: 'justifyContentSpaceBetween' }}
-                        alignItems={{ default: 'alignItemsCenter' }}
-                      >
-                        <FlexItem>
-                          <Flex alignItems={{ default: 'alignItemsCenter' }} spaceItems={{ default: 'spaceItemsSm' }}>
-                            <FlexItem>
-                              {node.status === 'Ready' ? (
-                                <CheckCircleIcon color="var(--pf-v6-global--success-color--100)" />
-                              ) : (
-                                <ExclamationCircleIcon color="var(--pf-v6-global--danger-color--100)" />
-                              )}
-                            </FlexItem>
-                            <FlexItem>
-                              <strong>{node.name}</strong>
-                            </FlexItem>
-                          </Flex>
-                        </FlexItem>
-                        <FlexItem>
-                          <Flex spaceItems={{ default: 'spaceItemsMd' }}>
-                            <FlexItem>
-                              <span style={{ fontSize: '14px' }}>CPU: {node.cpu}%</span>
-                            </FlexItem>
-                            <FlexItem>
-                              <span style={{ fontSize: '14px' }}>Memory: {node.memory}%</span>
-                            </FlexItem>
-                          </Flex>
-                        </FlexItem>
-                      </Flex>
-                      <div style={{ marginTop: '8px' }}>
-                        <Progress
-                          value={node.cpu}
-                          title="CPU"
-                          variant={node.cpu > 80 ? ProgressVariant.danger : node.cpu > 60 ? ProgressVariant.warning : ProgressVariant.success}
-                        />
-                      </div>
-                    </StackItem>
-                  ))}
-                </Stack>
-              </CardBody>
-            </Card>
-          </GridItem>
-
-          {/* Recent Pods Card */}
-          <GridItem md={6}>
-            <Card>
-              <CardTitle>
-                <Title headingLevel="h3">Recent Pods</Title>
-              </CardTitle>
-              <CardBody>
-                <p style={{ marginBottom: '16px', color: 'var(--pf-v6-global--Color--200)' }}>
-                  Latest pod deployments and status
-                </p>
-                <Stack hasGutter>
-                  {pods.slice(0, 5).map((pod) => (
-                    <StackItem key={pod.name}>
-                      <Flex justifyContent={{ default: 'justifyContentSpaceBetween' }}>
-                        <FlexItem>
-                          <Stack>
-                            <StackItem>
-                              <strong style={{ fontSize: '14px' }}>{pod.name}</strong>
-                            </StackItem>
-                            <StackItem>
-                              <span style={{ fontSize: '12px', color: 'var(--pf-v6-global--Color--200)' }}>
-                                {pod.namespace}
-                              </span>
-                            </StackItem>
-                          </Stack>
-                        </FlexItem>
-                        <FlexItem>
-                          <Label
-                            color={
-                              pod.status === 'Running'
-                                ? 'green'
-                                : pod.status === 'Pending'
-                                ? 'orange'
-                                : 'red'
-                            }
-                          >
-                            {pod.status}
-                          </Label>
-                        </FlexItem>
-                      </Flex>
-                    </StackItem>
-                  ))}
-                </Stack>
-              </CardBody>
-            </Card>
-          </GridItem>
-        </Grid>
-      </PageSection>
+      <QuickDeployDialog open={deployOpen} onClose={() => setDeployOpen(false)} />
     </>
   );
 }

@@ -11,8 +11,8 @@
   --console-primary-fg: hsl(var(--primary-foreground));
 
   /* Glassmorphism variables - Enhanced Premium Glass with Sunset Theme */
-  --glass-bg: rgba(255, 255, 255, 0.18);
-  --glass-border: rgba(255, 255, 255, 0.25);
+  --glass-bg: rgba(255, 255, 255, 0.55);
+  --glass-border: rgba(255, 255, 255, 0.4);
   --glass-shadow:
     0 8px 32px 0 rgba(251, 146, 60, 0.12),
     0 4px 16px 0 rgba(251, 113, 133, 0.08),
@@ -22,8 +22,8 @@
 }
 
 .dark {
-  --glass-bg: rgba(30, 10, 5, 0.25);
-  --glass-border: rgba(251, 146, 60, 0.2);
+  --glass-bg: rgba(30, 10, 5, 0.65);
+  --glass-border: rgba(251, 146, 60, 0.3);
   --glass-shadow:
     0 8px 32px 0 rgba(0, 0, 0, 0.4),
     0 4px 16px 0 rgba(251, 146, 60, 0.2),
@@ -138,7 +138,7 @@
 }
 
 .pf-v6-c-table thead {
-  background: rgba(241, 245, 249, 0.5);
+  background: rgba(241, 245, 249, 0.7) !important;
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--glass-border);
@@ -532,19 +532,19 @@
 .pf-v6-c-title {
   font-weight: 800;
   letter-spacing: -0.035em;
-  color: var(--console-text-primary);
-  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  background: linear-gradient(135deg, rgb(251, 146, 60), rgb(251, 113, 133));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: hsl(var(--foreground)) !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  -webkit-text-fill-color: unset !important;
+  background: none !important;
+  background-clip: unset !important;
+  -webkit-background-clip: unset !important;
 }
 
 /* Masthead Enhancement - Premium Glass */
 .pf-v6-c-masthead {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(20px) saturate(180%) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(24px) saturate(180%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.08) !important;
   box-shadow:
     0 4px 24px rgba(251, 146, 60, 0.12),
     0 2px 12px rgba(251, 113, 133, 0.08),
@@ -595,9 +595,9 @@
 
 /* Sidebar Enhancement - Premium Glass with Improved Layout */
 .pf-v6-c-page__sidebar {
-  background: var(--glass-bg) !important;
-  backdrop-filter: blur(20px) saturate(180%) brightness(1.08) !important;
-  -webkit-backdrop-filter: blur(20px) saturate(180%) brightness(1.08) !important;
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(24px) saturate(180%) brightness(1.08) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) brightness(1.08) !important;
   box-shadow:
     4px 0 24px rgba(251, 146, 60, 0.12),
     2px 0 12px rgba(251, 113, 133, 0.08),
@@ -885,19 +885,7 @@
   transform: scaleY(1.1);
 }
 
-/* Floating animation for premium feel */
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-.pf-v6-c-card:hover {
-  animation: float 2s ease-in-out infinite;
-}
+/* Removed conflicting infinite float animation on card hover */
 
 /* Enhanced Glow effect on interactive elements */
 .pf-v6-c-button.pf-m-primary,
@@ -996,19 +984,18 @@
 .pf-v6-c-nav__item:nth-child(8) { animation-delay: 0.4s; }
 .pf-v6-c-nav__item:nth-child(9) { animation-delay: 0.45s; }
 
-/* Smooth transitions for theme changes */
-* {
-  transition-property: background-color, border-color, color, box-shadow;
+/* Smooth transitions for theme changes — scoped to specific selectors */
+.pf-v6-c-card,
+.pf-v6-c-button,
+.pf-v6-c-nav__link,
+.pf-v6-c-label,
+.pf-v6-c-masthead,
+.pf-v6-c-page__sidebar,
+.pf-v6-c-toolbar,
+.pf-v6-c-badge {
+  transition-property: background-color, border-color, color, box-shadow, transform;
   transition-duration: 0.3s;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Exclude rapid transitions */
-button,
-input,
-textarea,
-select {
-  transition-property: transform, box-shadow;
 }
 
 /* Subtle noise texture for depth - DISABLED for better background visibility */
@@ -1054,72 +1041,1001 @@ select {
   }
 }
 
-/* Force glass effect on all PatternFly components - Override defaults */
+/* Force layout containers to be transparent for gradient to show through */
 .pf-v6-c-page,
 .pf-v6-c-page__main,
 .pf-v6-c-page__main-section,
 .pf-v6-c-page__sidebar-body,
 .pf-v6-c-nav,
-.pf-v6-c-card__body,
-.pf-v6-c-card__footer,
 .pf-v6-c-page__main-body,
 .pf-v6-c-page__main-group,
 .pf-v6-c-page__main-breadcrumb,
 .pf-v6-c-page__main-tabs,
-.pf-v6-c-page__header {
+.pf-v6-c-page__header,
+.pf-v6-c-nav__list,
+.pf-v6-c-nav__item,
+.pf-v6-l-gallery,
+.pf-v6-l-grid,
+.pf-v6-l-flex,
+.pf-v6-l-stack,
+.pf-m-light {
   background-color: transparent !important;
   background: transparent !important;
 }
 
-/* Ensure nav items allow background through */
-.pf-v6-c-nav__list {
-  background: transparent !important;
-}
-
-.pf-v6-c-nav__item {
-  background: transparent !important;
-}
-
-/* Force body and html to be transparent */
 html,
 body,
 #root {
   background: transparent !important;
 }
 
-/* Aggressively override all page section backgrounds */
+/* Force layout containers to be transparent (not glass elements) */
+.pf-v6-c-page,
+.pf-v6-c-page__main,
 .pf-v6-c-page__main-section,
-.pf-v6-c-page__main-section.pf-m-light,
-.pf-v6-c-page__main-section.pf-m-dark,
-.pf-v6-c-page__main-section[class*="pf-m-"],
-[class*="pf-v6-c-page__main"] {
-  background: transparent !important;
-  background-color: transparent !important;
-}
-
-/* Override any potential white/gray backgrounds on content containers */
+.pf-v6-c-page__main-body,
+.pf-v6-c-page__main-group,
 .pf-v6-l-gallery,
 .pf-v6-l-grid,
 .pf-v6-l-flex,
-.pf-v6-l-stack,
-div[class^="pf-v6-l-"],
-div[class*=" pf-v6-l-"] {
+.pf-v6-l-stack {
+  background-color: transparent !important;
+}
+
+/* =====================================================
+   NEW COMPONENTS — Phase 2-4 Enhancements
+   ===================================================== */
+
+/* === Command Palette === */
+.compass-command-palette-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 15vh;
+  animation: fadeInOverlay 0.15s ease;
+}
+
+@keyframes fadeInOverlay {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.compass-command-palette {
+  width: 560px;
+  max-height: 420px;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(30px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4), 0 0 40px rgba(251, 146, 60, 0.15);
+  overflow: hidden;
+  animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.compass-command-palette__input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+.compass-command-palette__input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-weight: 500;
+  color: inherit;
   background: transparent !important;
-  background-color: transparent !important;
 }
 
-/* Catch-all for any remaining white backgrounds */
-[class*="pf-v6-"] {
-  background-color: transparent;
+.compass-command-palette__kbd {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid var(--glass-border);
+  color: var(--pf-v6-global--Color--200);
+  font-family: monospace;
 }
 
-/* Specific override for light mode sections */
-.pf-m-light {
+.compass-command-palette__results {
+  max-height: 340px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.compass-command-palette__section {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(251, 146, 60, 0.7);
+  padding: 8px 12px 4px;
+}
+
+.compass-command-palette__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.1s;
+}
+
+.compass-command-palette__item--selected {
+  background: rgba(251, 146, 60, 0.15) !important;
+}
+
+.compass-command-palette__item:hover {
+  background: rgba(251, 146, 60, 0.1) !important;
+}
+
+.compass-command-palette__shortcut {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid var(--glass-border);
+  font-family: monospace;
+  color: var(--pf-v6-global--Color--200);
+}
+
+.compass-command-palette__empty {
+  text-align: center;
+  padding: 24px;
+  color: var(--pf-v6-global--Color--200);
+}
+
+/* === Toast Notifications === */
+.compass-toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 380px;
+}
+
+.compass-toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 0 20px rgba(251, 146, 60, 0.1);
+  animation: toastSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes toastSlideIn {
+  from { opacity: 0; transform: translateX(100px) scale(0.9); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+.compass-toast--success .compass-toast__icon { color: #22c55e; }
+.compass-toast--error .compass-toast__icon { color: #ef4444; }
+.compass-toast--warning .compass-toast__icon { color: #f59e0b; }
+.compass-toast--info .compass-toast__icon { color: #3b82f6; }
+
+.compass-toast__content { flex: 1; }
+.compass-toast__title { font-weight: 600; font-size: 14px; }
+.compass-toast__description { font-size: 13px; color: var(--pf-v6-global--Color--200); margin-top: 2px; }
+
+.compass-toast__close {
+  background: none !important;
+  border: none;
+  cursor: pointer;
+  color: var(--pf-v6-global--Color--200);
+  padding: 2px;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.compass-toast__close:hover { opacity: 1; }
+
+/* === Page Transition === */
+.compass-page-transition {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.compass-page-transition--enter {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.compass-page-transition--exit {
+  opacity: 0.3;
+  transform: translateY(4px);
+}
+
+/* === Empty State === */
+.compass-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.compass-empty-state__icon {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(251, 146, 60, 0.5);
+  margin-bottom: 16px;
+}
+
+.compass-empty-state__icon svg {
+  width: 32px;
+  height: 32px;
+}
+
+.compass-empty-state__title {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.compass-empty-state__message {
+  font-size: 14px;
+  color: var(--pf-v6-global--Color--200);
+}
+
+/* === Skeleton Loading === */
+.compass-skeleton {
+  background: linear-gradient(90deg,
+    rgba(241, 245, 249, 0.3) 0%,
+    rgba(226, 232, 240, 0.5) 50%,
+    rgba(241, 245, 249, 0.3) 100%
+  ) !important;
+  background-size: 1000px 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+.dark .compass-skeleton {
+  background: linear-gradient(90deg,
+    rgba(80, 30, 20, 0.2) 0%,
+    rgba(100, 50, 30, 0.35) 50%,
+    rgba(80, 30, 20, 0.2) 100%
+  ) !important;
+  background-size: 1000px 100%;
+}
+
+/* === Status Pulse === */
+.compass-status-pulse {
+  animation: statusPulse 2s ease-in-out infinite;
+}
+
+@keyframes statusPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* === Connection Pill === */
+.compass-connection-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(34, 197, 94, 0.1) !important;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+}
+
+.compass-connection-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #22c55e;
+  animation: connectionPulse 2s ease-in-out infinite;
+}
+
+@keyframes connectionPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0); }
+}
+
+/* === Notification Badge === */
+.compass-notification-badge {
+  position: absolute !important;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  font-size: 10px !important;
+  padding: 0 4px !important;
+  border-radius: 10px !important;
+  background: linear-gradient(135deg, #ef4444, #f97316) !important;
+  color: white !important;
+  border: 2px solid rgba(0, 0, 0, 0.3) !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === Dashboard Stat Cards V2 === */
+.compass-stat-card-v2 {
+  position: relative;
+}
+
+.compass-stat-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pf-v6-global--Color--200);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.compass-stat-value {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+
+.compass-stat-sub {
+  font-size: 12px;
+  color: var(--pf-v6-global--Color--200);
+  margin-top: 4px;
+}
+
+/* === Utilization Bar === */
+.compass-utilization-bar {
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(226, 232, 240, 0.3) !important;
+  overflow: hidden;
+}
+
+.compass-utilization-bar__fill {
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, rgba(59, 130, 246, 0.8), rgba(99, 102, 241, 0.9)) !important;
+  transition: width 1s ease;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.compass-utilization-bar__fill--memory {
+  background: linear-gradient(90deg, rgba(34, 197, 94, 0.8), rgba(16, 185, 129, 0.9)) !important;
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.3);
+}
+
+/* === Hero Banner === */
+.compass-hero-banner {
+  border-left: 4px solid transparent;
+  border-image: linear-gradient(135deg, rgb(251, 146, 60), rgb(251, 113, 133)) 1;
+}
+
+/* === Events Timeline === */
+.compass-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.compass-timeline__item {
+  display: flex;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--glass-border);
+  animation: fadeIn 0.3s ease-out backwards;
+}
+
+.compass-timeline__item:last-child {
+  border-bottom: none;
+}
+
+.compass-timeline__dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+
+.compass-timeline__dot--normal { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+.compass-timeline__dot--warning { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4); }
+.compass-timeline__dot--error { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
+
+.compass-timeline__content {
+  flex: 1;
+  min-width: 0;
+}
+
+.compass-timeline__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+}
+
+.compass-timeline__reason {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.compass-timeline__message {
+  font-size: 13px;
+  color: var(--pf-v6-global--Color--200);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.compass-timeline__meta {
+  font-size: 11px;
+  color: var(--pf-v6-global--Color--200);
+  opacity: 0.7;
+  margin-top: 2px;
+}
+
+/* === Quick Actions === */
+.compass-quick-action {
+  padding: 10px 20px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: rgba(251, 146, 60, 0.08) !important;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.compass-quick-action:hover {
+  background: rgba(251, 146, 60, 0.18) !important;
+  border-color: rgba(244, 114, 182, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.2);
+}
+
+/* === YAML Editor Enhancements === */
+.compass-yaml-editor .pf-v6-c-code-block {
+  position: relative;
+}
+
+.compass-yaml-editor .pf-v6-c-code-block__code pre {
+  counter-reset: line;
+  padding-left: 3.5em;
+}
+
+/* === Table Row Enter Animation === */
+.pf-v6-c-table tbody tr {
+  animation: tableRowEnter 0.3s ease-out backwards;
+}
+
+@keyframes tableRowEnter {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.pf-v6-c-table tbody tr:nth-child(1) { animation-delay: 0.02s; }
+.pf-v6-c-table tbody tr:nth-child(2) { animation-delay: 0.04s; }
+.pf-v6-c-table tbody tr:nth-child(3) { animation-delay: 0.06s; }
+.pf-v6-c-table tbody tr:nth-child(4) { animation-delay: 0.08s; }
+.pf-v6-c-table tbody tr:nth-child(5) { animation-delay: 0.10s; }
+.pf-v6-c-table tbody tr:nth-child(6) { animation-delay: 0.12s; }
+.pf-v6-c-table tbody tr:nth-child(7) { animation-delay: 0.14s; }
+.pf-v6-c-table tbody tr:nth-child(8) { animation-delay: 0.16s; }
+
+/* === Tab Content Fade === */
+.pf-v6-c-tab-content {
+  animation: fadeIn 0.25s ease-out;
+}
+
+/* === Button Ripple Effect === */
+.pf-v6-c-button.pf-m-primary:active::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: inherit;
+  animation: buttonRipple 0.4s ease-out;
+}
+
+@keyframes buttonRipple {
+  from { opacity: 1; transform: scale(0.8); }
+  to { opacity: 0; transform: scale(1.2); }
+}
+
+/* === Responsive: Mobile sidebar drawer + table to card === */
+@media (max-width: 768px) {
+  .compass-command-palette {
+    width: calc(100vw - 32px);
+    margin: 0 16px;
+  }
+
+  .compass-toast-container {
+    left: 16px;
+    right: 16px;
+    max-width: none;
+  }
+
+  .compass-stat-value {
+    font-size: 1.5rem;
+  }
+}
+
+/* === Collapsed sidebar === */
+.compass-sidebar--collapsed {
+  width: 64px !important;
+  overflow: hidden;
+}
+
+.compass-sidebar--collapsed .pf-v6-c-nav__link span {
+  display: none;
+}
+
+/* === Pagination glass style === */
+.pf-v6-c-pagination {
   background: transparent !important;
-  background-color: transparent !important;
 }
 
-/* Nuclear option - force everything transparent except glass elements */
-* :not(.pf-v6-c-card):not(.pf-v6-c-masthead):not(.pf-v6-c-page__sidebar):not(.pf-v6-c-toolbar):not(.pf-v6-c-table):not(.pf-v6-c-modal-box):not(.pf-v6-c-dropdown__menu):not(.pf-v6-c-menu):not(.pf-v6-c-button):not(.pf-v6-c-alert) {
-  background-color: transparent !important;
+/* =====================================================
+   DARK MODE — New Component Overrides
+   ===================================================== */
+
+.dark .compass-command-palette {
+  background: rgba(30, 10, 5, 0.85) !important;
+  border-color: rgba(251, 146, 60, 0.3) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 0 40px rgba(251, 146, 60, 0.2);
+}
+
+.dark .compass-command-palette__item--selected {
+  background: rgba(251, 146, 60, 0.2) !important;
+}
+
+.dark .compass-toast {
+  background: rgba(30, 10, 5, 0.9) !important;
+  border-color: rgba(251, 146, 60, 0.25) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 20px rgba(251, 146, 60, 0.15);
+}
+
+.dark .compass-connection-pill {
+  background: rgba(34, 197, 94, 0.15) !important;
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.dark .compass-quick-action {
+  background: rgba(251, 146, 60, 0.12) !important;
+  border-color: rgba(251, 146, 60, 0.25);
+}
+
+.dark .compass-quick-action:hover {
+  background: rgba(251, 146, 60, 0.25) !important;
+  border-color: rgba(244, 114, 182, 0.5);
+  box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3);
+}
+
+.dark .compass-utilization-bar {
+  background: rgba(50, 20, 10, 0.5) !important;
+}
+
+.dark .compass-timeline__item {
+  border-color: rgba(251, 146, 60, 0.15);
+}
+
+.dark .compass-notification-badge {
+  border-color: rgba(30, 10, 5, 0.8) !important;
+}
+
+/* =====================================================
+   LOG VIEWER
+   ===================================================== */
+
+.compass-log-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--glass-border);
+}
+
+.compass-log-viewer__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(241, 245, 249, 0.4) !important;
+  flex-wrap: wrap;
+}
+
+.dark .compass-log-viewer__toolbar {
+  background: rgba(30, 10, 5, 0.4) !important;
+}
+
+.compass-log-viewer__content {
+  flex: 1;
+  overflow-y: auto;
+  font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+  font-size: 12.5px;
+  line-height: 1.6;
+  padding: 0;
+  background: rgba(15, 23, 42, 0.95) !important;
+  color: #e2e8f0;
+}
+
+.compass-log-line {
+  display: flex;
+  padding: 1px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.compass-log-line:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02) !important;
+}
+
+.compass-log-line:hover {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+.compass-log-line--no-wrap {
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.compass-log-line__number {
+  min-width: 40px;
+  color: rgba(148, 163, 184, 0.5);
+  text-align: right;
+  padding-right: 12px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.compass-log-line__text {
+  flex: 1;
+}
+
+.compass-log-line--error .compass-log-line__text { color: #f87171; }
+.compass-log-line--warn .compass-log-line__text { color: #fbbf24; }
+.compass-log-line--info .compass-log-line__text { color: #93c5fd; }
+.compass-log-line--debug .compass-log-line__text { color: #6b7280; }
+
+.compass-log-highlight {
+  background: rgba(250, 204, 21, 0.3) !important;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+/* =====================================================
+   TOPOLOGY VIEW
+   ===================================================== */
+
+.compass-topology {
+  width: 100%;
+  min-height: 500px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.compass-topology__node {
+  cursor: pointer;
+  transition: filter 0.2s;
+}
+
+.compass-topology__node:hover {
+  filter: brightness(1.1) drop-shadow(0 0 8px rgba(251, 146, 60, 0.4));
+}
+
+.compass-topology__legend {
+  display: flex;
+  gap: 16px;
+  padding: 12px 16px;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.compass-topology__legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.compass-topology__legend-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+/* =====================================================
+   METRICS CHART
+   ===================================================== */
+
+.compass-chart {
+  position: relative;
+  width: 100%;
+}
+
+.compass-chart__tooltip {
+  position: absolute;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.9) !important;
+  color: #e2e8f0;
+  font-size: 12px;
+  font-weight: 500;
+  pointer-events: none;
+  z-index: 10;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+@keyframes chartDraw {
+  from { stroke-dashoffset: 2000; }
+  to { stroke-dashoffset: 0; }
+}
+
+.compass-chart__line {
+  stroke-dasharray: 2000;
+  animation: chartDraw 1.5s ease-out forwards;
+}
+
+/* =====================================================
+   CONFIRM DIALOG
+   ===================================================== */
+
+.compass-confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInOverlay 0.15s ease;
+}
+
+.compass-confirm-dialog {
+  width: 420px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(30px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark .compass-confirm-dialog {
+  background: rgba(30, 10, 5, 0.9) !important;
+}
+
+.compass-confirm-dialog__title {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.compass-confirm-dialog__description {
+  font-size: 14px;
+  color: var(--pf-v6-global--Color--200);
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+.compass-confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* =====================================================
+   CREATE RESOURCE DIALOG
+   ===================================================== */
+
+.compass-create-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInOverlay 0.15s ease;
+}
+
+.compass-create-dialog {
+  width: 500px;
+  padding: 24px;
+  border-radius: 16px;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(30px) saturate(200%) !important;
+  -webkit-backdrop-filter: blur(30px) saturate(200%) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.dark .compass-create-dialog {
+  background: rgba(30, 10, 5, 0.9) !important;
+}
+
+.compass-create-dialog__title {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+
+.compass-create-field {
+  margin-bottom: 16px;
+}
+
+.compass-create-field__label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.compass-create-field__input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: inherit;
+  font-size: 14px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.compass-create-field__input:focus {
+  border-color: rgba(251, 146, 60, 0.6);
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.15);
+}
+
+.compass-create-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* =====================================================
+   MICRO-INTERACTIONS
+   ===================================================== */
+
+/* Number transition for stat values */
+.compass-stat-value {
+  transition: color 0.3s;
+}
+
+/* Status change highlight */
+.compass-status-changed {
+  animation: statusChangeGlow 1s ease-out;
+}
+
+@keyframes statusChangeGlow {
+  0% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0.4); }
+  50% { box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.2); }
+  100% { box-shadow: 0 0 0 0 rgba(251, 146, 60, 0); }
+}
+
+/* Scroll-linked header shrink */
+.compass-header--scrolled .pf-v6-c-title {
+  font-size: 1.25rem !important;
+  transition: font-size 0.2s ease;
+}
+
+/* Mobile responsive enhancements */
+@media (max-width: 768px) {
+  .compass-log-viewer { height: 350px; }
+  .compass-confirm-dialog { width: calc(100vw - 32px); }
+  .compass-create-dialog { width: calc(100vw - 32px); }
+  .compass-topology { min-height: 300px; }
+
+  /* Sidebar becomes drawer on mobile */
+  .pf-v6-c-page__sidebar {
+    position: fixed !important;
+    z-index: 1000;
+    height: 100vh;
+    transition: transform 0.3s ease;
+  }
+
+  .pf-v6-c-page__sidebar:not(.pf-m-expanded) {
+    transform: translateX(-100%);
+  }
+}
+
+/* Breadcrumb glass styling */
+.pf-v6-c-breadcrumb {
+  background: transparent !important;
+}
+
+.pf-v6-c-breadcrumb__link {
+  color: var(--pf-v6-global--Color--200) !important;
+  transition: color 0.2s;
+}
+
+.pf-v6-c-breadcrumb__link:hover {
+  color: hsl(var(--foreground)) !important;
+}
+
+/* Tabs glass styling */
+.pf-v6-c-tabs {
+  background: transparent !important;
+  border-bottom: 1px solid var(--glass-border) !important;
+}
+
+.pf-v6-c-tabs__link {
+  transition: all 0.2s ease !important;
+}
+
+.pf-v6-c-tabs__link::after {
+  background: linear-gradient(90deg, rgb(251, 146, 60), rgb(251, 113, 133)) !important;
+}
+
+/* Select/dropdown glass */
+.pf-v6-c-menu-toggle {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s ease;
+}
+
+.pf-v6-c-menu-toggle:hover {
+  border-color: rgba(244, 114, 182, 0.4) !important;
+}
+
+/* Description list glass styling */
+.pf-v6-c-description-list__term {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--pf-v6-global--Color--200) !important;
+}
+
+/* Code block glass */
+.pf-v6-c-code-block {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #e2e8f0;
+}
+
+.pf-v6-c-code-block__code {
+  background: transparent !important;
+  color: #e2e8f0 !important;
+}
+
+/* Sort indicators in table headers */
+.pf-v6-c-table__sort .pf-v6-c-table__button {
+  color: inherit !important;
 }

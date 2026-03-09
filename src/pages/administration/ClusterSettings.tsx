@@ -1,8 +1,8 @@
+import React from 'react';
 import {
   PageSection,
   Title,
   Card,
-  CardTitle,
   CardBody,
   Grid,
   GridItem,
@@ -11,101 +11,123 @@ import {
   DescriptionListTerm,
   DescriptionListDescription,
   Label,
+  Button,
+  Progress,
+  ProgressVariant,
 } from '@patternfly/react-core';
+import { CheckCircleIcon, InProgressIcon } from '@patternfly/react-icons';
+import { useUIStore } from '@/store/useUIStore';
+import '@/openshift-components.css';
 
 export default function ClusterSettings() {
-  const clusterInfo = {
-    name: 'production-cluster',
-    id: 'abc123def456',
-    version: '4.14.8',
-    platform: 'AWS',
-    region: 'us-east-1',
-    apiServer: 'https://api.cluster.example.com:6443',
-    consoleURL: 'https://console-openshift-console.apps.cluster.example.com',
-    created: '2023-09-15',
-    updated: '2026-02-20',
-  };
+  const addToast = useUIStore((s) => s.addToast);
+  const [upgrading, setUpgrading] = React.useState(false);
+  const [upgradeProgress, setUpgradeProgress] = React.useState(0);
 
-  const networkConfig = {
-    clusterNetwork: '10.128.0.0/14',
-    serviceNetwork: '172.30.0.0/16',
-    networkType: 'OVNKubernetes',
-    dnsOperator: 'Running',
-  };
-
-  const authConfig = {
-    provider: 'htpasswd',
-    identityProviders: 2,
-    sessionTimeout: '24h',
+  const startUpgrade = () => {
+    setUpgrading(true);
+    setUpgradeProgress(0);
+    addToast({ type: 'info', title: 'Cluster upgrade started', description: 'Upgrading to OpenShift 4.15.1...' });
+    const interval = setInterval(() => {
+      setUpgradeProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setUpgrading(false);
+          addToast({ type: 'success', title: 'Cluster upgrade complete', description: 'Now running OpenShift 4.15.1' });
+          return 100;
+        }
+        return prev + 5;
+      });
+    }, 500);
   };
 
   return (
     <>
       <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Cluster Settings
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
+        <Title headingLevel="h1" size="2xl">Cluster Settings</Title>
+        <p className="os-cluster-settings__description">
           View and configure global cluster settings
         </p>
       </PageSection>
 
       <PageSection>
+        {/* Upgrade Card */}
+        <Card className="os-cluster-settings__card--spaced">
+          <CardBody>
+            <div className="os-cluster-settings__upgrade-header">
+              <div>
+                <Title headingLevel="h3" size="lg">Cluster Update</Title>
+                <p className="os-cluster-settings__upgrade-version">
+                  Current version: <Label color="blue">4.14.8</Label>
+                </p>
+              </div>
+              {!upgrading && upgradeProgress < 100 && (
+                <Button variant="primary" onClick={startUpgrade}>
+                  Update to 4.15.1
+                </Button>
+              )}
+              {upgradeProgress >= 100 && (
+                <Label color="green" icon={<CheckCircleIcon />}>Up to date</Label>
+              )}
+            </div>
+            {upgrading && (
+              <div>
+                <div className="os-cluster-settings__upgrade-progress-row">
+                  <InProgressIcon className="os-cluster-settings__upgrade-spinner" />
+                  <span className="os-cluster-settings__upgrade-label">Upgrading cluster... {upgradeProgress}%</span>
+                </div>
+                <Progress value={upgradeProgress} variant={ProgressVariant.success} />
+                <div className="os-cluster-settings__upgrade-detail">
+                  Updating control plane components, operators, and worker nodes...
+                </div>
+              </div>
+            )}
+            {!upgrading && upgradeProgress < 100 && (
+              <div className="os-cluster-settings__update-info">
+                <div className="os-cluster-settings__update-available">
+                  <strong>Available update:</strong> OpenShift 4.15.1
+                </div>
+                <div className="os-cluster-settings__update-channel">
+                  Channel: stable-4.14 &bull; Architecture: amd64 &bull; Risk: Low
+                </div>
+              </div>
+            )}
+          </CardBody>
+        </Card>
+
         <Grid hasGutter>
           <GridItem md={6}>
             <Card>
-              <CardTitle>
-                <Title headingLevel="h3">Cluster Information</Title>
-              </CardTitle>
               <CardBody>
-                <DescriptionList>
+                <Title headingLevel="h3" size="lg" className="os-detail__section-title">Cluster Information</Title>
+                <DescriptionList isCompact>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Cluster Name</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <strong>{clusterInfo.name}</strong>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>production-cluster</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Cluster ID</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <code style={{ fontSize: '0.875rem' }}>{clusterInfo.id}</code>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription className="os-cluster-settings__cluster-id">abc123def456</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Version</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <Label color="blue">{clusterInfo.version}</Label>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription><Label color="blue">{upgradeProgress >= 100 ? '4.15.1' : '4.14.8'}</Label></DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Platform</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {clusterInfo.platform} ({clusterInfo.region})
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>AWS (us-east-1)</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>API Server</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <code style={{ fontSize: '0.875rem' }}>{clusterInfo.apiServer}</code>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription><code>https://api.cluster.example.com:6443</code></DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Console URL</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <code style={{ fontSize: '0.875rem' }}>{clusterInfo.consoleURL}</code>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription><code>https://console-openshift-console.apps.cluster.example.com</code></DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Created</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {clusterInfo.created}
-                    </DescriptionListDescription>
-                  </DescriptionListGroup>
-                  <DescriptionListGroup>
-                    <DescriptionListTerm>Last Updated</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {clusterInfo.updated}
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>2023-09-15</DescriptionListDescription>
                   </DescriptionListGroup>
                 </DescriptionList>
               </CardBody>
@@ -113,63 +135,45 @@ export default function ClusterSettings() {
           </GridItem>
 
           <GridItem md={6}>
-            <Card>
-              <CardTitle>
-                <Title headingLevel="h3">Network Configuration</Title>
-              </CardTitle>
+            <Card className="os-cluster-settings__card--spaced">
               <CardBody>
-                <DescriptionList>
+                <Title headingLevel="h3" size="lg" className="os-detail__section-title">Network Configuration</Title>
+                <DescriptionList isCompact>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Cluster Network</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <code style={{ fontSize: '0.875rem' }}>{networkConfig.clusterNetwork}</code>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription><code>10.128.0.0/14</code></DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Service Network</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <code style={{ fontSize: '0.875rem' }}>{networkConfig.serviceNetwork}</code>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription><code>172.30.0.0/16</code></DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Network Type</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {networkConfig.networkType}
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>OVNKubernetes</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>DNS Operator</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      <Label color="green">{networkConfig.dnsOperator}</Label>
-                    </DescriptionListDescription>
+                    <DescriptionListDescription><Label color="green">Running</Label></DescriptionListDescription>
                   </DescriptionListGroup>
                 </DescriptionList>
               </CardBody>
             </Card>
 
-            <Card style={{ marginTop: '24px' }}>
-              <CardTitle>
-                <Title headingLevel="h3">Authentication</Title>
-              </CardTitle>
+            <Card>
               <CardBody>
-                <DescriptionList>
+                <Title headingLevel="h3" size="lg" className="os-detail__section-title">Authentication</Title>
+                <DescriptionList isCompact>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Provider</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {authConfig.provider}
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>htpasswd</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Identity Providers</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {authConfig.identityProviders}
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>2</DescriptionListDescription>
                   </DescriptionListGroup>
                   <DescriptionListGroup>
                     <DescriptionListTerm>Session Timeout</DescriptionListTerm>
-                    <DescriptionListDescription>
-                      {authConfig.sessionTimeout}
-                    </DescriptionListDescription>
+                    <DescriptionListDescription>24h</DescriptionListDescription>
                   </DescriptionListGroup>
                 </DescriptionList>
               </CardBody>

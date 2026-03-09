@@ -1,20 +1,8 @@
-import React from 'react';
-import {
-  PageSection,
-  Title,
-  Card,
-  CardBody,
-  Toolbar,
-  ToolbarContent,
-  ToolbarItem,
-  SearchInput,
-  Button,
-  Label,
-} from '@patternfly/react-core';
-import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
-import { PlusCircleIcon } from '@patternfly/react-icons';
+import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
+import { Label } from '@patternfly/react-core';
+import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
-interface IngressResource {
+interface IngressItem {
   name: string;
   namespace: string;
   hosts: string[];
@@ -23,122 +11,52 @@ interface IngressResource {
   age: string;
 }
 
-const mockIngress: IngressResource[] = [
-  {
-    name: 'webapp-ingress',
-    namespace: 'default',
-    hosts: ['webapp.example.com', 'www.webapp.example.com'],
-    address: '203.0.113.10',
-    ports: '80, 443',
-    age: '45d',
-  },
-  {
-    name: 'api-ingress',
-    namespace: 'default',
-    hosts: ['api.example.com'],
-    address: '203.0.113.11',
-    ports: '80, 443',
-    age: '40d',
-  },
-  {
-    name: 'monitoring-ingress',
-    namespace: 'monitoring',
-    hosts: ['grafana.example.com', 'prometheus.example.com'],
-    address: '203.0.113.12',
-    ports: '80, 443',
-    age: '90d',
-  },
+interface RawIngress extends K8sMeta {
+  spec: { rules?: { host?: string }[] };
+  status: { loadBalancer?: { ingress?: { ip?: string }[] } };
+}
+
+const columns: ColumnDef<IngressItem>[] = [
+  { title: 'Name', key: 'name' },
+  { title: 'Namespace', key: 'namespace' },
+  { title: 'Hosts', key: 'hosts', render: (i) => (
+    <span className="os-ingress__hosts-cell">
+      {i.hosts.map((h) => <Label key={h} color="blue">{h}</Label>)}
+    </span>
+  ), sortable: false },
+  { title: 'Address', key: 'address' },
+  { title: 'Ports', key: 'ports' },
+  { title: 'Age', key: 'age' },
 ];
 
 export default function Ingress() {
-  const [searchValue, setSearchValue] = React.useState('');
-
-  const filteredIngress = mockIngress.filter(
-    (ing) =>
-      ing.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-      ing.namespace.toLowerCase().includes(searchValue.toLowerCase()) ||
-      ing.hosts.some((host) => host.toLowerCase().includes(searchValue.toLowerCase()))
+  const { data, loading } = useK8sResource<RawIngress, IngressItem>(
+    '/apis/networking.k8s.io/v1/ingresses',
+    (item) => {
+      const hosts = (item.spec.rules ?? [])
+        .map((r) => r.host)
+        .filter((h): h is string => Boolean(h));
+      return {
+        name: item.metadata.name,
+        namespace: item.metadata.namespace ?? '',
+        hosts,
+        address: item.status.loadBalancer?.ingress?.[0]?.ip ?? '-',
+        ports: '80, 443',
+        age: ageFromTimestamp(item.metadata.creationTimestamp),
+      };
+    },
   );
 
   return (
-    <>
-      <PageSection variant="default">
-        <Title headingLevel="h1" size="2xl">
-          Ingress
-        </Title>
-        <p style={{ marginTop: '8px', color: 'var(--pf-v6-global--Color--200)' }}>
-          Manage Kubernetes ingress resources for HTTP(S) routing
-        </p>
-      </PageSection>
-
-      <PageSection>
-        <Card>
-          <CardBody>
-            <Toolbar id="ingress-toolbar">
-              <ToolbarContent>
-                <ToolbarItem>
-                  <SearchInput
-                    placeholder="Search by name, namespace, or host"
-                    value={searchValue}
-                    onChange={(_event, value) => setSearchValue(value)}
-                    onClear={() => setSearchValue('')}
-                  />
-                </ToolbarItem>
-                <ToolbarItem>
-                  <Button variant="primary" icon={<PlusCircleIcon />}>
-                    Create Ingress
-                  </Button>
-                </ToolbarItem>
-              </ToolbarContent>
-            </Toolbar>
-
-            <Table aria-label="Ingress table" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th>Name</Th>
-                  <Th>Namespace</Th>
-                  <Th>Hosts</Th>
-                  <Th>Address</Th>
-                  <Th>Ports</Th>
-                  <Th>Age</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {filteredIngress.length > 0 ? (
-                  filteredIngress.map((ing) => (
-                    <Tr key={`${ing.namespace}-${ing.name}`}>
-                      <Td dataLabel="Name">
-                        <strong>{ing.name}</strong>
-                      </Td>
-                      <Td dataLabel="Namespace">{ing.namespace}</Td>
-                      <Td dataLabel="Hosts">
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
-                          {ing.hosts.map((host) => (
-                            <Label key={host} color="blue">
-                              {host}
-                            </Label>
-                          ))}
-                        </div>
-                      </Td>
-                      <Td dataLabel="Address">
-                        <code style={{ fontSize: '0.875rem' }}>{ing.address}</code>
-                      </Td>
-                      <Td dataLabel="Ports">{ing.ports}</Td>
-                      <Td dataLabel="Age">{ing.age}</Td>
-                    </Tr>
-                  ))
-                ) : (
-                  <Tr>
-                    <Td colSpan={6} style={{ textAlign: 'center' }}>
-                      {searchValue ? 'No Ingress found matching your search' : 'No Ingress found'}
-                    </Td>
-                  </Tr>
-                )}
-              </Tbody>
-            </Table>
-          </CardBody>
-        </Card>
-      </PageSection>
-    </>
+    <ResourceListPage
+      title="Ingress"
+      description="Manage ingress resources for external access to services"
+      columns={columns}
+      data={data}
+      loading={loading}
+      getRowKey={(i) => `${i.namespace}-${i.name}`}
+      createLabel="Create Ingress"
+      nameField="name"
+    />
   );
 }

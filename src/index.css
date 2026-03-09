@@ -9,6 +9,13 @@
 @import './themes.css';
 @import './theme-integration.css';
 
+/* OpenShift Dark Theme Override (loads last) */
+@import './openshift-dark.css';
+
+/* Component CSS classes (extracted from inline styles) */
+@import './openshift-components.css';
+@import './openshift-components-2.css';
+
 /* Tailwind CSS (for utility classes where needed) */
 @tailwind base;
 @tailwind components;
@@ -250,10 +257,8 @@
     font-size: 2.5rem;
     font-weight: 800;
     letter-spacing: -0.04em;
-    background: linear-gradient(135deg, rgb(251, 146, 60), rgb(251, 113, 133));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    -webkit-text-fill-color: unset;
+    background: none;
   }
 
   h2 {
