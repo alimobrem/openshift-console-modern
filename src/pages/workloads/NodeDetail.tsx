@@ -1,86 +1,50 @@
-import {
-  Card,
-  CardBody,
-  Grid,
-  GridItem,
-  DescriptionList,
-  DescriptionListGroup,
-  DescriptionListTerm,
-  DescriptionListDescription,
-  Label,
-  Title,
-  Progress,
-  ProgressVariant,
-} from '@patternfly/react-core';
+import { useState, useEffect } from 'react';
+import { Card, CardBody, Grid, GridItem, DescriptionList, DescriptionListGroup, DescriptionListTerm, DescriptionListDescription, Label, Title, Progress, ProgressVariant } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
 import { useParams } from 'react-router-dom';
 import ResourceDetailPage from '@/components/ResourceDetailPage';
 import StatusIndicator from '@/components/StatusIndicator';
 import '@/openshift-components.css';
 
+const BASE = '/api/kubernetes';
+
 export default function NodeDetail() {
   const { name } = useParams();
+  const [node, setNode] = useState<Record<string, unknown> | null>(null);
+  const [yaml, setYaml] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const node = {
-    name: name || 'worker-0',
-    status: 'Ready',
-    role: 'worker',
-    version: 'v1.28.5',
-    osImage: 'Red Hat Enterprise Linux CoreOS 414.92.202402201450-0',
-    kernelVersion: '5.14.0-362.18.1.el9_3.x86_64',
-    containerRuntime: 'cri-o://1.28.3',
-    internalIP: '192.168.1.10',
-    externalIP: '203.0.113.10',
-    hostname: 'worker-0.cluster.local',
-    cpu: { capacity: '4', allocatable: '3800m', usage: 45 },
-    memory: { capacity: '16Gi', allocatable: '15.5Gi', usage: 62 },
-    podCapacity: { capacity: 250, current: 35 },
-    created: '2025-09-15T10:00:00Z',
-    labels: {
-      'kubernetes.io/hostname': 'worker-0',
-      'node-role.kubernetes.io/worker': '',
-      'topology.kubernetes.io/zone': 'us-east-1a',
-    },
-    conditions: [
-      { type: 'Ready', status: 'True', message: 'kubelet is posting ready status' },
-      { type: 'MemoryPressure', status: 'False', message: 'kubelet has sufficient memory available' },
-      { type: 'DiskPressure', status: 'False', message: 'kubelet has no disk pressure' },
-      { type: 'PIDPressure', status: 'False', message: 'kubelet has sufficient PID available' },
-      { type: 'NetworkUnavailable', status: 'False', message: 'RouteController created a route' },
-    ],
-    pods: [
-      { name: 'frontend-7d8f9b5c4d-x7k2m', namespace: 'default', status: 'Running', cpu: '10m', memory: '128Mi' },
-      { name: 'backend-api-5d6c8b7f9d-p4t8h', namespace: 'default', status: 'Running', cpu: '25m', memory: '256Mi' },
-      { name: 'fluentd-abc123', namespace: 'kube-system', status: 'Running', cpu: '100m', memory: '512Mi' },
-    ],
-  };
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`${BASE}/api/v1/nodes/${name}`);
+        if (res.ok) {
+          const raw = await res.json() as Record<string, unknown>;
+          setNode(raw);
+          setYaml(JSON.stringify(raw, null, 2));
+        }
+      } catch { /* ignore */ }
+      setLoading(false);
+    }
+    load();
+  }, [name]);
 
-  const yamlContent = `apiVersion: v1
-kind: Node
-metadata:
-  name: ${node.name}
-  labels:
-    kubernetes.io/hostname: ${node.name}
-    node-role.kubernetes.io/worker: ""
-    topology.kubernetes.io/zone: us-east-1a
-spec:
-  podCIDR: 10.128.2.0/24
-status:
-  capacity:
-    cpu: "${node.cpu.capacity}"
-    memory: ${node.memory.capacity}
-    pods: "${node.podCapacity.capacity}"
-  allocatable:
-    cpu: ${node.cpu.allocatable}
-    memory: ${node.memory.allocatable}
-  nodeInfo:
-    kubeletVersion: ${node.version}
-    osImage: "${node.osImage}"
-    kernelVersion: ${node.kernelVersion}
-    containerRuntimeVersion: ${node.containerRuntime}`;
+  if (loading) return <div className="os-text-muted" role="status">Loading...</div>;
+  if (!node) return <div className="os-text-muted">Node not found</div>;
 
-  const getProgressVariant = (v: number) =>
-    v > 80 ? ProgressVariant.danger : v > 60 ? ProgressVariant.warning : ProgressVariant.success;
+  const meta = node['metadata'] as Record<string, unknown>;
+  const status = node['status'] as Record<string, unknown>;
+  const nodeInfo = (status?.['nodeInfo'] ?? {}) as Record<string, unknown>;
+  const conditions = ((status?.['conditions'] ?? []) as Record<string, unknown>[]);
+  const capacity = (status?.['capacity'] ?? {}) as Record<string, string>;
+  const allocatable = (status?.['allocatable'] ?? {}) as Record<string, string>;
+  const labels = (meta?.['labels'] ?? {}) as Record<string, string>;
+  const addresses = ((status?.['addresses'] ?? []) as Record<string, string>[]);
+  const readyCond = conditions.find((c) => c['type'] === 'Ready');
+  const nodeStatus = readyCond?.['status'] === 'True' ? 'Ready' : 'NotReady';
+  const roles = Object.keys(labels).filter((l) => l.startsWith('node-role.kubernetes.io/')).map((l) => l.replace('node-role.kubernetes.io/', '')).join(', ') || 'worker';
+  const internalIP = addresses.find((a) => a['type'] === 'InternalIP')?.['address'] ?? '-';
+  const hostname = addresses.find((a) => a['type'] === 'Hostname')?.['address'] ?? '-';
 
   const detailsTab = (
     <Grid hasGutter>
@@ -89,42 +53,14 @@ status:
           <CardBody>
             <Title headingLevel="h3" size="lg" className="os-detail__section-title">Node Information</Title>
             <DescriptionList>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Name</DescriptionListTerm>
-                <DescriptionListDescription><strong>{node.name}</strong></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Status</DescriptionListTerm>
-                <DescriptionListDescription><StatusIndicator status={node.status} /></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Role</DescriptionListTerm>
-                <DescriptionListDescription><Label color="blue">{node.role}</Label></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Kubernetes Version</DescriptionListTerm>
-                <DescriptionListDescription><code>{node.version}</code></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Internal IP</DescriptionListTerm>
-                <DescriptionListDescription><code>{node.internalIP}</code></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>External IP</DescriptionListTerm>
-                <DescriptionListDescription><code>{node.externalIP}</code></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Hostname</DescriptionListTerm>
-                <DescriptionListDescription>{node.hostname}</DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>OS Image</DescriptionListTerm>
-                <DescriptionListDescription>{node.osImage}</DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Container Runtime</DescriptionListTerm>
-                <DescriptionListDescription><code>{node.containerRuntime}</code></DescriptionListDescription>
-              </DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Name</DescriptionListTerm><DescriptionListDescription><strong>{String(meta?.['name'] ?? '')}</strong></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Status</DescriptionListTerm><DescriptionListDescription><StatusIndicator status={nodeStatus} /></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Role</DescriptionListTerm><DescriptionListDescription><Label color="blue">{roles}</Label></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Kubelet Version</DescriptionListTerm><DescriptionListDescription><code>{String(nodeInfo['kubeletVersion'] ?? '-')}</code></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>OS Image</DescriptionListTerm><DescriptionListDescription>{String(nodeInfo['osImage'] ?? '-')}</DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Container Runtime</DescriptionListTerm><DescriptionListDescription><code>{String(nodeInfo['containerRuntimeVersion'] ?? '-')}</code></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Internal IP</DescriptionListTerm><DescriptionListDescription><code>{internalIP}</code></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Hostname</DescriptionListTerm><DescriptionListDescription>{hostname}</DescriptionListDescription></DescriptionListGroup>
             </DescriptionList>
           </CardBody>
         </Card>
@@ -132,43 +68,24 @@ status:
       <GridItem md={6}>
         <Card>
           <CardBody>
-            <Title headingLevel="h3" size="lg" className="os-detail__section-title">Resource Utilization</Title>
-            <div className="os-node__resource-section">
-              <div className="os-node__resource-header">
-                <strong>CPU Usage</strong><span>{node.cpu.usage}%</span>
-              </div>
-              <Progress value={node.cpu.usage} title="CPU" variant={getProgressVariant(node.cpu.usage)} />
-              <div className="os-node__resource-detail">
-                Allocatable: {node.cpu.allocatable} / Capacity: {node.cpu.capacity}
-              </div>
-            </div>
-            <div className="os-node__resource-section">
-              <div className="os-node__resource-header">
-                <strong>Memory Usage</strong><span>{node.memory.usage}%</span>
-              </div>
-              <Progress value={node.memory.usage} title="Memory" variant={getProgressVariant(node.memory.usage)} />
-              <div className="os-node__resource-detail">
-                Allocatable: {node.memory.allocatable} / Capacity: {node.memory.capacity}
-              </div>
-            </div>
-            <div>
-              <div className="os-node__resource-header">
-                <strong>Pod Usage</strong><span>{node.podCapacity.current} / {node.podCapacity.capacity}</span>
-              </div>
-              <Progress value={(node.podCapacity.current / node.podCapacity.capacity) * 100} title="Pods" variant={ProgressVariant.success} />
-            </div>
+            <Title headingLevel="h3" size="lg" className="os-detail__section-title">Capacity</Title>
+            <DescriptionList>
+              <DescriptionListGroup><DescriptionListTerm>CPU</DescriptionListTerm><DescriptionListDescription>{capacity['cpu'] ?? '-'} (allocatable: {allocatable['cpu'] ?? '-'})</DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Memory</DescriptionListTerm><DescriptionListDescription>{capacity['memory'] ?? '-'} (allocatable: {allocatable['memory'] ?? '-'})</DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Pods</DescriptionListTerm><DescriptionListDescription>{capacity['pods'] ?? '-'} (allocatable: {allocatable['pods'] ?? '-'})</DescriptionListDescription></DescriptionListGroup>
+            </DescriptionList>
           </CardBody>
         </Card>
         <Card className="os-detail__card--spaced">
           <CardBody>
             <Title headingLevel="h3" size="lg" className="os-detail__section-title">Conditions</Title>
-            {node.conditions.map((c) => (
-              <div key={c.type} className="os-node__condition">
+            {conditions.map((c) => (
+              <div key={String(c['type'])} className="os-node__condition">
                 <div className="os-node__condition-header">
-                  <strong>{c.type}</strong>
-                  <StatusIndicator status={c.status} />
+                  <strong>{String(c['type'] ?? '')}</strong>
+                  <StatusIndicator status={String(c['status'] ?? '')} />
                 </div>
-                <div className="os-node__condition-message">{c.message}</div>
+                <div className="os-node__condition-message">{String(c['message'] ?? '')}</div>
               </div>
             ))}
           </CardBody>
@@ -177,40 +94,16 @@ status:
     </Grid>
   );
 
-  const podsTab = (
-    <Card>
-      <CardBody>
-        <Table aria-label="Pods table" variant="compact">
-          <Thead><Tr><Th>Name</Th><Th>Namespace</Th><Th>Status</Th><Th>CPU</Th><Th>Memory</Th></Tr></Thead>
-          <Tbody>
-            {node.pods.map((p) => (
-              <Tr key={p.name}>
-                <Td><strong>{p.name}</strong></Td>
-                <Td>{p.namespace}</Td>
-                <Td><StatusIndicator status={p.status} /></Td>
-                <Td>{p.cpu}</Td>
-                <Td>{p.memory}</Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </CardBody>
-    </Card>
-  );
-
   return (
     <ResourceDetailPage
       kind="Node"
-      name={node.name}
-      status={node.status}
-      statusExtra={<Label color="blue">{node.role}</Label>}
+      name={String(meta?.['name'] ?? '')}
+      status={nodeStatus}
+      statusExtra={<Label color="blue">{roles}</Label>}
       backPath="/compute/nodes"
       backLabel="Nodes"
-      yaml={yamlContent}
-      tabs={[
-        { title: 'Details', content: detailsTab },
-        { title: 'Pods', content: podsTab },
-      ]}
+      yaml={yaml}
+      tabs={[{ title: 'Details', content: detailsTab }]}
     />
   );
 }

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
   Card,
   CardBody,
@@ -17,59 +18,74 @@ import StatusIndicator from '@/components/StatusIndicator';
 import LogViewer from '@/components/LogViewer';
 import '@/openshift-components.css';
 
+const BASE = '/api/kubernetes';
+
+interface PodData {
+  name: string;
+  namespace: string;
+  status: string;
+  podIP: string;
+  nodeName: string;
+  created: string;
+  labels: Record<string, string>;
+  containers: { name: string; image: string; ready: boolean; restartCount: number; state: string }[];
+  conditions: { type: string; status: string; lastTransition: string }[];
+}
+
 export default function PodDetail() {
   const { namespace, name } = useParams();
+  const [pod, setPod] = useState<PodData | null>(null);
+  const [yaml, setYaml] = useState('');
+  const [loading, setLoading] = useState(true);
 
-  const pod = {
-    name: name || 'frontend-7d8f9b5c4d-x7k2m',
-    namespace: namespace || 'default',
-    status: 'Running',
-    podIP: '10.128.2.45',
-    nodeIP: '192.168.1.10',
-    nodeName: 'worker-0',
-    created: '2026-02-28T10:15:30Z',
-    labels: { app: 'frontend', 'pod-template-hash': '7d8f9b5c4d', version: 'v1.0.0' },
-    containers: [
-      { name: 'frontend', image: 'nginx:1.21', ready: true, restartCount: 0, state: 'Running', cpu: '10m', memory: '128Mi' },
-    ],
-    conditions: [
-      { type: 'Initialized', status: 'True', lastTransition: '2026-02-28T10:15:30Z' },
-      { type: 'Ready', status: 'True', lastTransition: '2026-02-28T10:15:35Z' },
-      { type: 'ContainersReady', status: 'True', lastTransition: '2026-02-28T10:15:35Z' },
-      { type: 'PodScheduled', status: 'True', lastTransition: '2026-02-28T10:15:30Z' },
-    ],
-    events: [
-      { type: 'Normal', reason: 'Scheduled', message: `Successfully assigned ${namespace}/${name} to worker-0`, time: '2m' },
-      { type: 'Normal', reason: 'Pulled', message: 'Container image "nginx:1.21" already present on machine', time: '2m' },
-      { type: 'Normal', reason: 'Created', message: 'Created container frontend', time: '2m' },
-      { type: 'Normal', reason: 'Started', message: 'Started container frontend', time: '2m' },
-    ],
-  };
+  useEffect(() => {
+    async function load() {
+      try {
+        const res = await fetch(`${BASE}/api/v1/namespaces/${namespace}/pods/${name}`);
+        if (res.ok) {
+          const raw = await res.json() as Record<string, unknown>;
+          const meta = raw['metadata'] as Record<string, unknown>;
+          const spec = raw['spec'] as Record<string, unknown>;
+          const status = raw['status'] as Record<string, unknown>;
+          const containerStatuses = (status?.['containerStatuses'] ?? []) as Record<string, unknown>[];
+          const containers = ((spec?.['containers'] ?? []) as Record<string, unknown>[]).map((c, i) => {
+            const cs = containerStatuses[i];
+            const stateObj = cs?.['state'] as Record<string, unknown> | undefined;
+            const stateKey = stateObj ? Object.keys(stateObj)[0] ?? 'unknown' : 'unknown';
+            return {
+              name: String(c['name'] ?? ''),
+              image: String(c['image'] ?? ''),
+              ready: Boolean(cs?.['ready']),
+              restartCount: Number(cs?.['restartCount'] ?? 0),
+              state: stateKey.charAt(0).toUpperCase() + stateKey.slice(1),
+            };
+          });
+          const conditions = ((status?.['conditions'] ?? []) as Record<string, unknown>[]).map((c) => ({
+            type: String(c['type'] ?? ''),
+            status: String(c['status'] ?? ''),
+            lastTransition: String(c['lastTransitionTime'] ?? '-'),
+          }));
+          setPod({
+            name: String(meta?.['name'] ?? name ?? ''),
+            namespace: String(meta?.['namespace'] ?? namespace ?? ''),
+            status: String(status?.['phase'] ?? 'Unknown'),
+            podIP: String(status?.['podIP'] ?? '-'),
+            nodeName: String(spec?.['nodeName'] ?? '-'),
+            created: String(meta?.['creationTimestamp'] ?? '-'),
+            labels: (meta?.['labels'] ?? {}) as Record<string, string>,
+            containers,
+            conditions,
+          });
+          setYaml(JSON.stringify(raw, null, 2));
+        }
+      } catch { /* ignore */ }
+      setLoading(false);
+    }
+    load();
+  }, [namespace, name]);
 
-  const yamlContent = `apiVersion: v1
-kind: Pod
-metadata:
-  name: ${pod.name}
-  namespace: ${pod.namespace}
-  labels:
-    app: frontend
-    pod-template-hash: 7d8f9b5c4d
-    version: v1.0.0
-spec:
-  containers:
-  - name: frontend
-    image: nginx:1.21
-    resources:
-      limits:
-        cpu: 100m
-        memory: 256Mi
-      requests:
-        cpu: 10m
-        memory: 128Mi
-status:
-  phase: Running
-  podIP: ${pod.podIP}
-  hostIP: ${pod.nodeIP}`;
+  if (loading) return <div className="os-text-muted" role="status">Loading...</div>;
+  if (!pod) return <div className="os-text-muted">Pod not found</div>;
 
   const detailsTab = (
     <Grid hasGutter>
@@ -78,34 +94,12 @@ status:
           <CardBody>
             <Title headingLevel="h3" size="lg" className="os-detail__section-title">Pod Details</Title>
             <DescriptionList>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Name</DescriptionListTerm>
-                <DescriptionListDescription><strong>{pod.name}</strong></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Namespace</DescriptionListTerm>
-                <DescriptionListDescription>{pod.namespace}</DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Status</DescriptionListTerm>
-                <DescriptionListDescription><StatusIndicator status={pod.status} /></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Pod IP</DescriptionListTerm>
-                <DescriptionListDescription><code>{pod.podIP}</code></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Node</DescriptionListTerm>
-                <DescriptionListDescription>{pod.nodeName}</DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Node IP</DescriptionListTerm>
-                <DescriptionListDescription><code>{pod.nodeIP}</code></DescriptionListDescription>
-              </DescriptionListGroup>
-              <DescriptionListGroup>
-                <DescriptionListTerm>Created</DescriptionListTerm>
-                <DescriptionListDescription>{pod.created}</DescriptionListDescription>
-              </DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Name</DescriptionListTerm><DescriptionListDescription><strong>{pod.name}</strong></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Namespace</DescriptionListTerm><DescriptionListDescription>{pod.namespace}</DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Status</DescriptionListTerm><DescriptionListDescription><StatusIndicator status={pod.status} /></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Pod IP</DescriptionListTerm><DescriptionListDescription><code>{pod.podIP}</code></DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Node</DescriptionListTerm><DescriptionListDescription>{pod.nodeName}</DescriptionListDescription></DescriptionListGroup>
+              <DescriptionListGroup><DescriptionListTerm>Created</DescriptionListTerm><DescriptionListDescription>{pod.created}</DescriptionListDescription></DescriptionListGroup>
             </DescriptionList>
           </CardBody>
         </Card>
@@ -126,26 +120,10 @@ status:
             <Title headingLevel="h3" size="lg" className="os-detail__section-title">Containers</Title>
             {pod.containers.map((c) => (
               <DescriptionList key={c.name}>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Name</DescriptionListTerm>
-                  <DescriptionListDescription><strong>{c.name}</strong></DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Image</DescriptionListTerm>
-                  <DescriptionListDescription><code>{c.image}</code></DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>State</DescriptionListTerm>
-                  <DescriptionListDescription><StatusIndicator status={c.state} /></DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Restart Count</DescriptionListTerm>
-                  <DescriptionListDescription>{c.restartCount}</DescriptionListDescription>
-                </DescriptionListGroup>
-                <DescriptionListGroup>
-                  <DescriptionListTerm>Resources</DescriptionListTerm>
-                  <DescriptionListDescription>CPU: {c.cpu}, Memory: {c.memory}</DescriptionListDescription>
-                </DescriptionListGroup>
+                <DescriptionListGroup><DescriptionListTerm>Name</DescriptionListTerm><DescriptionListDescription><strong>{c.name}</strong></DescriptionListDescription></DescriptionListGroup>
+                <DescriptionListGroup><DescriptionListTerm>Image</DescriptionListTerm><DescriptionListDescription><code>{c.image}</code></DescriptionListDescription></DescriptionListGroup>
+                <DescriptionListGroup><DescriptionListTerm>State</DescriptionListTerm><DescriptionListDescription><StatusIndicator status={c.state} /></DescriptionListDescription></DescriptionListGroup>
+                <DescriptionListGroup><DescriptionListTerm>Restart Count</DescriptionListTerm><DescriptionListDescription>{c.restartCount}</DescriptionListDescription></DescriptionListGroup>
               </DescriptionList>
             ))}
           </CardBody>
@@ -157,11 +135,7 @@ status:
               <Thead><Tr><Th>Type</Th><Th>Status</Th><Th>Last Transition</Th></Tr></Thead>
               <Tbody>
                 {pod.conditions.map((c) => (
-                  <Tr key={c.type}>
-                    <Td>{c.type}</Td>
-                    <Td><StatusIndicator status={c.status} /></Td>
-                    <Td>{c.lastTransition}</Td>
-                  </Tr>
+                  <Tr key={c.type}><Td>{c.type}</Td><Td><StatusIndicator status={c.status} /></Td><Td>{c.lastTransition}</Td></Tr>
                 ))}
               </Tbody>
             </Table>
@@ -171,32 +145,8 @@ status:
     </Grid>
   );
 
-  const eventsTab = (
-    <Card>
-      <CardBody>
-        <Table aria-label="Events table" variant="compact">
-          <Thead><Tr><Th>Type</Th><Th>Reason</Th><Th>Message</Th><Th>Time</Th></Tr></Thead>
-          <Tbody>
-            {pod.events.map((e) => (
-              <Tr key={`${e.reason}-${e.time}`}>
-                <Td><StatusIndicator status={e.type} /></Td>
-                <Td><strong>{e.reason}</strong></Td>
-                <Td>{e.message}</Td>
-                <Td>{e.time}</Td>
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </CardBody>
-    </Card>
-  );
-
   const logsTab = (
-    <LogViewer
-      podName={pod.name}
-      namespace={pod.namespace}
-      containers={pod.containers.map((c) => c.name)}
-    />
+    <LogViewer podName={pod.name} namespace={pod.namespace} containers={pod.containers.map((c) => c.name)} />
   );
 
   return (
@@ -207,10 +157,9 @@ status:
       status={pod.status}
       backPath="/workloads/pods"
       backLabel="Pods"
-      yaml={yamlContent}
+      yaml={yaml}
       tabs={[
         { title: 'Details', content: detailsTab },
-        { title: 'Events', content: eventsTab },
         { title: 'Logs', content: logsTab },
       ]}
     />
