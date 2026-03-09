@@ -177,8 +177,8 @@ status:
         <Table aria-label="Events table" variant="compact">
           <Thead><Tr><Th>Type</Th><Th>Reason</Th><Th>Message</Th><Th>Time</Th></Tr></Thead>
           <Tbody>
-            {pod.events.map((e, i) => (
-              <Tr key={i}>
+            {pod.events.map((e) => (
+              <Tr key={`${e.reason}-${e.time}`}>
                 <Td><StatusIndicator status={e.type} /></Td>
                 <Td><strong>{e.reason}</strong></Td>
                 <Td>{e.message}</Td>

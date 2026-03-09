@@ -23,15 +23,23 @@ export default function ClusterSettings() {
   const addToast = useUIStore((s) => s.addToast);
   const [upgrading, setUpgrading] = React.useState(false);
   const [upgradeProgress, setUpgradeProgress] = React.useState(0);
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
 
   const startUpgrade = () => {
     setUpgrading(true);
     setUpgradeProgress(0);
     addToast({ type: 'info', title: 'Cluster upgrade started', description: 'Upgrading to OpenShift 4.15.1...' });
-    const interval = setInterval(() => {
+    intervalRef.current = setInterval(() => {
       setUpgradeProgress((prev) => {
         if (prev >= 100) {
-          clearInterval(interval);
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          intervalRef.current = null;
           setUpgrading(false);
           addToast({ type: 'success', title: 'Cluster upgrade complete', description: 'Now running OpenShift 4.15.1' });
           return 100;

@@ -35,12 +35,12 @@ export default function ResourceQuotas() {
     (item) => ({
       name: item.metadata.name,
       namespace: item.metadata.namespace ?? '',
-      cpuUsed: item.status?.used?.cpu ?? '-',
-      cpuLimit: item.status?.hard?.cpu ?? '-',
-      memUsed: item.status?.used?.memory ?? '-',
-      memLimit: item.status?.hard?.memory ?? '-',
-      podsUsed: item.status?.used?.pods ?? '-',
-      podsLimit: item.status?.hard?.pods ?? '-',
+      cpuUsed: item.status?.used?.['cpu'] ?? '-',
+      cpuLimit: item.status?.hard?.['cpu'] ?? '-',
+      memUsed: item.status?.used?.['memory'] ?? '-',
+      memLimit: item.status?.hard?.['memory'] ?? '-',
+      podsUsed: item.status?.used?.['pods'] ?? '-',
+      podsLimit: item.status?.hard?.['pods'] ?? '-',
       age: ageFromTimestamp(item.metadata.creationTimestamp),
     }),
   );

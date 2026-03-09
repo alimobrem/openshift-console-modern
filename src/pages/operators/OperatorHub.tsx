@@ -14,6 +14,7 @@ import {
   ToolbarItem,
 } from '@patternfly/react-core';
 import { useUIStore } from '@/store/useUIStore';
+import { useK8sResource, type K8sMeta } from '@/hooks/useK8sResource';
 import '@/openshift-components.css';
 
 interface Operator {
@@ -24,33 +25,59 @@ interface Operator {
   version: string;
   category: string;
   installed: boolean;
-  icon: string;
 }
 
-const operators: Operator[] = [
-  { name: 'prometheus', displayName: 'Prometheus Operator', provider: 'Red Hat', description: 'Manages Prometheus clusters atop Kubernetes.', version: 'v0.65.1', category: 'Monitoring', installed: true, icon: 'P' },
-  { name: 'elasticsearch', displayName: 'Elasticsearch Operator', provider: 'Red Hat', description: 'Manages Elasticsearch clusters for logging.', version: 'v5.8.1', category: 'Logging', installed: false, icon: 'E' },
-  { name: 'cert-manager', displayName: 'cert-manager', provider: 'Community', description: 'Automates TLS certificate management.', version: 'v1.13.0', category: 'Security', installed: false, icon: 'C' },
-  { name: 'argocd', displayName: 'Argo CD', provider: 'Community', description: 'Declarative GitOps continuous delivery tool.', version: 'v2.9.0', category: 'CI/CD', installed: false, icon: 'A' },
-  { name: 'vault', displayName: 'Vault Operator', provider: 'HashiCorp', description: 'Manages HashiCorp Vault on Kubernetes.', version: 'v0.25.0', category: 'Security', installed: true, icon: 'V' },
-  { name: 'kafka', displayName: 'Strimzi Kafka', provider: 'Community', description: 'Run Apache Kafka on Kubernetes.', version: 'v0.38.0', category: 'Streaming', installed: false, icon: 'K' },
-];
+interface RawPackageManifest extends K8sMeta {
+  status?: {
+    catalogSource?: string;
+    channels?: {
+      name: string;
+      currentCSV?: string;
+      currentCSVDesc?: {
+        displayName?: string;
+        version?: string;
+        provider?: { name?: string };
+        annotations?: Record<string, string>;
+        description?: string;
+      };
+    }[];
+  };
+}
 
 const categoryColors: Record<string, 'blue' | 'purple' | 'teal' | 'orange' | 'green'> = {
   Monitoring: 'blue',
   Logging: 'purple',
   Security: 'teal',
-  'CI/CD': 'orange',
-  Streaming: 'green',
+  Networking: 'orange',
+  Database: 'green',
 };
 
 export default function OperatorHub() {
   const [searchValue, setSearchValue] = React.useState('');
   const addToast = useUIStore((s) => s.addToast);
 
-  const filtered = operators.filter((op) =>
+  const { data, loading } = useK8sResource<RawPackageManifest, Operator>(
+    '/apis/packages.operators.coreos.com/v1/packagemanifests',
+    (item) => {
+      const channel = item.status?.channels?.[0];
+      const desc = channel?.currentCSVDesc;
+      const category = desc?.annotations?.['categories'] ?? 'Other';
+      return {
+        name: item.metadata.name,
+        displayName: desc?.displayName ?? item.metadata.name,
+        provider: desc?.provider?.name ?? '-',
+        description: desc?.description?.slice(0, 120) ?? '',
+        version: desc?.version ?? '-',
+        category: category.split(',')[0]?.trim() ?? 'Other',
+        installed: false,
+      };
+    },
+  );
+
+  const filtered = data.filter((op) =>
     op.displayName.toLowerCase().includes(searchValue.toLowerCase()) ||
-    op.category.toLowerCase().includes(searchValue.toLowerCase())
+    op.category.toLowerCase().includes(searchValue.toLowerCase()) ||
+    op.provider.toLowerCase().includes(searchValue.toLowerCase())
   );
 
   return (
@@ -73,34 +100,37 @@ export default function OperatorHub() {
                 onClear={() => setSearchValue('')}
               />
             </ToolbarItem>
+            <ToolbarItem>
+              <span className="os-text-muted">{filtered.length} operators</span>
+            </ToolbarItem>
           </ToolbarContent>
         </Toolbar>
 
-        <Gallery hasGutter minWidths={{ default: '100%', sm: '280px', md: '300px' }}>
-          {filtered.map((op) => (
-            <GalleryItem key={op.name}>
-              <Card isFullHeight className="os-operatorhub__card">
-                <CardBody>
-                  <div className="os-operatorhub__card-header">
-                    <div className="os-operatorhub__icon">
-                      {op.icon}
+        {loading ? (
+          <p className="os-text-muted">Loading operators...</p>
+        ) : (
+          <Gallery hasGutter minWidths={{ default: '100%', sm: '280px', md: '300px' }}>
+            {filtered.slice(0, 30).map((op) => (
+              <GalleryItem key={op.name}>
+                <Card isFullHeight className="os-operatorhub__card">
+                  <CardBody>
+                    <div className="os-operatorhub__card-header">
+                      <div className="os-operatorhub__icon">
+                        {op.displayName.charAt(0).toUpperCase()}
+                      </div>
+                      <div className="os-operatorhub__info">
+                        <div className="os-operatorhub__name">{op.displayName}</div>
+                        <div className="os-operatorhub__provider">by {op.provider}</div>
+                      </div>
                     </div>
-                    <div className="os-operatorhub__info">
-                      <div className="os-operatorhub__name">{op.displayName}</div>
-                      <div className="os-operatorhub__provider">by {op.provider}</div>
-                    </div>
-                  </div>
-                  <p className="os-operatorhub__card-desc">
-                    {op.description}
-                  </p>
-                  <div className="os-operatorhub__card-footer">
-                    <div className="os-operatorhub__label-group">
-                      <Label color={categoryColors[op.category] ?? 'grey'}>{op.category}</Label>
-                      <Label color="grey">{op.version}</Label>
-                    </div>
-                    {op.installed ? (
-                      <Label color="green">Installed</Label>
-                    ) : (
+                    <p className="os-operatorhub__card-desc">
+                      {op.description || 'No description available.'}
+                    </p>
+                    <div className="os-operatorhub__card-footer">
+                      <div className="os-operatorhub__label-group">
+                        <Label color={categoryColors[op.category] ?? 'grey'}>{op.category}</Label>
+                        <Label color="grey">{op.version}</Label>
+                      </div>
                       <Button
                         variant="primary"
                         size="sm"
@@ -108,13 +138,13 @@ export default function OperatorHub() {
                       >
                         Install
                       </Button>
-                    )}
-                  </div>
-                </CardBody>
-              </Card>
-            </GalleryItem>
-          ))}
-        </Gallery>
+                    </div>
+                  </CardBody>
+                </Card>
+              </GalleryItem>
+            ))}
+          </Gallery>
+        )}
       </PageSection>
     </>
   );

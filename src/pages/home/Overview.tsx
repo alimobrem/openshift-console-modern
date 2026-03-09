@@ -181,8 +181,8 @@ export default function Overview() {
                 </Flex>
 
                 {/* Alerts */}
-                {events.filter((e) => e.type === 'Warning').slice(0, 2).map((alert, i) => (
-                  <div key={i} className="os-overview__alert-item">
+                {events.filter((e) => e.type === 'Warning').slice(0, 2).map((alert) => (
+                  <div key={`${alert.timestamp}-${alert.reason}`} className="os-overview__alert-item">
                     <Flex alignItems={{ default: 'alignItemsFlexStart' }} spaceItems={{ default: 'spaceItemsSm' }}>
                       <FlexItem><ExclamationTriangleIcon color="var(--os-accent-yellow, #f0ab00)" /></FlexItem>
                       <FlexItem className="os-overview__alert-body">

@@ -28,7 +28,7 @@ export default class ErrorBoundary extends React.Component<
             {this.state.error?.message ?? 'An unexpected error occurred.'}
           </p>
           <button
-            className="os-error-boundary__button"
+            className="os-error-boundary__button" aria-label="Try again"
             onClick={() => this.setState({ hasError: false, error: null })}
           >
             Try again

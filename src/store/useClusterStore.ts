@@ -261,7 +261,7 @@ export const useClusterStore = create<ClusterStore>((set, get) => ({
       ],
     }));
     // Simulate restart completing after 3s
-    setTimeout(() => {
+    const timer2 = setTimeout(() => {
       set((state) => ({
         pods: state.pods.map((p) =>
           p.namespace === namespace && p.name === name
@@ -270,6 +270,7 @@ export const useClusterStore = create<ClusterStore>((set, get) => ({
         ),
       }));
     }, 3000);
+    set((s) => ({ pendingTimers: [...s.pendingTimers, timer2] }));
   },
 
   addNamespace: (name) => {
@@ -293,7 +294,7 @@ export const useClusterStore = create<ClusterStore>((set, get) => ({
       ],
     }));
     // Simulate pods becoming ready
-    setTimeout(() => {
+    const timer3 = setTimeout(() => {
       set((state) => ({
         deployments: state.deployments.map((d) =>
           d.namespace === namespace && d.name === name
@@ -311,5 +312,6 @@ export const useClusterStore = create<ClusterStore>((set, get) => ({
         ],
       }));
     }, 3000);
+    set((s) => ({ pendingTimers: [...s.pendingTimers, timer3] }));
   },
 }));

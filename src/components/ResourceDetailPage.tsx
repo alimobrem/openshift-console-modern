@@ -163,7 +163,7 @@ export default function ResourceDetailPage({
       <PageSection>
         <Tabs activeKey={activeTabKey} onSelect={(_, tabIndex) => setActiveTabKey(tabIndex)}>
           {allTabs.map((tab, i) => (
-            <Tab key={i} eventKey={i} title={<TabTitleText>{tab.title}</TabTitleText>}>
+            <Tab key={tab.title} eventKey={i} title={<TabTitleText>{tab.title}</TabTitleText>}>
               <div className="os-detail__tab-content">{tab.content}</div>
             </Tab>
           ))}

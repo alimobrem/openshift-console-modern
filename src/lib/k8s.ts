@@ -205,13 +205,5 @@ export async function checkClusterConnection(): Promise<boolean> {
   }
 }
 
-// === Generic list fetch for any resource ===
-export async function fetchResourceList<T extends K8sResource>(
-  apiPath: string
-): Promise<T[]> {
-  const data = await k8sFetch<K8sListResponse<T>>(apiPath);
-  return data.items;
-}
-
 export { ageFromTimestamp };
 export type { K8sResource, K8sListResponse };

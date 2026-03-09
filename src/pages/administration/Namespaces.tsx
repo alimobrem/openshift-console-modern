@@ -1,8 +1,7 @@
 import React from 'react';
-import { Dropdown, DropdownList, DropdownItem, MenuToggle, Divider } from '@patternfly/react-core';
+import { Dropdown, DropdownList, DropdownItem, MenuToggle, Divider, Label } from '@patternfly/react-core';
 import { EllipsisVIcon } from '@patternfly/react-icons';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
-import { Label } from '@patternfly/react-core';
 import { useClusterStore } from '@/store/useClusterStore';
 import { useUIStore } from '@/store/useUIStore';
 import ConfirmDialog from '@/components/ConfirmDialog';

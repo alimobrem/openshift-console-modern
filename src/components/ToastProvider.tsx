@@ -35,7 +35,7 @@ export default function ToastProvider() {
             <button
               className="compass-toast__close"
               onClick={() => removeToast(toast.id)}
-              aria-label="Close"
+              aria-label="Dismiss notification"
             >
               <TimesIcon />
             </button>
