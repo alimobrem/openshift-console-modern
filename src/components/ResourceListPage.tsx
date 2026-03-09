@@ -17,6 +17,7 @@ import StatusIndicator from './StatusIndicator';
 import ResourceEmptyState from './ResourceEmptyState';
 import ResourceListSkeleton from './ResourceListSkeleton';
 import CreateResourceDialog from './CreateResourceDialog';
+import { useClusterStore } from '@/store/useClusterStore';
 import { useUIStore } from '@/store/useUIStore';
 
 export interface ColumnDef<T> {
@@ -57,6 +58,7 @@ export default function ResourceListPage<T>({
   toolbarExtra,
 }: ResourceListPageProps<T>) {
   const addToast = useUIStore((s) => s.addToast);
+  const selectedNamespace = useClusterStore((s) => s.selectedNamespace);
   const [searchValue, setSearchValue] = React.useState('');
   const [createOpen, setCreateOpen] = React.useState(false);
   const [page, setPage] = React.useState(1);
@@ -71,7 +73,21 @@ export default function ResourceListPage<T>({
   };
 
   const filter = filterFn ?? defaultFilter;
-  const filtered = searchValue ? data.filter((item) => filter(item, searchValue)) : data;
+
+  // Apply namespace filter from header selector
+  const namespaceFiltered = selectedNamespace === 'all'
+    ? data
+    : data.filter((item) => {
+        const ns = (item as Record<string, unknown>)['namespace'];
+        return ns === undefined || ns === '' || ns === selectedNamespace;
+      });
+
+  const filtered = searchValue
+    ? namespaceFiltered.filter((item) => filter(item, searchValue))
+    : namespaceFiltered;
+
+  // Reset page when namespace changes
+  React.useEffect(() => { setPage(1); }, [selectedNamespace]);
 
   // Sort
   let sorted = filtered;
