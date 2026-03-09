@@ -1,0 +1,289 @@
+/* Theme Integration - Apply theme variables to components */
+
+/* Smooth theme transitions */
+body,
+body::before,
+body::after,
+.pf-v6-c-button,
+.pf-v6-c-nav__link,
+.pf-v6-c-card,
+.pf-v6-c-masthead,
+.pf-v6-c-page__sidebar {
+  transition-property: background, background-color, border-color, box-shadow, color;
+  transition-duration: 0.6s;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Don't transition transforms and scale */
+.pf-v6-c-button,
+.pf-v6-c-nav__link,
+.pf-v6-c-card {
+  transition-property: background, background-color, border-color, box-shadow, color !important;
+}
+
+/* Update glass effects with theme colors */
+:root {
+  --glass-shadow:
+    0 8px 32px 0 var(--theme-glass-shadow-1),
+    0 4px 16px 0 var(--theme-glass-shadow-2),
+    inset 0 1px 2px 0 rgba(255, 255, 255, 0.3);
+  --glass-glow: 0 0 20px var(--theme-glass-glow);
+}
+
+.dark {
+  --glass-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.4),
+    0 4px 16px 0 var(--theme-glass-shadow-1),
+    inset 0 1px 2px 0 var(--theme-glass-border);
+  --glass-glow: 0 0 30px var(--theme-glass-glow);
+}
+
+/* Update gradients for buttons */
+.pf-v6-c-button.pf-m-primary {
+  background: linear-gradient(135deg, var(--theme-color-1) 0%, var(--theme-color-2) 50%, var(--theme-color-3) 100%) !important;
+  box-shadow:
+    0 4px 14px var(--theme-glass-shadow-1),
+    0 2px 8px var(--theme-glass-shadow-2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+  border: 1px solid var(--theme-glass-border) !important;
+}
+
+.pf-v6-c-button.pf-m-primary:hover:not(:disabled) {
+  box-shadow:
+    0 6px 24px var(--theme-glass-shadow-1),
+    0 3px 12px var(--theme-glass-shadow-2),
+    0 0 30px var(--theme-glass-glow),
+    inset 0 1px 3px rgba(255, 255, 255, 0.4) !important;
+  background: linear-gradient(135deg, var(--theme-color-1) 0%, var(--theme-color-1) 50%, var(--theme-color-2) 100%) !important;
+}
+
+/* Update navigation active state */
+.pf-v6-c-nav__link.pf-m-current {
+  background: linear-gradient(135deg, var(--theme-color-1) 0%, var(--theme-color-2) 50%, var(--theme-color-3) 100%) !important;
+  box-shadow:
+    0 4px 16px var(--theme-glass-shadow-1),
+    0 2px 10px var(--theme-glass-shadow-2),
+    0 0 25px var(--theme-glass-glow),
+    inset 0 1px 2px rgba(255, 255, 255, 0.35) !important;
+  border: 1px solid var(--theme-glass-border) !important;
+  border-left: 4px solid var(--theme-color-4) !important;
+}
+
+.pf-v6-c-nav__link.pf-m-current:hover {
+  box-shadow:
+    0 6px 20px var(--theme-glass-shadow-1),
+    0 3px 12px var(--theme-glass-shadow-2),
+    0 0 30px var(--theme-glass-glow),
+    inset 0 1px 3px rgba(255, 255, 255, 0.4) !important;
+}
+
+/* Update nav hover states */
+.pf-v6-c-nav__link:hover {
+  background: var(--theme-bg-1) !important;
+  box-shadow:
+    0 3px 10px var(--theme-glass-shadow-1),
+    0 1px 4px var(--theme-glass-shadow-2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.25) !important;
+  border-left: 3px solid var(--theme-glass-border) !important;
+}
+
+/* Update title gradients */
+.pf-v6-c-title {
+  background: linear-gradient(135deg, var(--theme-color-1), var(--theme-color-3)) !important;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+h1 {
+  background: linear-gradient(135deg, var(--theme-color-1), var(--theme-color-3)) !important;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Update masthead and sidebar shadows */
+.pf-v6-c-masthead {
+  box-shadow:
+    0 4px 24px var(--theme-glass-shadow-1),
+    0 2px 12px var(--theme-glass-shadow-2),
+    inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+.pf-v6-c-page__sidebar {
+  box-shadow:
+    4px 0 24px var(--theme-glass-shadow-1),
+    2px 0 12px var(--theme-glass-shadow-2),
+    inset -1px 0 1px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Update sidebar gradient overlay */
+.pf-v6-c-page__sidebar::before {
+  background: linear-gradient(
+    180deg,
+    var(--theme-bg-1) 0%,
+    transparent 100%
+  ) !important;
+}
+
+/* Update card hover states */
+.pf-v6-c-card:hover {
+  box-shadow:
+    0 16px 48px 0 var(--theme-glass-shadow-1),
+    0 8px 24px 0 var(--theme-glass-shadow-2),
+    var(--glass-glow),
+    inset 0 1px 3px 0 rgba(255, 255, 255, 0.4) !important;
+  border-color: var(--theme-glass-border) !important;
+}
+
+/* Update expandable nav styling */
+.pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link {
+  color: var(--theme-color-1) !important;
+  background: var(--theme-bg-1) !important;
+  border-left: 3px solid var(--theme-glass-border) !important;
+}
+
+.pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link:hover {
+  background: var(--theme-bg-2) !important;
+  box-shadow:
+    0 2px 8px var(--theme-glass-shadow-1),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Update scrollbar colors */
+::-webkit-scrollbar-track {
+  background: var(--theme-bg-1) !important;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-bg-2) !important;
+  box-shadow: 0 0 10px var(--theme-glass-glow) !important;
+}
+
+.pf-v6-c-page__sidebar-body::-webkit-scrollbar-thumb {
+  background: var(--theme-bg-1) !important;
+}
+
+.pf-v6-c-page__sidebar-body::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-bg-2) !important;
+  box-shadow: 0 0 8px var(--theme-glass-glow) !important;
+}
+
+/* Update focus states */
+.pf-v6-c-button:focus-visible,
+.pf-v6-c-nav__link:focus-visible,
+.pf-v6-c-search-input:focus-within {
+  outline: 2px solid var(--theme-color-4) !important;
+  box-shadow:
+    0 0 0 4px var(--theme-glass-shadow-1),
+    0 0 20px var(--theme-glass-glow) !important;
+}
+
+.dark .pf-v6-c-button:focus-visible,
+.dark .pf-v6-c-nav__link:focus-visible,
+.dark .pf-v6-c-search-input:focus-within {
+  outline-color: var(--theme-color-light) !important;
+  box-shadow:
+    0 0 0 4px var(--theme-glass-shadow-1),
+    0 0 30px var(--theme-glass-glow) !important;
+}
+
+/* Update glow animations */
+.pf-v6-c-button.pf-m-primary::after,
+.pf-v6-c-nav__link.pf-m-current::after {
+  background: linear-gradient(135deg, var(--theme-bg-1), var(--theme-bg-3), var(--theme-bg-2)) !important;
+}
+
+/* Update secondary button hover */
+.pf-v6-c-button.pf-m-secondary:hover:not(:disabled) {
+  background: var(--theme-bg-1) !important;
+  border-color: var(--theme-glass-border) !important;
+  color: var(--theme-color-2) !important;
+  box-shadow:
+    0 4px 12px var(--theme-glass-shadow-1),
+    0 2px 8px var(--theme-glass-shadow-2),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+}
+
+/* Update dark mode specific elements */
+.dark .pf-v6-c-masthead {
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 2px 12px var(--theme-glass-shadow-1),
+    inset 0 1px 1px var(--theme-glass-border) !important;
+}
+
+.dark .pf-v6-c-page__sidebar {
+  box-shadow:
+    4px 0 24px rgba(0, 0, 0, 0.4),
+    2px 0 12px var(--theme-glass-shadow-1),
+    inset -1px 0 1px var(--theme-glass-border) !important;
+}
+
+.dark .pf-v6-c-card {
+  box-shadow:
+    0 8px 32px 0 rgba(0, 0, 0, 0.6),
+    0 4px 16px 0 var(--theme-glass-shadow-1),
+    inset 0 1px 2px 0 var(--theme-glass-border) !important;
+}
+
+.dark .pf-v6-c-card:hover {
+  box-shadow:
+    0 16px 48px 0 rgba(0, 0, 0, 0.7),
+    0 8px 24px 0 var(--theme-glass-shadow-1),
+    0 0 40px var(--theme-glass-glow),
+    inset 0 1px 3px 0 var(--theme-bg-1) !important;
+}
+
+/* Update nav section headers for dark mode */
+.dark .pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link {
+  color: var(--theme-color-light) !important;
+  background: var(--theme-bg-2) !important;
+  border-left-color: var(--theme-color-light) !important;
+}
+
+.dark .pf-v6-c-nav__item.pf-m-expandable.pf-m-current > .pf-v6-c-nav__link,
+.dark .pf-v6-c-nav__item.pf-m-expandable.pf-m-expanded > .pf-v6-c-nav__link {
+  background: var(--theme-bg-3) !important;
+  color: var(--theme-color-light) !important;
+}
+
+/* ============================================
+   PATTERNFLY CLASSIC THEME OVERRIDES
+   More subtle, flatter design
+   ============================================ */
+[data-theme="patternfly"] .pf-v6-c-card {
+  background: rgba(255, 255, 255, 0.65) !important;
+  backdrop-filter: blur(8px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(120%) !important;
+}
+
+[data-theme="patternfly"] .pf-v6-c-masthead {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px) saturate(110%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(110%) !important;
+}
+
+[data-theme="patternfly"] .pf-v6-c-page__sidebar {
+  background: rgba(255, 255, 255, 0.7) !important;
+  backdrop-filter: blur(12px) saturate(110%) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(110%) !important;
+}
+
+[data-theme="patternfly"].dark .pf-v6-c-card {
+  background: rgba(30, 30, 30, 0.5) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+}
+
+[data-theme="patternfly"].dark .pf-v6-c-masthead {
+  background: rgba(25, 25, 25, 0.6) !important;
+  backdrop-filter: blur(16px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(130%) !important;
+}
+
+[data-theme="patternfly"].dark .pf-v6-c-page__sidebar {
+  background: rgba(25, 25, 25, 0.6) !important;
+  backdrop-filter: blur(16px) saturate(130%) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(130%) !important;
+}
