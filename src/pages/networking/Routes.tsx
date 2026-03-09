@@ -90,7 +90,7 @@ export default function Routes() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Routes
         </Title>
@@ -104,7 +104,7 @@ export default function Routes() {
           <CardBody>
             <Toolbar id="routes-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name, namespace, or host"
                     value={searchValue}
@@ -154,7 +154,7 @@ export default function Routes() {
                           }}
                         >
                           <span style={{ fontSize: '0.875rem' }}>{route.host}</span>
-                          <ExternalLinkAltIcon size="sm" />
+                          <ExternalLinkAltIcon />
                         </a>
                       </Td>
                       <Td dataLabel="Path">

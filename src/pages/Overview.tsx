@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useClusterStore } from '@/store/useClusterStore';
 import { Activity, Server, Package, AlertCircle } from 'lucide-react';

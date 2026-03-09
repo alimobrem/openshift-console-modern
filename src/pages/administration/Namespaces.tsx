@@ -93,7 +93,7 @@ export default function Namespaces() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Namespaces
         </Title>
@@ -107,7 +107,7 @@ export default function Namespaces() {
           <CardBody>
             <Toolbar id="namespaces-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name"
                     value={searchValue}

@@ -72,7 +72,7 @@ export default function StorageClasses() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Storage Classes
         </Title>
@@ -86,7 +86,7 @@ export default function StorageClasses() {
           <CardBody>
             <Toolbar id="storage-classes-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name"
                     value={searchValue}

@@ -85,7 +85,7 @@ export default function DaemonSets() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           DaemonSets
         </Title>
@@ -99,7 +99,7 @@ export default function DaemonSets() {
           <CardBody>
             <Toolbar id="daemonsets-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

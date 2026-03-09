@@ -64,7 +64,7 @@ export default function NetworkPolicies() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Network Policies
         </Title>
@@ -78,7 +78,7 @@ export default function NetworkPolicies() {
           <CardBody>
             <Toolbar id="network-policies-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

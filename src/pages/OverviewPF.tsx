@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   PageSection,
   Title,
@@ -76,7 +76,7 @@ export default function OverviewPF() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Cluster Overview
         </Title>
@@ -141,11 +141,11 @@ export default function OverviewPF() {
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
                     {clusterHealth === 'Healthy' ? (
-                      <CheckCircleIcon size="sm" color="var(--pf-v6-global--success-color--100)" />
+                      <CheckCircleIcon color="var(--pf-v6-global--success-color--100)" />
                     ) : clusterHealth === 'Degraded' ? (
-                      <ExclamationCircleIcon size="sm" color="var(--pf-v6-global--danger-color--100)" />
+                      <ExclamationCircleIcon color="var(--pf-v6-global--danger-color--100)" />
                     ) : (
-                      <ExclamationTriangleIcon size="sm" color="var(--pf-v6-global--warning-color--100)" />
+                      <ExclamationTriangleIcon color="var(--pf-v6-global--warning-color--100)" />
                     )}
                   </FlexItem>
                   <FlexItem>Cluster Health</FlexItem>
@@ -184,7 +184,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <ServerIcon size="sm" />
+                    <ServerIcon />
                   </FlexItem>
                   <FlexItem>Nodes</FlexItem>
                 </Flex>
@@ -212,7 +212,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <CubeIcon size="sm" />
+                    <CubeIcon />
                   </FlexItem>
                   <FlexItem>Pods</FlexItem>
                 </Flex>
@@ -240,7 +240,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <InProgressIcon size="sm" />
+                    <InProgressIcon />
                   </FlexItem>
                   <FlexItem>Deployments</FlexItem>
                 </Flex>
@@ -268,7 +268,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <NetworkIcon size="sm" />
+                    <NetworkIcon />
                   </FlexItem>
                   <FlexItem>Services</FlexItem>
                 </Flex>
@@ -296,7 +296,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <DatabaseIcon size="sm" />
+                    <DatabaseIcon />
                   </FlexItem>
                   <FlexItem>Volumes</FlexItem>
                 </Flex>
@@ -324,7 +324,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <ProjectDiagramIcon size="sm" />
+                    <ProjectDiagramIcon />
                   </FlexItem>
                   <FlexItem>Namespaces</FlexItem>
                 </Flex>
@@ -353,7 +353,7 @@ export default function OverviewPF() {
                 <CardTitle>
                   <Flex alignItems={{ default: 'alignItemsCenter' }}>
                     <FlexItem>
-                      <HddIcon size="sm" />
+                      <HddIcon />
                     </FlexItem>
                     <FlexItem>Storage</FlexItem>
                   </Flex>

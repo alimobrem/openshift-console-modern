@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import {
   PageSection,
   Title,
@@ -44,7 +44,7 @@ export default function OverviewPF() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Cluster Overview
         </Title>
@@ -61,7 +61,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <ServerIcon size="sm" />
+                    <ServerIcon />
                   </FlexItem>
                   <FlexItem>Total Nodes</FlexItem>
                 </Flex>
@@ -89,7 +89,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <CubeIcon size="sm" />
+                    <CubeIcon />
                   </FlexItem>
                   <FlexItem>Running Pods</FlexItem>
                 </Flex>
@@ -117,7 +117,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <ExclamationCircleIcon size="sm" color="var(--pf-v6-global--danger-color--100)" />
+                    <ExclamationCircleIcon color="var(--pf-v6-global--danger-color--100)" />
                   </FlexItem>
                   <FlexItem>Failed Pods</FlexItem>
                 </Flex>
@@ -145,7 +145,7 @@ export default function OverviewPF() {
               <CardTitle>
                 <Flex alignItems={{ default: 'alignItemsCenter' }}>
                   <FlexItem>
-                    <CheckCircleIcon size="sm" color="var(--pf-v6-global--success-color--100)" />
+                    <CheckCircleIcon color="var(--pf-v6-global--success-color--100)" />
                   </FlexItem>
                   <FlexItem>Cluster Health</FlexItem>
                 </Flex>

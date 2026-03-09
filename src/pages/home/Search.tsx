@@ -70,25 +70,25 @@ export default function Search() {
     return matchesSearch && matchesFilter;
   });
 
-  const getKindColor = (kind: string) => {
-    const colors: { [key: string]: string } = {
+  const getKindColor = (kind: string): 'blue' | 'purple' | 'teal' | 'orange' | 'green' | 'grey' => {
+    const colors = {
       Pod: 'blue',
       Deployment: 'purple',
-      Service: 'cyan',
+      Service: 'teal',
       Node: 'orange',
       PersistentVolumeClaim: 'green',
       StatefulSet: 'purple',
-      Route: 'cyan',
+      Route: 'teal',
       Secret: 'grey',
       ConfigMap: 'grey',
       CronJob: 'blue',
-    };
-    return colors[kind] || 'grey';
+    } as const;
+    return colors[kind as keyof typeof colors] || 'grey';
   };
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Search
         </Title>
@@ -102,7 +102,7 @@ export default function Search() {
           <CardBody>
             <Toolbar id="search-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter" style={{ flexGrow: 1 }}>
+                <ToolbarItem style={{ flexGrow: 1 }}>
                   <SearchInput
                     placeholder="Search resources by name, kind, or namespace..."
                     value={searchValue}
@@ -170,7 +170,7 @@ export default function Search() {
                 ) : (
                   <Tr>
                     <Td colSpan={5} style={{ textAlign: 'center', padding: '40px' }}>
-                      <SearchIcon size="lg" style={{ marginBottom: '12px', color: 'var(--pf-v6-global--Color--200)' }} />
+                      <SearchIcon style={{ marginBottom: '12px', color: 'var(--pf-v6-global--Color--200)', width: '24px', height: '24px' }} />
                       <div>
                         {searchValue
                           ? `No resources found matching "${searchValue}"`

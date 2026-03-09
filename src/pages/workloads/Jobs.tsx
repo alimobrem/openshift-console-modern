@@ -90,7 +90,7 @@ export default function Jobs() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Jobs
         </Title>
@@ -104,7 +104,7 @@ export default function Jobs() {
           <CardBody>
             <Toolbar id="jobs-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

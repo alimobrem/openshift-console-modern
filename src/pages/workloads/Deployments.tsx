@@ -32,7 +32,7 @@ export default function Deployments() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Deployments
         </Title>
@@ -46,7 +46,7 @@ export default function Deployments() {
           <CardBody>
             <Toolbar id="deployments-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name"
                     value={searchValue}

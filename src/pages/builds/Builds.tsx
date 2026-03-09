@@ -85,7 +85,7 @@ export default function Builds() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Builds
         </Title>
@@ -99,7 +99,7 @@ export default function Builds() {
           <CardBody>
             <Toolbar id="builds-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name, namespace, or build config"
                     value={searchValue}

@@ -14,10 +14,6 @@ import {
   NavItem,
   NavExpandable,
   PageToggleButton,
-  Toolbar,
-  ToolbarContent,
-  ToolbarGroup,
-  ToolbarItem,
   Button,
   Avatar,
 } from '@patternfly/react-core';
@@ -29,7 +25,8 @@ import {
   MoonIcon,
   SunIcon,
 } from '@patternfly/react-icons';
-import ThemePicker, { ThemeName } from './ThemePicker';
+import type { ThemeName } from './ThemePicker';
+import ThemePicker from './ThemePicker';
 
 const navigation = [
   {
@@ -261,7 +258,7 @@ export default function CompassLayout() {
             variant="plain"
             icon={<CogIcon />}
           />
-          <Avatar style={{ marginLeft: '8px' }} />
+          <Avatar alt="" style={{ marginLeft: '8px' }} />
         </span>
       </MastheadContent>
     </Masthead>

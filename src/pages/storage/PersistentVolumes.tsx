@@ -94,7 +94,7 @@ export default function PersistentVolumes() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Persistent Volumes
         </Title>
@@ -108,7 +108,7 @@ export default function PersistentVolumes() {
           <CardBody>
             <Toolbar id="persistent-volumes-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or claim"
                     value={searchValue}
@@ -148,7 +148,7 @@ export default function PersistentVolumes() {
                       <Td dataLabel="Access Modes">
                         <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
                           {pv.accessModes.map((mode) => (
-                            <Label key={mode} color="cyan">
+                            <Label key={mode} color="teal">
                               {mode}
                             </Label>
                           ))}

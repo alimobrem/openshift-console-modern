@@ -90,7 +90,7 @@ export default function BuildConfigs() {
       case 'Source':
         return 'blue';
       case 'Docker':
-        return 'cyan';
+        return 'teal';
       case 'Custom':
         return 'purple';
       case 'JenkinsPipeline':
@@ -102,7 +102,7 @@ export default function BuildConfigs() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Build Configs
         </Title>
@@ -116,7 +116,7 @@ export default function BuildConfigs() {
           <CardBody>
             <Toolbar id="buildconfigs-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

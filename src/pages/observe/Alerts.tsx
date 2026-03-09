@@ -113,7 +113,7 @@ export default function Alerts() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Alerts
         </Title>
@@ -127,7 +127,7 @@ export default function Alerts() {
           <CardBody>
             <Toolbar id="alerts-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter" style={{ flexGrow: 1 }}>
+                <ToolbarItem style={{ flexGrow: 1 }}>
                   <SearchInput
                     placeholder="Search alerts by name or message..."
                     value={searchValue}

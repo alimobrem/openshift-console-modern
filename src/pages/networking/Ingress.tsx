@@ -62,7 +62,7 @@ export default function Ingress() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Ingress
         </Title>
@@ -76,7 +76,7 @@ export default function Ingress() {
           <CardBody>
             <Toolbar id="ingress-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name, namespace, or host"
                     value={searchValue}

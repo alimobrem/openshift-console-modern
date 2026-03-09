@@ -31,7 +31,7 @@ export default function Nodes() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Nodes
         </Title>
@@ -45,7 +45,7 @@ export default function Nodes() {
           <CardBody>
             <Toolbar id="nodes-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name"
                     value={searchValue}

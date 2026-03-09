@@ -70,7 +70,7 @@ export default function ConfigMaps() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           ConfigMaps
         </Title>
@@ -84,7 +84,7 @@ export default function ConfigMaps() {
           <CardBody>
             <Toolbar id="configmaps-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

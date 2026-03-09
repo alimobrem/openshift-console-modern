@@ -47,7 +47,7 @@ export default function NodeDetail() {
     hostname: 'worker-0.cluster.local',
     cpu: { capacity: '4', allocatable: '3800m', usage: 45 },
     memory: { capacity: '16Gi', allocatable: '15.5Gi', usage: 62 },
-    pods: { capacity: 250, current: 35 },
+    podCapacity: { capacity: 250, current: 35 },
     created: '2025-09-15T10:00:00Z',
     labels: {
       'kubernetes.io/hostname': 'worker-0',
@@ -82,7 +82,7 @@ status:
   capacity:
     cpu: "${node.cpu.capacity}"
     memory: ${node.memory.capacity}
-    pods: "${node.pods.capacity}"
+    pods: "${node.podCapacity.capacity}"
   allocatable:
     cpu: ${node.cpu.allocatable}
     memory: ${node.memory.allocatable}
@@ -94,7 +94,7 @@ status:
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Breadcrumb>
           <BreadcrumbItem to="#" onClick={() => navigate('/compute/nodes')}>
             Nodes
@@ -257,11 +257,11 @@ status:
                         <div style={{ marginBottom: '8px' }}>
                           <strong>Pod Usage</strong>
                           <span style={{ float: 'right' }}>
-                            {node.pods.current} / {node.pods.capacity}
+                            {node.podCapacity.current} / {node.podCapacity.capacity}
                           </span>
                         </div>
                         <Progress
-                          value={(node.pods.current / node.pods.capacity) * 100}
+                          value={(node.podCapacity.current / node.podCapacity.capacity) * 100}
                           title="Pods"
                           variant={ProgressVariant.success}
                         />

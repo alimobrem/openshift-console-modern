@@ -1,7 +1,6 @@
 import React from 'react';
 import {
   Dropdown,
-  DropdownToggle,
   DropdownItem,
   MenuToggle,
   DropdownList,
@@ -55,8 +54,6 @@ export default function ThemePicker({ currentTheme, onThemeChange }: ThemePicker
     onThemeChange(theme);
     setIsOpen(false);
   };
-
-  const currentThemeLabel = themes.find((t) => t.name === currentTheme)?.label || 'Sunset Gradient';
 
   return (
     <Dropdown

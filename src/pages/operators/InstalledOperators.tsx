@@ -76,7 +76,7 @@ export default function InstalledOperators() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Installed Operators
         </Title>
@@ -90,7 +90,7 @@ export default function InstalledOperators() {
           <CardBody>
             <Toolbar id="installed-operators-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

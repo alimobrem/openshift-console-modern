@@ -42,7 +42,7 @@ node_cpu_seconds_total{cpu="1",mode="user"} 88765.34`;
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Metrics
         </Title>

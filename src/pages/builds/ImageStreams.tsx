@@ -77,7 +77,7 @@ export default function ImageStreams() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Image Streams
         </Title>
@@ -91,7 +91,7 @@ export default function ImageStreams() {
           <CardBody>
             <Toolbar id="imagestreams-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

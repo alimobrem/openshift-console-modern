@@ -131,7 +131,7 @@ export default function Events() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Events
         </Title>
@@ -145,7 +145,7 @@ export default function Events() {
           <CardBody>
             <Toolbar id="events-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by object, reason, or message"
                     value={searchValue}

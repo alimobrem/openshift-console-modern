@@ -44,7 +44,7 @@ export default function Pods() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Pods
         </Title>
@@ -58,7 +58,7 @@ export default function Pods() {
           <CardBody>
             <Toolbar id="pods-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name"
                     value={searchValue}

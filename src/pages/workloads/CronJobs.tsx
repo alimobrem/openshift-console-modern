@@ -83,7 +83,7 @@ export default function CronJobs() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           CronJobs
         </Title>
@@ -97,7 +97,7 @@ export default function CronJobs() {
           <CardBody>
             <Toolbar id="cronjobs-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

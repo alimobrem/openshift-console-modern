@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   PageSection,
   Title,
@@ -68,7 +67,7 @@ const mockDashboards: Dashboard[] = [
 export default function Dashboards() {
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Dashboards
         </Title>

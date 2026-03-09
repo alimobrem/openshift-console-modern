@@ -78,7 +78,7 @@ export default function Secrets() {
 
   const getTypeColor = (type: string) => {
     if (type.includes('tls')) return 'purple';
-    if (type.includes('dockerconfigjson')) return 'cyan';
+    if (type.includes('dockerconfigjson')) return 'teal';
     if (type.includes('ssh-auth')) return 'orange';
     if (type.includes('service-account-token')) return 'blue';
     return 'grey';
@@ -86,7 +86,7 @@ export default function Secrets() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Secrets
         </Title>
@@ -100,7 +100,7 @@ export default function Secrets() {
           <CardBody>
             <Toolbar id="secrets-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}
@@ -132,7 +132,7 @@ export default function Secrets() {
                     <Tr key={`${secret.namespace}-${secret.name}`}>
                       <Td dataLabel="Name">
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                          <EyeSlashIcon size="sm" style={{ color: 'var(--pf-v6-global--Color--200)' }} />
+                          <EyeSlashIcon style={{ color: 'var(--pf-v6-global--Color--200)' }} />
                           <strong>{secret.name}</strong>
                         </div>
                       </Td>

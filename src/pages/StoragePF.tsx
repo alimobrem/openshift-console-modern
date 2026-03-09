@@ -1,10 +1,9 @@
-import React from 'react';
 import { PageSection, Title, Card, CardTitle, CardBody } from '@patternfly/react-core';
 
 export default function StoragePF() {
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Storage
         </Title>

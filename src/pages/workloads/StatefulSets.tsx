@@ -49,7 +49,7 @@ export default function StatefulSets() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           StatefulSets
         </Title>
@@ -63,7 +63,7 @@ export default function StatefulSets() {
           <CardBody>
             <Toolbar id="statefulsets-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}

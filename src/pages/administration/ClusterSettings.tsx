@@ -1,4 +1,3 @@
-import React from 'react';
 import {
   PageSection,
   Title,
@@ -42,7 +41,7 @@ export default function ClusterSettings() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Cluster Settings
         </Title>

@@ -135,7 +135,7 @@ status:
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Breadcrumb>
           <BreadcrumbItem to="#" onClick={() => navigate('/workloads/pods')}>
             Pods

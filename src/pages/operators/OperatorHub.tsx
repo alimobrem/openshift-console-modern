@@ -94,7 +94,7 @@ export default function OperatorHub() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           OperatorHub
         </Title>
@@ -108,7 +108,7 @@ export default function OperatorHub() {
           <CardBody>
             <Toolbar id="operatorhub-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search operators..."
                     value={searchValue}

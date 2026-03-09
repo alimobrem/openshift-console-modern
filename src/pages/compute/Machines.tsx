@@ -88,7 +88,7 @@ export default function Machines() {
       case 'Provisioning':
         return 'blue';
       case 'Provisioned':
-        return 'cyan';
+        return 'teal';
       case 'Failed':
         return 'red';
       case 'Deleting':
@@ -100,7 +100,7 @@ export default function Machines() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Machines
         </Title>
@@ -114,7 +114,7 @@ export default function Machines() {
           <CardBody>
             <Toolbar id="machines-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or type"
                     value={searchValue}

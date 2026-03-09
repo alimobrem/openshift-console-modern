@@ -90,7 +90,7 @@ export default function Services() {
       case 'ClusterIP':
         return 'green';
       case 'ExternalName':
-        return 'cyan';
+        return 'teal';
       default:
         return 'grey';
     }
@@ -98,7 +98,7 @@ export default function Services() {
 
   return (
     <>
-      <PageSection variant="light">
+      <PageSection variant="default">
         <Title headingLevel="h1" size="2xl">
           Services
         </Title>
@@ -112,7 +112,7 @@ export default function Services() {
           <CardBody>
             <Toolbar id="services-toolbar">
               <ToolbarContent>
-                <ToolbarItem variant="search-filter">
+                <ToolbarItem>
                   <SearchInput
                     placeholder="Search by name or namespace"
                     value={searchValue}
