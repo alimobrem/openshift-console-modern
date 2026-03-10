@@ -46,121 +46,46 @@ interface LogViewerProps {
 
 interface LogLine {
   id: number;
-  timestamp: Date;
+  timestamp: string;
   level: 'INFO' | 'WARN' | 'ERROR' | 'DEBUG';
   message: string;
 }
 
 type LogLevel = LogLine['level'];
 
-const HTTP_METHODS = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'] as const;
-const HTTP_PATHS = [
-  '/api/v1/users',
-  '/api/v1/health',
-  '/api/v1/orders',
-  '/api/v1/products',
-  '/api/v1/auth/token',
-  '/api/v1/metrics',
-  '/api/v1/config',
-  '/api/v2/search',
-  '/healthz',
-  '/readyz',
-  '/livez',
-  '/api/v1/events',
-  '/api/v1/notifications',
-];
-const STATUS_CODES = [200, 200, 200, 200, 201, 204, 301, 400, 401, 403, 404, 500, 503];
-const USER_AGENTS = ['Mozilla/5.0', 'curl/7.88.1', 'Go-http-client/2.0', 'python-requests/2.31.0'];
-const CLIENT_IPS = ['10.128.0.14', '10.128.0.22', '10.130.2.5', '172.16.0.101', '192.168.1.55'];
-
-function randomItem<T>(arr: readonly T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)] as T;
+function detectLevel(message: string): LogLevel {
+  const lower = message.toLowerCase();
+  if (lower.includes('error') || lower.includes('fatal') || lower.includes('panic')) return 'ERROR';
+  if (lower.includes('warn')) return 'WARN';
+  if (lower.includes('debug') || lower.includes('trace')) return 'DEBUG';
+  return 'INFO';
 }
 
-function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
+function parseLogLines(text: string, startId: number): LogLine[] {
+  const lines = text.split('\n').filter((line) => line.length > 0);
+  return lines.map((line, index) => {
+    // K8s log format: 2024-01-15T10:30:00.123456789Z log message here
+    const timestampMatch = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\S+?Z?)\s+(.*)/);
+    let timestamp: string;
+    let message: string;
+    if (timestampMatch) {
+      timestamp = timestampMatch[1];
+      message = timestampMatch[2];
+    } else {
+      timestamp = new Date().toISOString();
+      message = line;
+    }
+    return {
+      id: startId + index,
+      timestamp,
+      level: detectLevel(message),
+      message,
+    };
+  });
 }
 
-function generateLogLine(id: number): LogLine {
-  const timestamp = new Date();
-  const rand = Math.random();
-
-  // ~5% ERROR, ~10% WARN, ~15% DEBUG, ~70% INFO
-  let level: LogLevel;
-  if (rand < 0.05) level = 'ERROR';
-  else if (rand < 0.15) level = 'WARN';
-  else if (rand < 0.30) level = 'DEBUG';
-  else level = 'INFO';
-
-  let message: string;
-
-  switch (level) {
-    case 'ERROR': {
-      const errorMessages = [
-        `Connection refused to database at postgres:5432 - retrying in 5s`,
-        `Failed to process request: context deadline exceeded after 30s`,
-        `OOMKilled: container exceeded memory limit (512Mi)`,
-        `Unhandled exception in worker thread #${randomInt(1, 8)}: NullPointerException`,
-        `TLS handshake failed with upstream service catalog-api: certificate expired`,
-        `POST /api/webhook - 502 Bad Gateway (${randomInt(1000, 5000)}ms)`,
-        `Redis connection pool exhausted (max: 50, active: 50, waiting: 12)`,
-        `Panic recovered in handler: runtime error: index out of range [${randomInt(5, 20)}]`,
-      ];
-      message = randomItem(errorMessages);
-      break;
-    }
-    case 'WARN': {
-      const warnMessages = [
-        `High latency detected on ${randomItem(HTTP_PATHS)}: ${randomInt(800, 3000)}ms (threshold: 500ms)`,
-        `Connection pool utilization at ${randomInt(75, 95)}% (${randomInt(38, 48)}/50)`,
-        `Deprecated API version v1beta1 called by client ${randomItem(CLIENT_IPS)}`,
-        `Rate limit approaching for tenant org-${randomInt(100, 999)}: ${randomInt(900, 990)}/1000 requests`,
-        `Disk usage at ${randomInt(80, 95)}% on /var/log - consider rotation`,
-        `Slow query detected: SELECT * FROM orders WHERE status='pending' (${randomInt(500, 2000)}ms)`,
-        `Certificate for *.internal.svc expires in ${randomInt(5, 30)} days`,
-        `Retry attempt ${randomInt(2, 5)}/5 for upstream service payment-api`,
-      ];
-      message = randomItem(warnMessages);
-      break;
-    }
-    case 'DEBUG': {
-      const debugMessages = [
-        `Request headers: Host=${randomItem(HTTP_PATHS).split('/')[1]}.svc.cluster.local, X-Request-ID=${crypto.randomUUID?.() ?? `req-${randomInt(10000, 99999)}`}`,
-        `Cache lookup for key user:${randomInt(1000, 9999)}: ${Math.random() > 0.5 ? 'HIT' : 'MISS'}`,
-        `DNS resolved catalog-api.default.svc.cluster.local -> ${randomItem(CLIENT_IPS)} in ${randomInt(1, 5)}ms`,
-        `gRPC channel state change: READY -> IDLE (connection ${randomInt(1, 20)})`,
-        `JWT token validated for sub=user-${randomInt(100, 999)}, exp=${Math.floor(Date.now() / 1000) + 3600}`,
-        `Worker pool stats: active=${randomInt(2, 8)}, idle=${randomInt(0, 4)}, pending=${randomInt(0, 3)}`,
-        `Outbound request to https://api.external.io/v2/verify - ${randomInt(50, 200)}ms`,
-      ];
-      message = randomItem(debugMessages);
-      break;
-    }
-    default: {
-      const infoMessages = [
-        `${randomItem(HTTP_METHODS)} ${randomItem(HTTP_PATHS)} ${randomItem(STATUS_CODES)} ${randomInt(1, 400)}ms - ${randomItem(CLIENT_IPS)} "${randomItem(USER_AGENTS)}"`,
-        `Health check passed: all ${randomInt(3, 8)} dependencies healthy`,
-        `Listening on :${randomItem([8080, 8443, 3000, 9090] as const)}`,
-        `Connected to PostgreSQL at postgres.database.svc:5432/appdb`,
-        `Scheduled job cleanup-sessions completed in ${randomInt(100, 1500)}ms, removed ${randomInt(0, 150)} expired sessions`,
-        `WebSocket connection established from ${randomItem(CLIENT_IPS)} (total active: ${randomInt(10, 200)})`,
-        `Configuration reloaded from ConfigMap app-config (version: v${randomInt(1, 50)})`,
-        `Request processed: orderId=ORD-${randomInt(10000, 99999)}, items=${randomInt(1, 10)}, total=$${(Math.random() * 500 + 10).toFixed(2)}`,
-        `Serving static assets from /var/www/html (${randomInt(20, 200)} files, ${randomInt(1, 50)}MB)`,
-        `Graceful shutdown initiated, draining ${randomInt(0, 15)} active connections`,
-        `Started container with PID ${randomInt(1, 500)}, uid=1000, gid=1000`,
-        `Kubernetes readiness probe: HTTP ${randomItem(HTTP_PATHS)} -> 200 OK`,
-      ];
-      message = randomItem(infoMessages);
-      break;
-    }
-  }
-
-  return { id, timestamp, level, message };
-}
-
-function formatTimestamp(date: Date): string {
-  return date.toISOString().replace('T', ' ').replace('Z', '');
+function formatTimestamp(ts: string): string {
+  return ts.replace('T', ' ').replace('Z', '').replace(/\.\d+$/, '');
 }
 
 function getLogLevelClass(level: LogLevel): string {
@@ -190,16 +115,10 @@ function highlightText(text: string, search: string): React.ReactNode {
   );
 }
 
-export default function LogViewer({ podName, containers }: LogViewerProps) {
+export default function LogViewer({ podName, namespace, containers }: LogViewerProps) {
   const addToast = useUIStore((s) => s.addToast);
 
-  const [logs, setLogs] = useState<LogLine[]>(() => {
-    const initial: LogLine[] = [];
-    for (let i = 0; i < 50; i++) {
-      initial.push(generateLogLine(i + 1));
-    }
-    return initial;
-  });
+  const [logs, setLogs] = useState<LogLine[]>([]);
   const [streaming, setStreaming] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const [searchValue, setSearchValue] = useState('');
@@ -209,23 +128,67 @@ export default function LogViewer({ podName, containers }: LogViewerProps) {
   const [showTimestamps, setShowTimestamps] = useState(true);
 
   const logBodyRef = useRef<HTMLDivElement>(null);
-  const nextIdRef = useRef(51);
+  const nextIdRef = useRef(1);
 
-  // Streaming interval
+  // Initial log fetch
   useEffect(() => {
-    if (!streaming) return;
+    if (!podName || !namespace || !selectedContainer) return;
 
-    const interval = setInterval(() => {
-      const count = Math.random() > 0.5 ? 2 : 1;
-      const newLines: LogLine[] = [];
-      for (let i = 0; i < count; i++) {
-        newLines.push(generateLogLine(nextIdRef.current++));
+    let cancelled = false;
+    nextIdRef.current = 1;
+
+    async function fetchInitialLogs() {
+      try {
+        const url = `/api/kubernetes/api/v1/namespaces/${namespace}/pods/${podName}/log?container=${selectedContainer}&tailLines=500&timestamps=true`;
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(`${res.status} ${res.statusText}`);
+        }
+        const text = await res.text();
+        if (cancelled) return;
+        const parsed = parseLogLines(text, nextIdRef.current);
+        nextIdRef.current += parsed.length;
+        setLogs(parsed);
+      } catch (err) {
+        if (!cancelled) {
+          addToast({
+            type: 'error',
+            title: 'Failed to fetch logs',
+            description: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
-      setLogs((prev) => [...prev, ...newLines]);
-    }, randomInt(1000, 2000));
+    }
+
+    setLogs([]);
+    fetchInitialLogs();
+
+    return () => { cancelled = true; };
+  }, [podName, namespace, selectedContainer, addToast]);
+
+  // Polling for new log lines
+  useEffect(() => {
+    if (!streaming || !podName || !namespace || !selectedContainer) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const url = `/api/kubernetes/api/v1/namespaces/${namespace}/pods/${podName}/log?container=${selectedContainer}&sinceSeconds=3&timestamps=true`;
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const text = await res.text();
+        if (!text.trim()) return;
+        const newLines = parseLogLines(text, nextIdRef.current);
+        if (newLines.length > 0) {
+          nextIdRef.current += newLines.length;
+          setLogs((prev) => [...prev, ...newLines]);
+        }
+      } catch {
+        // Silently ignore polling errors
+      }
+    }, 3000);
 
     return () => clearInterval(interval);
-  }, [streaming]);
+  }, [streaming, podName, namespace, selectedContainer]);
 
   // Auto-scroll
   useEffect(() => {
@@ -316,8 +279,6 @@ export default function LogViewer({ podName, containers }: LogViewerProps) {
             onSelect={(_event, selection) => {
               setSelectedContainer(selection as string);
               setContainerSelectOpen(false);
-              setLogs([]);
-              nextIdRef.current = 1;
             }}
             onOpenChange={(isOpen) => setContainerSelectOpen(isOpen)}
             toggle={(toggleRef) => (

@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   PageSection,
   Title,
@@ -10,19 +11,67 @@ import { useUIStore } from '@/store/useUIStore';
 
 export default function GitImport() {
   const addToast = useUIStore((s) => s.addToast);
+  const navigate = useNavigate();
   const [gitRepo, setGitRepo] = React.useState('');
   const [gitRef, setGitRef] = React.useState('');
   const [contextDir, setContextDir] = React.useState('');
   const [appName, setAppName] = React.useState('');
   const [name, setName] = React.useState('');
   const [targetPort, setTargetPort] = React.useState(8080);
+  const [creating, setCreating] = React.useState(false);
 
-  const handleCreate = () => {
-    addToast({
-      type: 'success',
-      title: 'Application created',
-      description: `${name || appName || 'Application'} has been created successfully`,
-    });
+  const handleCreate = async () => {
+    if (!gitRepo || !name) return;
+    setCreating(true);
+    try {
+      const res = await fetch('/api/kubernetes/apis/apps/v1/namespaces/default/deployments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          apiVersion: 'apps/v1',
+          kind: 'Deployment',
+          metadata: {
+            name,
+            namespace: 'default',
+            labels: { app: name },
+          },
+          spec: {
+            replicas: 1,
+            selector: { matchLabels: { app: name } },
+            template: {
+              metadata: { labels: { app: name } },
+              spec: {
+                containers: [{
+                  name,
+                  image: gitRepo,
+                  ports: [{ containerPort: targetPort }],
+                }],
+              },
+            },
+          },
+        }),
+      });
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(errBody || `${res.status} ${res.statusText}`);
+      }
+
+      addToast({
+        type: 'success',
+        title: 'Deployment created',
+        description: `Deployment "${name}" has been created successfully`,
+      });
+      navigate('/workloads/deployments');
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Failed to create deployment',
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setCreating(false);
+    }
   };
 
   return (
@@ -114,7 +163,8 @@ export default function GitImport() {
                 <Button
                   variant="primary"
                   onClick={handleCreate}
-                  isDisabled={!gitRepo || !name}
+                  isDisabled={!gitRepo || !name || creating}
+                  isLoading={creating}
                 >
                   Create
                 </Button>

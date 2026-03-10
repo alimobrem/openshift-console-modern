@@ -41,11 +41,9 @@ interface RawInfrastructure extends K8sMeta {
 
 export default function ClusterSettings() {
   const addToast = useUIStore((s) => s.addToast);
-  const [upgrading, setUpgrading] = React.useState(false);
-  const [upgradeProgress, setUpgradeProgress] = React.useState(0);
-  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const [updating, setUpdating] = React.useState(false);
 
-  const { data: clusterVersions } = useK8sResource<RawClusterVersion, RawClusterVersion>(
+  const { data: clusterVersions, refetch } = useK8sResource<RawClusterVersion, RawClusterVersion>(
     '/apis/config.openshift.io/v1/clusterversions',
     (item) => item,
   );
@@ -65,29 +63,46 @@ export default function ClusterSettings() {
   const apiServer = infra?.status?.apiServerURL ?? '-';
   const availableUpdate = cv?.status?.availableUpdates?.[0]?.version;
 
-  React.useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+  const progressingCondition = cv?.status?.conditions?.find((c) => c.type === 'Progressing');
+  const isProgressing = progressingCondition?.status === 'True';
+  const progressMessage = progressingCondition?.message ?? '';
 
-  const startUpgrade = () => {
+  // Extract progress percentage from the condition message if available (e.g., "Working towards 4.14.5: 45% complete")
+  const progressMatch = progressMessage.match(/(\d+)%/);
+  const progressValue = progressMatch ? parseInt(progressMatch[1], 10) : 0;
+
+  const startUpgrade = async () => {
     if (!availableUpdate) return;
-    setUpgrading(true);
-    setUpgradeProgress(0);
-    addToast({ type: 'info', title: 'Cluster upgrade started', description: `Upgrading to ${availableUpdate}...` });
-    intervalRef.current = setInterval(() => {
-      setUpgradeProgress((prev) => {
-        if (prev >= 100) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          intervalRef.current = null;
-          setUpgrading(false);
-          addToast({ type: 'success', title: 'Cluster upgrade complete', description: `Now running ${availableUpdate}` });
-          return 100;
-        }
-        return prev + 5;
+    setUpdating(true);
+    try {
+      const res = await fetch('/api/kubernetes/apis/config.openshift.io/v1/clusterversions/version', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/strategic-merge-patch+json' },
+        body: JSON.stringify({
+          spec: { desiredUpdate: { version: availableUpdate } },
+        }),
       });
-    }, 500);
+
+      if (!res.ok) {
+        const errBody = await res.text();
+        throw new Error(errBody || `${res.status} ${res.statusText}`);
+      }
+
+      addToast({
+        type: 'info',
+        title: 'Cluster update initiated',
+        description: `Upgrading to ${availableUpdate}...`,
+      });
+      refetch();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        title: 'Cluster update failed',
+        description: err instanceof Error ? err.message : String(err),
+      });
+    } finally {
+      setUpdating(false);
+    }
   };
 
   return (
@@ -109,31 +124,35 @@ export default function ClusterSettings() {
                   Current version: <Label color="blue">{currentVersion}</Label>
                 </p>
               </div>
-              {!upgrading && upgradeProgress < 100 && availableUpdate && (
-                <Button variant="primary" onClick={startUpgrade}>
+              {!isProgressing && availableUpdate && (
+                <Button
+                  variant="primary"
+                  onClick={startUpgrade}
+                  isDisabled={updating}
+                  isLoading={updating}
+                >
                   Update to {availableUpdate}
                 </Button>
               )}
-              {!availableUpdate && !upgrading && upgradeProgress < 100 && (
-                <Label color="green" icon={<CheckCircleIcon />}>Up to date</Label>
-              )}
-              {upgradeProgress >= 100 && (
+              {!availableUpdate && !isProgressing && (
                 <Label color="green" icon={<CheckCircleIcon />}>Up to date</Label>
               )}
             </div>
-            {upgrading && (
+            {isProgressing && (
               <div>
                 <div className="os-cluster-settings__upgrade-progress-row">
                   <InProgressIcon className="os-cluster-settings__upgrade-spinner" />
-                  <span className="os-cluster-settings__upgrade-label">Upgrading cluster... {upgradeProgress}%</span>
+                  <span className="os-cluster-settings__upgrade-label">
+                    {progressMessage || 'Upgrading cluster...'}
+                  </span>
                 </div>
-                <Progress value={upgradeProgress} variant={ProgressVariant.success} />
+                <Progress value={progressValue} variant={ProgressVariant.success} />
                 <div className="os-cluster-settings__upgrade-detail">
                   Updating control plane components, operators, and worker nodes...
                 </div>
               </div>
             )}
-            {!upgrading && upgradeProgress < 100 && availableUpdate && (
+            {!isProgressing && availableUpdate && (
               <div className="os-cluster-settings__update-info">
                 <div className="os-cluster-settings__update-available">
                   <strong>Available update:</strong> {availableUpdate}
