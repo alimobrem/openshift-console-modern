@@ -88,6 +88,7 @@ import CertificateManagement from './pages/operations/CertificateManagement';
 import NodeScaling from './pages/operations/NodeScaling';
 
 // Observe (new)
+import DashboardView from './pages/observe/DashboardView';
 import PodResources from './pages/observe/PodResources';
 import NamespaceConsumption from './pages/observe/NamespaceConsumption';
 import AlertRules from './pages/observe/AlertRules';
@@ -382,6 +383,7 @@ function App() {
           {/* Observe */}
           <Route path="observe">
             <Route path="dashboards" element={<Dashboards />} />
+            <Route path="dashboards/:name" element={<DashboardView />} />
             <Route path="metrics" element={<Metrics />} />
             <Route path="alerts" element={<Alerts />} />
             <Route path="alert-rules" element={<AlertRules />} />

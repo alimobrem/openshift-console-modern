@@ -79,7 +79,7 @@ export default function Dashboards() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => navigate(`/workloads/configmaps/${dash.namespace}/${dash.name}`)}
+                        onClick={() => navigate(`/observe/dashboards/${dash.name}`)}
                       >
                         View
                       </Button>

@@ -96,6 +96,16 @@ export default defineConfig({
         secure: false,
         pathRewrite: (path: string) => path.replace(/^\/api\/kubernetes/, ''),
       },
+      {
+        context: ['/api/prometheus'],
+        target: process.env.THANOS_URL || 'https://thanos-querier-openshift-monitoring.apps.rhamilto.devcluster.openshift.com',
+        changeOrigin: true,
+        secure: false,
+        pathRewrite: (path: string) => path.replace(/^\/api\/prometheus/, ''),
+        headers: {
+          Authorization: `Bearer ${process.env.OC_TOKEN || ''}`,
+        },
+      },
     ],
   },
   performance: {
