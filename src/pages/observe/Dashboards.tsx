@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import {
   PageSection,
   Title,
@@ -8,7 +9,6 @@ import {
   Label,
   Button,
 } from '@patternfly/react-core';
-import { useUIStore } from '@/store/useUIStore';
 import { useK8sResource, type K8sMeta } from '@/hooks/useK8sResource';
 import '@/openshift-components.css';
 
@@ -31,7 +31,7 @@ function formatTitle(name: string): string {
 }
 
 export default function Dashboards() {
-  const addToast = useUIStore((s) => s.addToast);
+  const navigate = useNavigate();
 
   const { data, loading } = useK8sResource<RawConfigMap, Dashboard>(
     '/api/v1/namespaces/openshift-config-managed/configmaps',
@@ -79,7 +79,7 @@ export default function Dashboards() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => addToast({ type: 'info', title: `Opening ${dash.title}` })}
+                        onClick={() => navigate(`/workloads/configmaps/${dash.namespace}/${dash.name}`)}
                       >
                         View
                       </Button>
