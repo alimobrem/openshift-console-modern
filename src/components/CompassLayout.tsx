@@ -417,7 +417,7 @@ export default function CompassLayout() {
       <CommandPalette />
       <ToastProvider />
       <QuickStartGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
-      <WebTerminal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
+      <WebTerminal open={terminalOpen} onClose={() => setTerminalOpen(false)} sidebarOpen={isSidebarOpen} />
       <PageTransition>
         <Outlet />
       </PageTransition>
