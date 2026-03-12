@@ -269,14 +269,36 @@ export default function DashboardView() {
 
         const vars: VariableOption[] = [];
         for (const tpl of templates) {
-          if (tpl.type === 'datasource' || tpl.type === 'constant' || tpl.type === 'interval' || tpl.type === 'custom') continue;
-          const name = tpl.name;
+          if (tpl.type === 'datasource') continue;
+
+          const tplName = tpl.name;
           const label = tpl.label ?? tpl.name;
-          const opts = options[name] ?? [];
+
+          // For interval/custom/constant types, use predefined values
+          if (tpl.type === 'interval' || tpl.type === 'custom' || tpl.type === 'constant') {
+            const queryStr = typeof tpl.query === 'string' ? tpl.query : '';
+            const intervalOpts = queryStr.split(',').map((s: string) => s.trim()).filter(Boolean);
+            if (intervalOpts.length > 0 || tpl.current?.value) {
+              vars.push({
+                name: tplName,
+                label,
+                options: intervalOpts.length > 0 ? intervalOpts : [tpl.current?.value ?? '5m'],
+                selected: tpl.current?.value ?? intervalOpts[0] ?? '5m',
+              });
+            }
+            continue;
+          }
+
+          const opts = options[tplName] ?? [];
+          if (opts.length === 0 && tpl.current?.value) {
+            // Use the default value even if we couldn't fetch options
+            vars.push({ name: tplName, label, options: [tpl.current.value], selected: tpl.current.value });
+            continue;
+          }
           if (opts.length === 0) continue;
 
           vars.push({
-            name,
+            name: tplName,
             label,
             options: opts,
             selected: tpl.current?.value ?? opts[0] ?? '',
