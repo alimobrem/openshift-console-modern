@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card, CardBody, Grid, GridItem, DescriptionList, DescriptionListGroup, DescriptionListTerm, DescriptionListDescription, Label, Title, Progress, ProgressVariant } from '@patternfly/react-core';
 import { Table, Thead, Tr, Th, Tbody, Td } from '@patternfly/react-table';
 import { useParams } from 'react-router-dom';
@@ -48,7 +48,7 @@ export default function DeploymentDetail() {
   }, [namespace, name]);
 
   if (loading) return <div className="os-text-muted" role="status">Loading...</div>;
-  if (!deploy) return <div className="os-text-muted">Deployment not found</div>;
+  if (!deploy) return <div className="os-text-muted">Deployment not found. Check that the namespace and name are correct.</div>;
 
   const meta = deploy['metadata'] as Record<string, unknown>;
   const spec = deploy['spec'] as Record<string, unknown>;
