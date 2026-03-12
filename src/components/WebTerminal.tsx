@@ -3,6 +3,7 @@ import React, { useState, useRef, useCallback, useEffect } from 'react';
 interface WebTerminalProps {
   open: boolean;
   onClose: () => void;
+  onHeightChange?: (height: number) => void;
 }
 
 interface TerminalEntry {
@@ -217,7 +218,7 @@ const MIN_HEIGHT = 150;
 const MAX_HEIGHT = window.innerHeight - 100;
 const DEFAULT_HEIGHT = 350;
 
-const WebTerminal: React.FC<WebTerminalProps> = ({ open, onClose }) => {
+const WebTerminal: React.FC<WebTerminalProps> = ({ open, onClose, onHeightChange }) => {
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<TerminalEntry[]>([]);
   const [cmdHistory, setCmdHistory] = useState<string[]>([]);
@@ -240,7 +241,9 @@ const WebTerminal: React.FC<WebTerminalProps> = ({ open, onClose }) => {
     const onMove = (me: MouseEvent) => {
       if (!dragging.current) return;
       const delta = startY.current - me.clientY;
-      setHeight(Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, startH.current + delta)));
+      const newHeight = Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, startH.current + delta));
+      setHeight(newHeight);
+      onHeightChange?.(newHeight);
     };
     const onUp = () => {
       dragging.current = false;

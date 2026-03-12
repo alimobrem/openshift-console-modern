@@ -233,6 +233,7 @@ export default function CompassLayout() {
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace);
   const [nsSelectOpen, setNsSelectOpen] = React.useState(false);
   const [terminalOpen, setTerminalOpen] = React.useState(false);
+  const [terminalHeight, setTerminalHeight] = React.useState(350);
   const [guideOpen, setGuideOpen] = React.useState(false);
 
   const counts = useResourceCounts();
@@ -420,8 +421,8 @@ export default function CompassLayout() {
       <PageTransition>
         <Outlet />
       </PageTransition>
-      {terminalOpen && <div style={{ height: 350 }} />}
-      <WebTerminal open={terminalOpen} onClose={() => setTerminalOpen(false)} />
+      {terminalOpen && <div style={{ height: terminalHeight }} />}
+      <WebTerminal open={terminalOpen} onClose={() => setTerminalOpen(false)} onHeightChange={setTerminalHeight} />
     </Page>
   );
 }
