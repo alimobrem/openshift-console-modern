@@ -10,7 +10,10 @@ import Events from './pages/home/Events';
 import Topology from './pages/home/Topology';
 import Troubleshoot from './pages/home/Troubleshoot';
 import ServiceMap from './pages/home/ServiceMap';
+import MultiCluster from './pages/home/MultiCluster';
 import Timeline from './pages/observe/Timeline';
+import CostDashboard from './pages/observe/CostDashboard';
+import Runbooks from './pages/operations/Runbooks';
 
 // Operators
 import OperatorHub from './pages/operators/OperatorHub';
@@ -126,6 +129,7 @@ function App() {
             <Route path="topology" element={<Topology />} />
             <Route path="troubleshoot" element={<Troubleshoot />} />
             <Route path="service-map" element={<ServiceMap />} />
+            <Route path="multi-cluster" element={<MultiCluster />} />
           </Route>
 
           {/* Operators */}
@@ -391,6 +395,7 @@ function App() {
             <Route path="metrics" element={<Metrics />} />
             <Route path="alerts" element={<Alerts />} />
             <Route path="timeline" element={<Timeline />} />
+            <Route path="costs" element={<CostDashboard />} />
             <Route path="alert-rules" element={<AlertRules />} />
             <Route path="pod-resources" element={<PodResources />} />
             <Route path="namespace-consumption" element={<NamespaceConsumption />} />
@@ -402,6 +407,7 @@ function App() {
             <Route path="pvc-resize" element={<PVCResize />} />
             <Route path="hpa-recommendations" element={<HPARecommendations />} />
             <Route path="certificates" element={<CertificateManagement />} />
+            <Route path="runbooks" element={<Runbooks />} />
             <Route path="node-scaling" element={<NodeScaling />} />
           </Route>
 
