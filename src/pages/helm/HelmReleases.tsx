@@ -1,5 +1,7 @@
+import { useNavigate } from 'react-router-dom';
 import ResourceListPage, { type ColumnDef } from '@/components/ResourceListPage';
-import { Label } from '@patternfly/react-core';
+import ResourceActions from '@/components/ResourceActions';
+import { Label, Button } from '@patternfly/react-core';
 import { useK8sResource, ageFromTimestamp, type K8sMeta } from '@/hooks/useK8sResource';
 
 interface RawSecret extends K8sMeta {
@@ -33,9 +35,11 @@ const columns: ColumnDef<HelmRelease>[] = [
   { title: 'Version', key: 'version' },
   { title: 'Status', key: 'status', render: (r) => <Label color={statusColors[r.status] ?? 'grey'}>{r.status}</Label> },
   { title: 'Updated', key: 'age' },
+  { title: '', key: 'actions', render: (r) => <ResourceActions name={r.name} namespace={r.namespace} apiBase="/api/v1" resourceType="secrets" kind="Helm Release" />, sortable: false },
 ];
 
 export default function HelmReleases() {
+  const navigate = useNavigate();
   const { data, loading } = useK8sResource<RawSecret, HelmRelease>(
     '/api/v1/secrets',
     (item) => ({
@@ -60,6 +64,7 @@ export default function HelmReleases() {
       loading={loading}
       getRowKey={(r) => `${r.namespace}-${r.name}-${r.version}`}
       nameField="name"
+      toolbarExtra={<Button variant="primary" onClick={() => navigate('/helm/charts')}>Browse Charts</Button>}
     />
   );
 }
