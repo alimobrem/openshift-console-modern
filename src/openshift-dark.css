@@ -310,7 +310,15 @@ input::placeholder, textarea::placeholder { color: var(--os-text-muted) !importa
 .pf-v6-c-progress__status-text { color: var(--os-text-secondary) !important; }
 .pf-v6-c-table__sort .pf-v6-c-table__button, .pf-v6-c-table__sort .pf-v6-c-table__button-content { color: var(--os-text-secondary) !important; }
 .pf-v6-c-description-list__term { color: var(--os-text-muted) !important; }
+.pf-v6-c-description-list__description { color: var(--os-text-primary) !important; }
+.pf-v6-c-card__body { color: var(--os-text-primary) !important; }
+.pf-v6-c-card__title { color: var(--os-text-primary) !important; }
 .pf-v6-c-toolbar__item { color: var(--os-text-primary) !important; }
+code, pre { color: var(--os-text-primary) !important; }
+.os-text-muted { color: var(--os-text-muted) !important; }
+.os-detail__section-title { color: var(--os-text-primary) !important; }
+.os-list__description { color: var(--os-text-secondary) !important; }
+.os-dashboard__card-title { color: var(--os-text-primary) !important; }
 .pf-v6-c-pagination { background: transparent !important; color: var(--os-text-secondary) !important; }
 .pf-v6-c-pagination .pf-v6-c-menu-toggle { color: var(--os-text-secondary) !important; }
 .pf-v6-c-pagination__nav-control .pf-v6-c-button { color: var(--os-text-secondary) !important; }
