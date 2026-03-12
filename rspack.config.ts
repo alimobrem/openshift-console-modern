@@ -15,14 +15,6 @@ function getOCToken(): string {
   }
 }
 
-function getGCPToken(): string {
-  if (process.env.GCP_ACCESS_TOKEN) return process.env.GCP_ACCESS_TOKEN;
-  try {
-    return execSync('gcloud auth print-access-token 2>/dev/null', { encoding: 'utf-8' }).trim();
-  } catch {
-    return '';
-  }
-}
 
 export default defineConfig({
   entry: {
@@ -133,21 +125,6 @@ export default defineConfig({
         pathRewrite: (path: string) => path.replace(/^\/api\/alertmanager/, ''),
         headers: {
           Authorization: `Bearer ${getOCToken()}`,
-        },
-      },
-      {
-        context: ['/api/ai'],
-        target: `https://${process.env.ANTHROPIC_VERTEX_REGION || 'us-east5'}-aiplatform.googleapis.com`,
-        changeOrigin: true,
-        secure: true,
-        pathRewrite: () => {
-          const project = process.env.ANTHROPIC_VERTEX_PROJECT_ID || 'itpc-gcp-product-all-claude';
-          const region = process.env.ANTHROPIC_VERTEX_REGION || 'us-east5';
-          const model = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6@20250514';
-          return `/v1/projects/${project}/locations/${region}/publishers/anthropic/models/${model}:rawPredict`;
-        },
-        headers: {
-          Authorization: `Bearer ${getGCPToken()}`,
         },
       },
     ],

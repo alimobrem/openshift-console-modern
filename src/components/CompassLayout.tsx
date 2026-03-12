@@ -44,7 +44,6 @@ import ToastProvider from './ToastProvider';
 import PageTransition from './PageTransition';
 import QuickStartGuide from './QuickStartGuide';
 import WebTerminal from './WebTerminal';
-import AIAssistant from './AIAssistant';
 import { useUIStore } from '@/store/useUIStore';
 import { useClusterStore } from '@/store/useClusterStore';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
@@ -246,7 +245,6 @@ export default function CompassLayout() {
   const setSelectedNamespace = useClusterStore((s) => s.setSelectedNamespace);
   const [nsSelectOpen, setNsSelectOpen] = React.useState(false);
   const [terminalOpen, setTerminalOpen] = React.useState(false);
-  const [aiOpen, setAiOpen] = React.useState(false);
   const [terminalHeight, setTerminalHeight] = React.useState(350);
   const [guideOpen, setGuideOpen] = React.useState(false);
 
@@ -365,12 +363,7 @@ export default function CompassLayout() {
               onClick={() => setIsDarkMode(!isDarkMode)}
             />
           </Tooltip>
-          <Tooltip content="AI Assistant">
-            <Button aria-label="AI Assistant" variant="plain" onClick={() => setAiOpen(!aiOpen)} style={{ fontSize: 16 }}>
-              🤖
-            </Button>
-          </Tooltip>
-          <Tooltip content="Web Terminal">
+<Tooltip content="Web Terminal">
             <Button aria-label="Web Terminal" variant="plain" icon={<CodeIcon />} onClick={() => setTerminalOpen(!terminalOpen)} />
           </Tooltip>
           <Tooltip content="Quick Start Guide">
@@ -443,7 +436,6 @@ export default function CompassLayout() {
         </PageTransition>
       </div>
       <WebTerminal open={terminalOpen} onClose={() => setTerminalOpen(false)} onHeightChange={setTerminalHeight} />
-      <AIAssistant open={aiOpen} onClose={() => setAiOpen(false)} />
     </Page>
   );
 }
