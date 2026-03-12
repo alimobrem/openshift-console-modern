@@ -299,6 +299,7 @@ const WebTerminal: React.FC<WebTerminalProps> = ({ open, onClose }) => {
       setNextId((n) => n + 1);
     }
     setExecuting(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
   }, [input, nextId, cmdHistory, historyIdx]);
 
   if (!open) return null;
@@ -348,7 +349,7 @@ const WebTerminal: React.FC<WebTerminalProps> = ({ open, onClose }) => {
         .os-terminal__line--output { color: #c9d1d9; }
         .os-terminal__line--error { color: #f87171; }
         .os-terminal__prompt { color: #4ade80; margin-right: 6px; font-weight: 600; }
-        .os-terminal__input { background: none; border: none; color: #e2e8f0; font-family: inherit; font-size: inherit; outline: none; width: calc(100% - 20px); caret-color: #4ade80; }
+        .os-terminal__input { background: transparent !important; border: none !important; color: #e2e8f0 !important; font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace !important; font-size: 13px !important; outline: none !important; width: calc(100% - 20px); caret-color: #4ade80; -webkit-text-fill-color: #e2e8f0 !important; }
       `}</style>
     </div>
   );
