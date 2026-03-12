@@ -249,6 +249,45 @@ export async function fetchPersistentVolumes() {
   }));
 }
 
+// === Cluster Info ===
+export async function fetchClusterInfo(): Promise<{
+  version: string; kubernetesVersion: string; platform: string;
+  region: string; consoleURL: string; apiURL: string; updateChannel: string;
+}> {
+  let version = '-', platform = '-', apiURL = '-', updateChannel = '-';
+
+  // Fetch OpenShift ClusterVersion
+  try {
+    const cv = await k8sFetch<{ status?: { desired?: { version?: string }; history?: { version: string }[] }; spec?: { channel?: string } }>('/apis/config.openshift.io/v1/clusterversions/version');
+    version = cv.status?.desired?.version ?? cv.status?.history?.[0]?.version ?? '-';
+    updateChannel = cv.spec?.channel ?? '-';
+  } catch { /* not OpenShift or no access */ }
+
+  // Fetch Infrastructure
+  try {
+    const infra = await k8sFetch<{ status?: { platform?: string; apiServerURL?: string } }>('/apis/config.openshift.io/v1/infrastructures/cluster');
+    platform = infra.status?.platform ?? '-';
+    apiURL = infra.status?.apiServerURL ?? '-';
+  } catch { /* not OpenShift or no access */ }
+
+  // Fetch Kubernetes version
+  let kubernetesVersion = '-';
+  try {
+    const ver = await k8sFetch<{ gitVersion?: string }>('/version');
+    kubernetesVersion = ver.gitVersion ?? '-';
+  } catch { /* ignore */ }
+
+  return {
+    version: version !== '-' ? `OpenShift ${version}` : kubernetesVersion,
+    kubernetesVersion,
+    platform,
+    region: '-',
+    consoleURL: window.location.origin,
+    apiURL,
+    updateChannel,
+  };
+}
+
 // === Check if cluster is reachable ===
 export async function checkClusterConnection(): Promise<boolean> {
   try {

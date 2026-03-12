@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, cleanup } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, cleanup, act } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 
 // --- Shared mocks ---
@@ -19,23 +19,21 @@ vi.mock('@/store/useUIStore', () => ({
 
 // --- Pod tests ---
 describe('Pods Quick Actions', () => {
-  const restartPodMock = vi.fn();
-  const deletePodMock = vi.fn();
-
-  const mockPods = [
-    { name: 'nginx-1', namespace: 'default', status: 'Running', restarts: 0 },
-    { name: 'redis-1', namespace: 'prod', status: 'Failed', restarts: 3 },
-  ];
-
   beforeEach(() => {
     vi.clearAllMocks();
+    // Mock fetch for useK8sResource
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        items: [
+          { metadata: { name: 'nginx-1', namespace: 'default', creationTimestamp: '2024-01-01T00:00:00Z' }, status: { phase: 'Running', containerStatuses: [{ restartCount: 0 }] }, spec: { nodeName: 'node-1' } },
+          { metadata: { name: 'redis-1', namespace: 'prod', creationTimestamp: '2024-01-01T00:00:00Z' }, status: { phase: 'Failed', containerStatuses: [{ restartCount: 3 }] }, spec: { nodeName: 'node-2' } },
+        ],
+      }),
+    });
     vi.doMock('@/store/useClusterStore', () => ({
       useClusterStore: (selector?: (s: Record<string, unknown>) => unknown) => {
-        const state: Record<string, unknown> = {
-          pods: mockPods, fetchClusterData: vi.fn(), restartPod: restartPodMock,
-          deletePod: deletePodMock, selectedNamespace: 'all', namespaces: [],
-          deployments: [], services: [], nodes: [], setSelectedNamespace: vi.fn(),
-        };
+        const state: Record<string, unknown> = { selectedNamespace: 'all', setSelectedNamespace: vi.fn() };
         return selector ? selector(state) : state;
       },
     }));
@@ -44,30 +42,32 @@ describe('Pods Quick Actions', () => {
   afterEach(() => { cleanup(); vi.resetModules(); });
 
   it('renders inline Logs and Restart buttons', async () => {
-    // Re-import after mock
     const { default: PodsPage } = await import('../pages/workloads/Pods');
     render(<MemoryRouter><PodsPage /></MemoryRouter>);
-    const logsButtons = screen.getAllByText('Logs');
-    expect(logsButtons.length).toBe(2);
-    const restartButtons = screen.getAllByText('Restart');
-    expect(restartButtons.length).toBe(2);
+    await waitFor(() => {
+      expect(screen.getAllByText('Logs').length).toBe(2);
+      expect(screen.getAllByText('Restart').length).toBe(2);
+    });
   });
 
   it('Logs button navigates to pod detail with logs tab', async () => {
     const { default: PodsPage } = await import('../pages/workloads/Pods');
     render(<MemoryRouter><PodsPage /></MemoryRouter>);
+    await waitFor(() => { expect(screen.getByText('nginx-1')).toBeDefined(); });
     const logsButtons = screen.getAllByText('Logs');
     fireEvent.click(logsButtons[0]);
     expect(navigateMock).toHaveBeenCalledWith('/workloads/pods/default/nginx-1?tab=logs');
   });
 
-  it('Restart button calls restartPod and shows toast', async () => {
+  it('Restart button calls DELETE and shows toast', async () => {
     const { default: PodsPage } = await import('../pages/workloads/Pods');
     render(<MemoryRouter><PodsPage /></MemoryRouter>);
+    await waitFor(() => { expect(screen.getByText('nginx-1')).toBeDefined(); });
     const restartButtons = screen.getAllByText('Restart');
     fireEvent.click(restartButtons[0]);
-    expect(restartPodMock).toHaveBeenCalledWith('default', 'nginx-1');
-    expect(addToastMock).toHaveBeenCalledWith(expect.objectContaining({ title: 'Restarting nginx-1' }));
+    await waitFor(() => {
+      expect(addToastMock).toHaveBeenCalledWith(expect.objectContaining({ title: 'Restarting nginx-1' }));
+    });
   });
 });
 

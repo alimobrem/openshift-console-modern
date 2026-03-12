@@ -132,7 +132,7 @@ export const useClusterStore = create<ClusterStore>((set, get) => ({
     const connected = await k8s.checkClusterConnection();
     if (connected) {
       try {
-        const [nodes, pods, deployments, services, namespaces, events, pvs] = await Promise.all([
+        const [nodes, pods, deployments, services, namespaces, events, pvs, clusterInfo] = await Promise.all([
           k8s.fetchNodes(),
           k8s.fetchPods(),
           k8s.fetchDeployments(),
@@ -140,12 +140,15 @@ export const useClusterStore = create<ClusterStore>((set, get) => ({
           k8s.fetchNamespaces(),
           k8s.fetchEvents(),
           k8s.fetchPersistentVolumes(),
+          k8s.fetchClusterInfo(),
         ]);
+        const avgCpu = nodes.length > 0 ? Math.round(nodes.reduce((s, n) => s + n.cpu, 0) / nodes.length) : 0;
+        const avgMem = nodes.length > 0 ? Math.round(nodes.reduce((s, n) => s + n.memory, 0) / nodes.length) : 0;
         set({
           nodes, pods, deployments, services, namespaces, events,
           persistentVolumes: pvs,
-          clusterInfo: { version: 'OpenShift (live)', kubernetesVersion: nodes[0]?.version ?? '', platform: 'Live Cluster', region: '-', consoleURL: window.location.origin, apiURL: 'via kubectl proxy', updateChannel: '-' },
-          metrics: [{ timestamp: new Date().toISOString(), cpu: 0, memory: 0, pods: pods.length }],
+          clusterInfo,
+          metrics: [{ timestamp: new Date().toISOString(), cpu: avgCpu, memory: avgMem, pods: pods.length }],
           storageInfo: { totalCapacity: '-', used: '-', available: '-', storageClasses: 0 },
           isLoading: false,
         });
@@ -185,11 +188,13 @@ export const useClusterStore = create<ClusterStore>((set, get) => ({
           k8s.fetchNodes(),
         ]);
         const now = new Date();
+        const avgCpu = nodes.length > 0 ? Math.round(nodes.reduce((s, n) => s + n.cpu, 0) / nodes.length) : 0;
+        const avgMem = nodes.length > 0 ? Math.round(nodes.reduce((s, n) => s + n.memory, 0) / nodes.length) : 0;
         set((state) => {
           const newMetric: ResourceMetrics = {
             timestamp: now.toISOString(),
-            cpu: 0,
-            memory: 0,
+            cpu: avgCpu,
+            memory: avgMem,
             pods: pods.length,
           };
           return {
