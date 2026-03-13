@@ -140,24 +140,6 @@
   }
 }
 
-/* Force layout containers to be transparent for gradient to show through */
-
-.pf-v6-l-gallery,
-
-.pf-v6-l-grid,
-
-.pf-v6-l-flex,
-
-.pf-v6-l-stack,
-
-/* Force layout containers to be transparent (not glass elements) */
-
-.pf-v6-l-gallery,
-
-.pf-v6-l-grid,
-
-.pf-v6-l-flex,
-
 /* =====================================================
    NEW COMPONENTS — Phase 2-4 Enhancements
    ===================================================== */

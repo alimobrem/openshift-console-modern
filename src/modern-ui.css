@@ -299,6 +299,11 @@ h3 { font-size: 16px !important; }
 /* --- Misc --- */
 p, span, div { text-shadow: none !important; }
 code, pre { color: var(--modern-text) !important; }
+
+/* Code blocks: ensure text contrasts with background */
+.pf-v6-c-code-block { background: var(--modern-bg) !important; color: var(--modern-text) !important; border: 1px solid var(--modern-border) !important; border-radius: var(--modern-radius) !important; }
+.pf-v6-c-code-block__content,
+.pf-v6-c-code-block__code { color: var(--modern-text) !important; }
 .os-text-muted { color: var(--modern-text-muted) !important; }
 input, textarea, select { color: var(--modern-text) !important; }
 input::placeholder, textarea::placeholder { color: var(--modern-text-muted) !important; }
