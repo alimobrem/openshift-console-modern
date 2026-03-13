@@ -160,6 +160,8 @@ export default function PodDetail() {
       backPath="/workloads/pods"
       backLabel="Pods"
       yaml={yaml}
+      apiUrl={`${BASE}/api/v1/namespaces/${namespace}/pods/${name}`}
+      onYamlSaved={(newYaml) => setYaml(newYaml)}
       tabs={[
         { title: 'Details', content: detailsTab },
         { title: 'Logs', content: logsTab },

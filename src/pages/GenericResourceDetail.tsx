@@ -93,6 +93,7 @@ export default function GenericResourceDetail({ kind, apiPath, backPath, backLab
 
   const statusValue = statusField ? String(getNestedValue(resource, statusField) ?? '') : undefined;
   const yamlContent = JSON.stringify(resource, null, 2);
+  const resourceApiUrl = `${BASE}${apiPath(params as Record<string, string>)}`;
 
   const specEntries = spec ? Object.entries(spec).filter(([, v]) => typeof v !== 'object' || v === null) : [];
   const statusEntries = statusObj ? Object.entries(statusObj).filter(([, v]) => typeof v !== 'object' || v === null) : [];
@@ -190,6 +191,8 @@ export default function GenericResourceDetail({ kind, apiPath, backPath, backLab
       backPath={backPath}
       backLabel={backLabel}
       yaml={yamlContent}
+      apiUrl={resourceApiUrl}
+      onYamlSaved={(newYaml) => setResource(JSON.parse(newYaml))}
       tabs={[{ title: 'Details', content: detailsTab }]}
     />
   );

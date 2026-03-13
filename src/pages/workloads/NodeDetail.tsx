@@ -270,6 +270,8 @@ export default function NodeDetail() {
       backPath="/compute/nodes"
       backLabel="Nodes"
       yaml={yaml}
+      apiUrl={`${BASE}/api/v1/nodes/${name}`}
+      onYamlSaved={(newYaml) => setYaml(newYaml)}
       tabs={[
         { title: 'Details', content: detailsTab },
         { title: 'Logs', content: logsTab },

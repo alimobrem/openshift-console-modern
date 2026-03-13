@@ -9,19 +9,15 @@ import {
   Tab,
   TabTitleText,
   Button,
-  Card,
-  CardBody,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
 } from '@patternfly/react-core';
-import { TrashIcon, EditIcon, DownloadIcon, CopyIcon } from '@patternfly/react-icons';
-import CodeMirror from '@uiw/react-codemirror';
-import { json } from '@codemirror/lang-json';
-import { oneDark } from '@codemirror/theme-one-dark';
+import { TrashIcon, EditIcon } from '@patternfly/react-icons';
 import StatusIndicator from './StatusIndicator';
 import ConfirmDialog from './ConfirmDialog';
 import RelatedResources from './RelatedResources';
+import YamlEditor from './YamlEditor';
 import { useUIStore } from '@/store/useUIStore';
 
 interface DetailTab {
@@ -39,6 +35,10 @@ interface ResourceDetailPageProps {
   backLabel: string;
   tabs: DetailTab[];
   yaml?: string;
+  /** K8s API URL for this resource (enables save in YAML editor) */
+  apiUrl?: string;
+  /** Called when YAML is saved successfully */
+  onYamlSaved?: (newYaml: string) => void;
   labels?: Record<string, string>;
 }
 
@@ -52,6 +52,8 @@ export default function ResourceDetailPage({
   backLabel,
   tabs,
   yaml,
+  apiUrl,
+  onYamlSaved,
   labels,
 }: ResourceDetailPageProps) {
   const navigate = useNavigate();
@@ -74,48 +76,7 @@ export default function ResourceDetailPage({
           title: 'YAML',
           content: (
             <div className="os-detail__yaml-section">
-              <Card>
-                <CardBody>
-                  <div className="os-detail__yaml-actions">
-                    <Button
-                      variant="secondary"
-                      icon={<CopyIcon />}
-                      size="sm"
-                      onClick={() => {
-                        navigator.clipboard.writeText(yaml);
-                        addToast({ type: 'success', title: 'YAML copied to clipboard' });
-                      }}
-                    >
-                      Copy
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      icon={<DownloadIcon />}
-                      size="sm"
-                      onClick={() => {
-                        const blob = new Blob([yaml], { type: 'text/yaml' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `${name}.yaml`;
-                        a.click();
-                        URL.revokeObjectURL(url);
-                        addToast({ type: 'success', title: 'YAML downloaded' });
-                      }}
-                    >
-                      Download
-                    </Button>
-                  </div>
-                  <CodeMirror
-                    value={yaml}
-                    extensions={[json()]}
-                    theme={document.documentElement.classList.contains('dark') ? oneDark : 'light'}
-                    editable={false}
-                    basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: false }}
-                    style={{ fontSize: 13, borderRadius: 'var(--modern-radius, 10px)', overflow: 'hidden', border: '1px solid var(--modern-border, #eaeaea)' }}
-                  />
-                </CardBody>
-              </Card>
+              <YamlEditor value={yaml} name={name} apiUrl={apiUrl} onSaved={onYamlSaved} />
             </div>
           ),
         }]

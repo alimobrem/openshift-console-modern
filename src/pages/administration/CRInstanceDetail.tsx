@@ -22,6 +22,7 @@ export default function CRInstanceDetail() {
   const { name: crdName, namespace, instanceName } = useParams();
   const [resource, setResource] = useState<Record<string, unknown> | null>(null);
   const [yaml, setYaml] = useState('');
+  const [resourceApiUrl, setResourceApiUrl] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,11 +45,13 @@ export default function CRInstanceDetail() {
         const apiPath = ns
           ? `/apis/${group}/${version}/namespaces/${ns}/${plural}/${instanceName}`
           : `/apis/${group}/${version}/${plural}/${instanceName}`;
-        const res = await fetch(`${BASE}${apiPath}`);
+        const fullApiUrl = `${BASE}${apiPath}`;
+        const res = await fetch(fullApiUrl);
         if (res.ok) {
           const raw = await res.json() as Record<string, unknown>;
           setResource(raw);
           setYaml(JSON.stringify(raw, null, 2));
+          setResourceApiUrl(fullApiUrl);
         }
       } catch {
         // API may not be available
@@ -130,6 +133,8 @@ export default function CRInstanceDetail() {
       backPath={`/administration/crds/${crdName}/instances`}
       backLabel={`${kind} Instances`}
       yaml={yaml}
+      apiUrl={resourceApiUrl}
+      onYamlSaved={(newYaml) => { setYaml(newYaml); setResource(JSON.parse(newYaml)); }}
       tabs={[{ title: 'Details', content: detailsTab }]}
     />
   );

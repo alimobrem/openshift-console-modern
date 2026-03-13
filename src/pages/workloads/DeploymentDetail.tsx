@@ -181,6 +181,8 @@ export default function DeploymentDetail() {
       backPath="/workloads/deployments"
       backLabel="Deployments"
       yaml={yaml}
+      apiUrl={`${BASE}/apis/apps/v1/namespaces/${namespace}/deployments/${name}`}
+      onYamlSaved={(newYaml) => { setYaml(newYaml); setDeploy(JSON.parse(newYaml)); }}
       labels={labels}
       tabs={[
         { title: 'Details', content: detailsTab },
