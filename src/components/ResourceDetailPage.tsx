@@ -11,13 +11,14 @@ import {
   Button,
   Card,
   CardBody,
-  CodeBlock,
-  CodeBlockCode,
   Toolbar,
   ToolbarContent,
   ToolbarItem,
 } from '@patternfly/react-core';
 import { TrashIcon, EditIcon, DownloadIcon, CopyIcon } from '@patternfly/react-icons';
+import CodeMirror from '@uiw/react-codemirror';
+import { json } from '@codemirror/lang-json';
+import { oneDark } from '@codemirror/theme-one-dark';
 import StatusIndicator from './StatusIndicator';
 import ConfirmDialog from './ConfirmDialog';
 import RelatedResources from './RelatedResources';
@@ -105,11 +106,14 @@ export default function ResourceDetailPage({
                       Download
                     </Button>
                   </div>
-                  <div className="compass-yaml-editor">
-                    <CodeBlock>
-                      <CodeBlockCode>{yaml}</CodeBlockCode>
-                    </CodeBlock>
-                  </div>
+                  <CodeMirror
+                    value={yaml}
+                    extensions={[json()]}
+                    theme={document.documentElement.classList.contains('dark') ? oneDark : 'light'}
+                    editable={false}
+                    basicSetup={{ lineNumbers: true, foldGutter: true, highlightActiveLine: false }}
+                    style={{ fontSize: 13, borderRadius: 'var(--modern-radius, 10px)', overflow: 'hidden', border: '1px solid var(--modern-border, #eaeaea)' }}
+                  />
                 </CardBody>
               </Card>
             </div>
