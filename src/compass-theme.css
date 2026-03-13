@@ -1,6 +1,5 @@
-/* Modern Glassmorphism Theme - 2026 Edition */
-
 /* Global Design System with Glass Effect */
+
 :root {
   --console-bg-base: hsl(var(--background));
   --console-bg-elevated: hsl(var(--card));
@@ -22,26 +21,8 @@
   --glass-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Card Styling — clean, modern */
-.pf-v6-c-card {
-  transition: box-shadow 0.15s ease, border-color 0.15s ease;
-  border-radius: 8px;
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border) !important;
-  box-shadow: var(--glass-shadow) !important;
-  padding: 0;
-}
-
-.pf-v6-c-card:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-/* Secondary Card Style */
-.pf-v6-c-card.pf-m-secondary {
-  background: var(--glass-bg) !important;
-}
-
 /* Stat Card Enhancement */
+
 .compass-stat-card .pf-v6-c-card {
   border-left: 3px solid var(--console-primary);
   position: relative;
@@ -64,528 +45,8 @@
   border-left-width: 4px;
 }
 
-/* Gallery/Grid Enhancement */
-.pf-v6-l-gallery {
-  gap: calc(var(--spacing-unit) * 2);
-}
-
-/* Page main area — flex column for docked terminal */
-.pf-v6-c-page__main {
-  display: flex !important;
-  flex-direction: column !important;
-  overflow: hidden !important;
-}
-
-/* Page Section */
-.pf-v6-c-page__main-section {
-  background-color: transparent !important;
-}
-
-.pf-v6-c-page__main-section[class*="pf-m-light"] {
-  background: rgba(255, 255, 255, 0.2) !important;
-  border-bottom: 1px solid var(--glass-border) !important;
-}
-
-/* Enhanced Table Styling - Glassmorphism */
-.pf-v6-c-table {
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--glass-bg) !important;
-  box-shadow: var(--glass-shadow) !important;
-  border: 1px solid var(--glass-border) !important;
-}
-
-.pf-v6-c-table thead {
-  background: #f5f5f5 !important;
-  border-bottom: 1px solid var(--glass-border);
-}
-.dark .pf-v6-c-table thead {
-  background: #252530 !important;
-}
-
-.pf-v6-c-table tbody tr {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  border-bottom: 1px solid var(--glass-border);
-}
-
-.pf-v6-c-table tbody tr:nth-child(even) {
-  background: rgba(0, 0, 0, 0.02);
-}
-.dark .pf-v6-c-table tbody tr:nth-child(even) {
-  background: rgba(255, 255, 255, 0.02);
-}
-.pf-v6-c-table tbody tr:hover {
-  background: rgba(0, 0, 0, 0.05) !important;
-}
-.dark .pf-v6-c-table tbody tr:hover {
-  background: rgba(255, 255, 255, 0.06) !important;
-}
-
-/* Enhanced Labels */
-.pf-v6-c-label {
-  font-weight: 600;
-  border-radius: 4px;
-  padding: 2px 8px;
-  font-size: 0.75rem;
-}
-
-/* Enhanced Progress Bars */
-.pf-v6-c-progress {
-  border-radius: var(--border-radius-sm);
-  background: rgba(226, 232, 240, 0.5);
-  overflow: hidden;
-}
-
-.pf-v6-c-progress__bar {
-  border-radius: var(--border-radius-sm);
-  background: linear-gradient(90deg, var(--console-primary), hsl(var(--primary) / 0.8));
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 10px var(--console-primary);
-}
-
-/* Navigation Enhancements - Premium Glass Effect with Improved Spacing */
-.pf-v6-c-nav {
-  padding: 16px 0;
-}
-
-.pf-v6-c-nav__list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.pf-v6-c-nav__link {
-  transition: background 0.15s ease, color 0.15s ease;
-  border-radius: 6px;
-  margin: 1px 8px;
-  font-weight: 500;
-  font-size: 13px;
-  position: relative;
-  padding: 8px 12px;
-}
-
-.pf-v6-c-nav__link:hover {
-  background: rgba(0, 0, 0, 0.06);
-}
-.dark .pf-v6-c-nav__link:hover {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.pf-v6-c-nav__link.pf-m-current {
-  font-weight: 600;
-  background: var(--theme-color-1);
-  color: #fff !important;
-  border-radius: 6px;
-}
-
-.pf-v6-c-nav__link.pf-m-current:hover {
-  background: var(--theme-color-2);
-}
-
-/* Expandable Nav Enhancement - Premium Design */
-.pf-v6-c-nav__item.pf-m-expandable {
-  margin-bottom: 12px;
-  position: relative;
-}
-
-/* Add subtle divider after each expandable section */
-.pf-v6-c-nav__item.pf-m-expandable::after {
-  content: '';
-  position: absolute;
-  bottom: -6px;
-  left: 12px;
-  right: 12px;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    var(--theme-glass-shadow-2) 20%,
-    var(--theme-glass-shadow-2) 80%,
-    transparent
-  );
-}
-
-.pf-v6-c-nav__item.pf-m-expandable:last-child::after {
-  display: none;
-}
-
-/* Section headers */
-.pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link {
-  font-weight: 600;
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--os-text-secondary, #6a6e73);
-  padding: 10px 12px 6px 12px;
-  margin: 4px 8px 2px 8px;
-}
-
-.dark .pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link {
-  color: var(--os-text-muted, #8a8d90);
-}
-
-.pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link:hover {
-  background: rgba(0, 0, 0, 0.04);
-}
-.dark .pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-/* Toggle icon */
-.pf-v6-c-nav__toggle-icon {
-  transition: transform 0.2s ease;
-  color: var(--os-text-muted, #8a8d90);
-}
-
-.pf-v6-c-nav__item.pf-m-expandable.pf-m-expanded > .pf-v6-c-nav__link .pf-v6-c-nav__toggle-icon {
-  transform: rotate(90deg);
-}
-
-/* Subnav */
-.pf-v6-c-nav__item.pf-m-expandable .pf-v6-c-nav__subnav {
-  padding: 2px 0 6px 0;
-}
-
-.dark .pf-v6-c-nav__item.pf-m-expandable .pf-v6-c-nav__subnav {
-  background: transparent;
-}
-
-/* Child nav items get indentation */
-.pf-v6-c-nav__subnav .pf-v6-c-nav__link {
-  padding-left: 24px;
-  font-size: 0.875rem;
-}
-
-.pf-v6-c-nav__subnav .pf-v6-c-nav__link::before {
-  content: '';
-  position: absolute;
-  left: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--theme-glass-border);
-  transition: all 0.3s ease;
-}
-
-.pf-v6-c-nav__subnav .pf-v6-c-nav__link:hover::before {
-  width: 6px;
-  height: 6px;
-  background: rgba(252, 165, 165, 0.8);
-  box-shadow: 0 0 8px rgba(252, 165, 165, 0.6);
-}
-
-.pf-v6-c-nav__subnav .pf-v6-c-nav__link.pf-m-current::before {
-  width: 6px;
-  height: 6px;
-  background: rgba(252, 165, 165, 1);
-  box-shadow: 0 0 10px rgba(252, 165, 165, 0.8);
-}
-
-/* Add subtle hover effect to entire nav section */
-.pf-v6-c-nav__item.pf-m-expandable:hover {
-  background: rgba(251, 146, 60, 0.02);
-  border-radius: 12px;
-  margin: 0 8px;
-  padding: 0 4px;
-  transition: all 0.3s ease;
-}
-
-/* Better spacing for nav items */
-.pf-v6-c-nav__item {
-  transition: all 0.3s ease;
-}
-
-/* Add counter badge style for expandable sections (optional future use) */
-.pf-v6-c-nav__item.pf-m-expandable > .pf-v6-c-nav__link::after {
-  /* Reserved for count badges if needed */
-}
-
-/* Enhance the active section header */
-.pf-v6-c-nav__item.pf-m-expandable.pf-m-current > .pf-v6-c-nav__link,
-.pf-v6-c-nav__item.pf-m-expandable.pf-m-expanded > .pf-v6-c-nav__link {
-  background: rgba(251, 146, 60, 0.12);
-  border-left-color: rgba(252, 165, 165, 0.8);
-  color: var(--theme-color-2);
-}
-
-.dark .pf-v6-c-nav__item.pf-m-expandable.pf-m-current > .pf-v6-c-nav__link,
-.dark .pf-v6-c-nav__item.pf-m-expandable.pf-m-expanded > .pf-v6-c-nav__link {
-  background: rgba(251, 146, 60, 0.2);
-  color: var(--theme-color-light);
-}
-
-/* Toolbar Enhancements - Glass */
-.pf-v6-c-toolbar {
-  background: rgba(255, 255, 255, 0.2) !important;
-  padding: var(--spacing-unit) calc(var(--spacing-unit) * 2);
-  margin-bottom: var(--spacing-unit);
-  border: 1px solid var(--glass-border) !important;
-  border-radius: var(--border-radius-md);
-  box-shadow: var(--glass-shadow) !important;
-}
-
-/* Button Enhancements - Premium Glassmorphism */
-.pf-v6-c-button {
-  font-weight: 600;
-  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border-radius: var(--border-radius-sm);
-  font-size: 0.875rem;
-  position: relative;
-  overflow: hidden;
-  letter-spacing: 0.01em;
-}
-
-/* Buttons — clean, flat */
-.pf-v6-c-button.pf-m-primary {
-  background: var(--theme-color-1) !important;
-  color: #fff;
-  border: none;
-  border-radius: 6px;
-  font-weight: 500;
-}
-
-.pf-v6-c-button.pf-m-primary:hover:not(:disabled) {
-  background: var(--theme-color-2) !important;
-}
-
-.pf-v6-c-button.pf-m-secondary {
-  background: transparent;
-  border: 1px solid var(--glass-border);
-  color: var(--os-text-primary, #151515);
-  border-radius: 6px;
-}
-
-.pf-v6-c-button.pf-m-secondary:hover:not(:disabled) {
-  border-color: var(--theme-color-1);
-  color: var(--theme-color-1);
-}
-
-.pf-v6-c-button:active:not(:disabled) {
-  transform: scale(0.97);
-}
-
-/* Search Input Enhancement - Glass */
-.pf-v6-c-search-input {
-  background: var(--glass-bg);
-  box-shadow: var(--glass-shadow);
-  border-radius: var(--border-radius-md);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  border: 1px solid var(--glass-border);
-}
-
-.pf-v6-c-search-input:focus-within {
-  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2);
-  border-color: var(--console-primary);
-  transform: translateY(-2px);
-}
-
-/* Empty State Enhancement */
-.pf-v6-c-empty-state {
-  padding: calc(var(--spacing-unit) * 6);
-  background: var(--glass-bg);
-  border-radius: var(--border-radius-lg);
-  border: 1px solid var(--glass-border);
-}
-
-/* Title Enhancements - Premium Typography */
-.pf-v6-c-title {
-  font-weight: 800;
-  letter-spacing: -0.035em;
-  color: hsl(var(--foreground)) !important;
-  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  -webkit-text-fill-color: unset !important;
-  background: none !important;
-  background-clip: unset !important;
-  -webkit-background-clip: unset !important;
-}
-
-/* Masthead Enhancement - Premium Glass */
-.pf-v6-c-masthead {
-  background: #ffffff !important;
-  box-shadow:
-    0 4px 24px rgba(251, 146, 60, 0.12),
-    0 2px 12px rgba(251, 113, 133, 0.08),
-    inset 0 1px 1px rgba(255, 255, 255, 0.3) !important;
-  border-bottom: 1px solid var(--glass-border) !important;
-  position: relative;
-  display: flex;
-  align-items: center;
-  min-height: 64px;
-  padding: 0 16px;
-  transition: all 0.3s ease;
-}
-
-.dark .pf-v6-c-masthead {
-  background: #1a1a26 !important;
-  box-shadow: 0 1px 0 var(--glass-border) !important;
-}
-
-.pf-v6-c-masthead__toggle {
-  flex-shrink: 0;
-}
-
-.pf-v6-c-masthead__main {
-  flex-shrink: 0;
-  margin-right: auto;
-}
-
-.pf-v6-c-masthead__content {
-  flex-shrink: 0;
-  margin-left: auto;
-}
-
-.pf-v6-c-masthead::after {
-  content: '';
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--console-primary), transparent);
-  opacity: 0.5;
-}
-
-/* Sidebar Enhancement - Premium Glass with Improved Layout */
-.pf-v6-c-page__sidebar {
-  background: #f8f8fa !important;
-  box-shadow:
-    1px 0 0 var(--glass-border),
-    2px 0 12px rgba(251, 113, 133, 0.08),
-    inset -1px 0 1px rgba(255, 255, 255, 0.3) !important;
-  border-right: 1px solid var(--glass-border) !important;
-  transition: all 0.3s ease;
-  position: relative;
-}
-
-/* Add subtle gradient overlay at top of sidebar */
-.pf-v6-c-page__sidebar::before {
-  display: none;
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 60px;
-  background: linear-gradient(
-    180deg,
-    var(--theme-bg-6) 0%,
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 1;
-}
-
-.dark .pf-v6-c-page__sidebar {
-  background: #16161f !important;
-  box-shadow: 1px 0 0 var(--glass-border) !important;
-}
-
-.dark .pf-v6-c-page__sidebar::before {
-  background: linear-gradient(
-    180deg,
-    var(--theme-bg-1) 0%,
-    transparent 100%
-  );
-}
-
-/* Sidebar body with better scrolling */
-.pf-v6-c-page__sidebar-body {
-  overflow-y: auto;
-  overflow-x: hidden;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(251, 146, 60, 0.3) transparent;
-}
-
-/* Custom scrollbar for sidebar */
-.pf-v6-c-page__sidebar-body::-webkit-scrollbar {
-  width: 6px;
-}
-
-.pf-v6-c-page__sidebar-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.pf-v6-c-page__sidebar-body::-webkit-scrollbar-thumb {
-  background: rgba(251, 146, 60, 0.3);
-  border-radius: 3px;
-  transition: all 0.3s ease;
-}
-
-.pf-v6-c-page__sidebar-body::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-glass-border);
-  box-shadow: 0 0 8px var(--theme-glass-shadow-1);
-}
-
-/* Card Header - Glass */
-.pf-v6-c-card__header {
-  border-bottom: 1px solid var(--glass-border) !important;
-  background: rgba(248, 250, 252, 0.2) !important;
-}
-
-/* Card Title Enhancement - Premium Typography */
-.pf-v6-c-card__title {
-  font-weight: 700;
-  font-size: 1.25rem;
-  letter-spacing: -0.02em;
-  color: var(--console-text-primary);
-  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
-  margin-bottom: 0.5rem;
-}
-
-/* Badge Glass Effect */
-.pf-v6-c-badge {
-  border-radius: var(--border-radius-sm);
-  font-weight: 600;
-  font-size: 0.75rem;
-  padding: 4px 10px;
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-}
-
-/* Alert Glass Styling */
-.pf-v6-c-alert {
-  border-radius: var(--border-radius-md);
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
-}
-
-/* Modal/Dialog Glass Effect */
-.pf-v6-c-modal-box,
-.pf-v6-c-about-modal-box {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
-  border-radius: 8px;
-}
-
-/* Dropdown */
-.pf-v6-c-dropdown__menu,
-.pf-v6-c-menu {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 12px 40px rgba(31, 38, 135, 0.2);
-  border-radius: var(--border-radius-md);
-}
-
-/* Form Controls Glass */
-.pf-v6-c-form-control,
-.pf-v6-c-text-input-group {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.pf-v6-c-form-control:focus,
-.pf-v6-c-text-input-group:focus-within {
-  border-color: var(--console-primary);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
 /* Responsive improvements */
+
 @media (max-width: 768px) {
   .pf-v6-l-gallery {
     gap: var(--spacing-unit);
@@ -606,71 +67,8 @@
   }
 }
 
-/* Dark theme glass adjustments - Enhanced with sunset glow */
-.dark .pf-v6-c-card {
-  box-shadow:
-    0 8px 32px 0 rgba(0, 0, 0, 0.6),
-    0 4px 16px 0 var(--theme-glass-shadow-1),
-    inset 0 1px 2px 0 var(--theme-glass-shadow-2);
-}
-
-.dark .pf-v6-c-card:hover {
-  box-shadow:
-    0 16px 48px 0 rgba(0, 0, 0, 0.7),
-    0 8px 24px 0 rgba(251, 146, 60, 0.35),
-    0 0 40px var(--theme-glass-shadow-2),
-    inset 0 1px 3px 0 rgba(254, 215, 170, 0.3);
-}
-
-.dark .pf-v6-c-table thead {
-  background: rgba(80, 30, 20, 0.4);
-  border-bottom: 1px solid var(--theme-glass-shadow-2);
-  box-shadow: 0 2px 8px rgba(251, 146, 60, 0.2);
-}
-
-.dark .pf-v6-c-table tbody tr:hover {
-  background: var(--theme-bg-1);
-  border-left-color: rgba(252, 165, 165, 0.7);
-}
-
-.dark .pf-v6-c-button.pf-m-secondary {
-  background: rgba(80, 30, 20, 0.35);
-  border-color: var(--theme-glass-shadow-2);
-  box-shadow:
-    0 2px 8px rgba(0, 0, 0, 0.3),
-    inset 0 1px 1px rgba(244, 114, 182, 0.15);
-}
-
-.dark .pf-v6-c-button.pf-m-secondary:hover:not(:disabled) {
-  background: var(--theme-glass-shadow-1);
-  border-color: rgba(244, 114, 182, 0.6);
-  box-shadow:
-    0 4px 12px rgba(0, 0, 0, 0.4),
-    0 2px 8px rgba(251, 146, 60, 0.3),
-    inset 0 1px 2px rgba(254, 215, 170, 0.2);
-}
-
-/* Accessibility - Enhanced Focus states with sunset glow */
-.pf-v6-c-button:focus-visible,
-.pf-v6-c-nav__link:focus-visible,
-.pf-v6-c-search-input:focus-within {
-  outline: 2px solid rgb(244, 114, 182);
-  outline-offset: 2px;
-  box-shadow:
-    0 0 0 4px var(--theme-glass-shadow-1),
-    0 0 20px var(--theme-glass-shadow-1);
-}
-
-.dark .pf-v6-c-button:focus-visible,
-.dark .pf-v6-c-nav__link:focus-visible,
-.dark .pf-v6-c-search-input:focus-within {
-  outline-color: var(--theme-color-light);
-  box-shadow:
-    0 0 0 4px rgba(244, 114, 182, 0.35),
-    0 0 30px rgba(254, 215, 170, 0.5);
-}
-
 /* Loading shimmer with glass */
+
 @keyframes shimmer {
   0% {
     background-position: -1000px 0;
@@ -692,56 +90,7 @@
   border-radius: var(--border-radius-sm);
 }
 
-/* Scrollbar Styling - Premium Glass Effect */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--theme-bg-6);
-  border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--glass-bg);
-  border-radius: 5px;
-  border: 1px solid var(--glass-border);
-  transition: all 0.3s ease;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--theme-bg-1);
-  box-shadow: 0 0 10px var(--theme-glass-border);
-  transform: scaleY(1.1);
-}
-
-/* Removed conflicting infinite float animation on card hover */
-
 /* Enhanced Glow effect on interactive elements */
-.pf-v6-c-button.pf-m-primary,
-.pf-v6-c-nav__link.pf-m-current {
-  position: relative;
-}
-
-.pf-v6-c-button.pf-m-primary::after,
-.pf-v6-c-nav__link.pf-m-current::after {
-  content: '';
-  position: absolute;
-  inset: -3px;
-  border-radius: inherit;
-  background: linear-gradient(135deg, rgba(251, 146, 60, 0.6), var(--theme-glass-shadow-1), rgba(251, 113, 133, 0.5));
-  opacity: 0;
-  filter: blur(15px);
-  transition: opacity 0.4s ease;
-  z-index: -1;
-  animation: glow-pulse 3s ease-in-out infinite;
-}
-
-.pf-v6-c-button.pf-m-primary:hover::after,
-.pf-v6-c-nav__link.pf-m-current:hover::after {
-  opacity: 0.7;
-}
 
 @keyframes glow-pulse {
   0%, 100% {
@@ -753,6 +102,7 @@
 }
 
 /* Fade-in animation for page load */
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -765,6 +115,7 @@
 }
 
 /* Scale-in animation */
+
 @keyframes scaleIn {
   from {
     opacity: 0;
@@ -777,6 +128,7 @@
 }
 
 /* Slide-in from left animation */
+
 @keyframes slideInLeft {
   from {
     opacity: 0;
@@ -788,136 +140,30 @@
   }
 }
 
-/* Apply stagger animation to cards */
-.pf-v6-c-card {
-  animation: fadeIn 0.6s ease-out backwards;
-}
-
-.pf-v6-c-card:nth-child(1) { animation-delay: 0.05s; }
-.pf-v6-c-card:nth-child(2) { animation-delay: 0.1s; }
-.pf-v6-c-card:nth-child(3) { animation-delay: 0.15s; }
-.pf-v6-c-card:nth-child(4) { animation-delay: 0.2s; }
-.pf-v6-c-card:nth-child(5) { animation-delay: 0.25s; }
-.pf-v6-c-card:nth-child(6) { animation-delay: 0.3s; }
-
-/* Apply stagger animation to nav items */
-.pf-v6-c-nav__item {
-  animation: slideInLeft 0.5s ease-out backwards;
-}
-
-.pf-v6-c-nav__item:nth-child(1) { animation-delay: 0.05s; }
-.pf-v6-c-nav__item:nth-child(2) { animation-delay: 0.1s; }
-.pf-v6-c-nav__item:nth-child(3) { animation-delay: 0.15s; }
-.pf-v6-c-nav__item:nth-child(4) { animation-delay: 0.2s; }
-.pf-v6-c-nav__item:nth-child(5) { animation-delay: 0.25s; }
-.pf-v6-c-nav__item:nth-child(6) { animation-delay: 0.3s; }
-.pf-v6-c-nav__item:nth-child(7) { animation-delay: 0.35s; }
-.pf-v6-c-nav__item:nth-child(8) { animation-delay: 0.4s; }
-.pf-v6-c-nav__item:nth-child(9) { animation-delay: 0.45s; }
-
-/* Smooth transitions for theme changes — scoped to specific selectors */
-.pf-v6-c-card,
-.pf-v6-c-button,
-.pf-v6-c-nav__link,
-.pf-v6-c-label,
-.pf-v6-c-masthead,
-.pf-v6-c-page__sidebar,
-.pf-v6-c-toolbar,
-.pf-v6-c-badge {
-  transition-property: background-color, border-color, color, box-shadow, transform;
-  transition-duration: 0.3s;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Subtle noise texture for depth - DISABLED for better background visibility */
-/* .pf-v6-c-card::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
-  opacity: 0.03;
-  pointer-events: none;
-  border-radius: inherit;
-  mix-blend-mode: overlay;
-} */
-
-/* Parallax effect on scroll for depth */
-@media (prefers-reduced-motion: no-preference) {
-  body::after {
-    animation: drift 30s ease-in-out infinite alternate;
-  }
-
-  .pf-v6-c-card {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1), transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-  }
-}
-
-/* Respect reduced motion preferences */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-
-  body::after {
-    animation: none;
-  }
-
-  .pf-v6-c-card:hover {
-    animation: none;
-    transform: none;
-  }
-}
-
 /* Force layout containers to be transparent for gradient to show through */
-.pf-v6-c-page,
-.pf-v6-c-page__main,
-.pf-v6-c-page__main-section,
-.pf-v6-c-page__sidebar-body,
-.pf-v6-c-nav,
-.pf-v6-c-page__main-body,
-.pf-v6-c-page__main-group,
-.pf-v6-c-page__main-breadcrumb,
-.pf-v6-c-page__main-tabs,
-.pf-v6-c-page__header,
-.pf-v6-c-nav__list,
-.pf-v6-c-nav__item,
-.pf-v6-l-gallery,
-.pf-v6-l-grid,
-.pf-v6-l-flex,
-.pf-v6-l-stack,
-.pf-m-light {
-  background-color: transparent !important;
-  background: transparent !important;
-}
 
-html,
-body,
-#root {
-  background: transparent !important;
-}
+.pf-v6-l-gallery,
+
+.pf-v6-l-grid,
+
+.pf-v6-l-flex,
+
+.pf-v6-l-stack,
 
 /* Force layout containers to be transparent (not glass elements) */
-.pf-v6-c-page,
-.pf-v6-c-page__main,
-.pf-v6-c-page__main-section,
-.pf-v6-c-page__main-body,
-.pf-v6-c-page__main-group,
+
 .pf-v6-l-gallery,
+
 .pf-v6-l-grid,
+
 .pf-v6-l-flex,
-.pf-v6-l-stack {
-  background-color: transparent !important;
-}
 
 /* =====================================================
    NEW COMPONENTS — Phase 2-4 Enhancements
    ===================================================== */
 
 /* === Command Palette === */
+
 .compass-command-palette-overlay {
   position: fixed;
   inset: 0;
@@ -1025,6 +271,7 @@ body,
 }
 
 /* === Toast Notifications === */
+
 .compass-toast-container {
   position: fixed;
   bottom: 20px;
@@ -1054,12 +301,17 @@ body,
 }
 
 .compass-toast--success .compass-toast__icon { color: #22c55e; }
+
 .compass-toast--error .compass-toast__icon { color: #ef4444; }
+
 .compass-toast--warning .compass-toast__icon { color: #f59e0b; }
+
 .compass-toast--info .compass-toast__icon { color: #3b82f6; }
 
 .compass-toast__content { flex: 1; }
+
 .compass-toast__title { font-weight: 600; font-size: 14px; }
+
 .compass-toast__description { font-size: 13px; color: var(--pf-v6-global--Color--200); margin-top: 2px; }
 
 .compass-toast__close {
@@ -1071,9 +323,11 @@ body,
   opacity: 0.6;
   transition: opacity 0.2s;
 }
+
 .compass-toast__close:hover { opacity: 1; }
 
 /* === Page Transition === */
+
 .compass-page-transition {
   transition: opacity 0.15s ease, transform 0.15s ease;
 }
@@ -1089,6 +343,7 @@ body,
 }
 
 /* === Empty State === */
+
 .compass-empty-state {
   display: flex;
   flex-direction: column;
@@ -1125,6 +380,7 @@ body,
 }
 
 /* === Skeleton Loading === */
+
 .compass-skeleton {
   background: linear-gradient(90deg,
     rgba(241, 245, 249, 0.3) 0%,
@@ -1146,6 +402,7 @@ body,
 }
 
 /* === Status Pulse === */
+
 .compass-status-pulse {
   animation: statusPulse 2s ease-in-out infinite;
 }
@@ -1156,6 +413,7 @@ body,
 }
 
 /* === Connection Pill === */
+
 .compass-connection-pill {
   display: inline-flex;
   align-items: center;
@@ -1183,6 +441,7 @@ body,
 }
 
 /* === Notification Badge === */
+
 .compass-notification-badge {
   position: absolute !important;
   top: -4px;
@@ -1201,6 +460,7 @@ body,
 }
 
 /* === Dashboard Stat Cards V2 === */
+
 .compass-stat-card-v2 {
   position: relative;
 }
@@ -1229,6 +489,7 @@ body,
 }
 
 /* === Utilization Bar === */
+
 .compass-utilization-bar {
   height: 8px;
   border-radius: 4px;
@@ -1250,12 +511,14 @@ body,
 }
 
 /* === Hero Banner === */
+
 .compass-hero-banner {
   border-left: 4px solid transparent;
   border-image: linear-gradient(135deg, var(--theme-color-1), rgb(251, 113, 133)) 1;
 }
 
 /* === Events Timeline === */
+
 .compass-timeline {
   display: flex;
   flex-direction: column;
@@ -1283,7 +546,9 @@ body,
 }
 
 .compass-timeline__dot--normal { background: #22c55e; box-shadow: 0 0 6px rgba(34, 197, 94, 0.4); }
+
 .compass-timeline__dot--warning { background: #f59e0b; box-shadow: 0 0 6px rgba(245, 158, 11, 0.4); }
+
 .compass-timeline__dot--error { background: #ef4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.4); }
 
 .compass-timeline__content {
@@ -1319,6 +584,7 @@ body,
 }
 
 /* === Quick Actions === */
+
 .compass-quick-action {
   padding: 10px 20px;
   border-radius: 10px;
@@ -1339,6 +605,7 @@ body,
 }
 
 /* === YAML Editor Enhancements === */
+
 .compass-yaml-editor .pf-v6-c-code-block {
   position: relative;
 }
@@ -1349,9 +616,6 @@ body,
 }
 
 /* === Table Row Enter Animation === */
-.pf-v6-c-table tbody tr {
-  animation: tableRowEnter 0.3s ease-out backwards;
-}
 
 @keyframes tableRowEnter {
   from {
@@ -1364,29 +628,7 @@ body,
   }
 }
 
-.pf-v6-c-table tbody tr:nth-child(1) { animation-delay: 0.02s; }
-.pf-v6-c-table tbody tr:nth-child(2) { animation-delay: 0.04s; }
-.pf-v6-c-table tbody tr:nth-child(3) { animation-delay: 0.06s; }
-.pf-v6-c-table tbody tr:nth-child(4) { animation-delay: 0.08s; }
-.pf-v6-c-table tbody tr:nth-child(5) { animation-delay: 0.10s; }
-.pf-v6-c-table tbody tr:nth-child(6) { animation-delay: 0.12s; }
-.pf-v6-c-table tbody tr:nth-child(7) { animation-delay: 0.14s; }
-.pf-v6-c-table tbody tr:nth-child(8) { animation-delay: 0.16s; }
-
-/* === Tab Content Fade === */
-.pf-v6-c-tab-content {
-  animation: fadeIn 0.25s ease-out;
-}
-
 /* === Button Ripple Effect === */
-.pf-v6-c-button.pf-m-primary:active::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.3);
-  border-radius: inherit;
-  animation: buttonRipple 0.4s ease-out;
-}
 
 @keyframes buttonRipple {
   from { opacity: 1; transform: scale(0.8); }
@@ -1394,6 +636,7 @@ body,
 }
 
 /* === Responsive: Mobile sidebar drawer + table to card === */
+
 @media (max-width: 768px) {
   .compass-command-palette {
     width: calc(100vw - 32px);
@@ -1412,6 +655,7 @@ body,
 }
 
 /* === Collapsed sidebar === */
+
 .compass-sidebar--collapsed {
   width: 64px !important;
   overflow: hidden;
@@ -1419,11 +663,6 @@ body,
 
 .compass-sidebar--collapsed .pf-v6-c-nav__link span {
   display: none;
-}
-
-/* === Pagination glass style === */
-.pf-v6-c-pagination {
-  background: transparent !important;
 }
 
 /* =====================================================
@@ -1547,8 +786,11 @@ body,
 }
 
 .compass-log-line--error .compass-log-line__text { color: #f87171; }
+
 .compass-log-line--warn .compass-log-line__text { color: #fbbf24; }
+
 .compass-log-line--info .compass-log-line__text { color: #93c5fd; }
+
 .compass-log-line--debug .compass-log-line__text { color: #6b7280; }
 
 .compass-log-highlight {
@@ -1754,11 +996,13 @@ body,
    ===================================================== */
 
 /* Number transition for stat values */
+
 .compass-stat-value {
   transition: color 0.3s;
 }
 
 /* Status change highlight */
+
 .compass-status-changed {
   animation: statusChangeGlow 1s ease-out;
 }
@@ -1770,12 +1014,14 @@ body,
 }
 
 /* Scroll-linked header shrink */
+
 .compass-header--scrolled .pf-v6-c-title {
   font-size: 1.25rem !important;
   transition: font-size 0.2s ease;
 }
 
 /* Mobile responsive enhancements */
+
 @media (max-width: 768px) {
   .compass-log-viewer { height: 350px; }
   .compass-confirm-dialog { width: calc(100vw - 32px); }
@@ -1795,72 +1041,8 @@ body,
   }
 }
 
-/* Breadcrumb glass styling */
-.pf-v6-c-breadcrumb {
-  background: transparent !important;
-}
-
-.pf-v6-c-breadcrumb__link {
-  color: var(--pf-v6-global--Color--200) !important;
-  transition: color 0.2s;
-}
-
-.pf-v6-c-breadcrumb__link:hover {
-  color: hsl(var(--foreground)) !important;
-}
-
-/* Tabs glass styling */
-.pf-v6-c-tabs {
-  background: transparent !important;
-  border-bottom: 1px solid var(--glass-border) !important;
-}
-
-.pf-v6-c-tabs__link {
-  transition: all 0.2s ease !important;
-}
-
-.pf-v6-c-tabs__link::after {
-  background: linear-gradient(90deg, var(--theme-color-1), rgb(251, 113, 133)) !important;
-}
-
-/* Select/dropdown glass */
-.pf-v6-c-menu-toggle {
-  background: var(--glass-bg) !important;
-  border: 1px solid var(--glass-border) !important;
-  border-radius: 8px !important;
-  transition: all 0.2s ease;
-}
-
-.pf-v6-c-menu-toggle:hover {
-  border-color: var(--theme-glass-shadow-1) !important;
-}
-
-/* Description list glass styling */
-.pf-v6-c-description-list__term {
-  font-weight: 600;
-  font-size: 13px;
-  color: var(--pf-v6-global--Color--200) !important;
-}
-
-/* Code block glass */
-.pf-v6-c-code-block {
-  background: rgba(15, 23, 42, 0.95) !important;
-  border-radius: 8px !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
-  color: #e2e8f0;
-}
-
-.pf-v6-c-code-block__code {
-  background: transparent !important;
-  color: #e2e8f0 !important;
-}
-
-/* Sort indicators in table headers */
-.pf-v6-c-table__sort .pf-v6-c-table__button {
-  color: inherit !important;
-}
-
 /* WebTerminal */
+
 .compass-web-terminal {
   position: fixed;
   bottom: 0;
