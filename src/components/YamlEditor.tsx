@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Button, Label, Tooltip } from '@patternfly/react-core';
 import {
   CopyIcon,
@@ -356,7 +357,7 @@ export default function YamlEditor({ value, name, apiUrl, onSaved }: YamlEditorP
     return `${(bytes / 1024).toFixed(1)} KB`;
   };
 
-  return (
+  const editorContent = (
     <div className={`os-yaml-editor${fullscreen ? ' os-yaml-editor--fullscreen' : ''}`}>
       {/* Toolbar */}
       <div className="os-yaml-editor__toolbar">
@@ -478,11 +479,13 @@ export default function YamlEditor({ value, name, apiUrl, onSaved }: YamlEditorP
       <style>{`
         .os-yaml-editor { display: flex; flex-direction: column; position: relative; }
         .os-yaml-editor--fullscreen {
-          position: fixed; inset: 0; z-index: 9998;
+          position: fixed; inset: 0; z-index: 10000;
           background: var(--modern-card, #fff);
           padding: 0;
+          display: flex; flex-direction: column;
         }
-        .os-yaml-editor--fullscreen .cm-editor { max-height: none !important; height: calc(100vh - 88px) !important; }
+        .os-yaml-editor--fullscreen .cm-editor { max-height: none !important; flex: 1 !important; min-height: 0 !important; }
+        .os-yaml-editor--fullscreen .cm-scroller { max-height: none !important; }
         .os-yaml-editor__toolbar {
           display: flex; justify-content: space-between; align-items: center;
           padding: 8px 12px; gap: 8px; flex-wrap: wrap;
@@ -562,4 +565,8 @@ export default function YamlEditor({ value, name, apiUrl, onSaved }: YamlEditorP
       `}</style>
     </div>
   );
+
+  // Use portal for fullscreen to escape ancestor transform containing blocks
+  if (fullscreen) return createPortal(editorContent, document.body);
+  return editorContent;
 }
