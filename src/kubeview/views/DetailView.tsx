@@ -119,8 +119,12 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
 
   const handleApplyFix = async (diagnosis: Diagnosis) => {
     if (!diagnosis.fix) return;
-    console.log('Applying fix:', diagnosis.fix);
-    // TODO: Implement fix application using k8sPatch
+    try {
+      await k8sPatch(diagnosis.fix.patchTarget, diagnosis.fix.patch as any, diagnosis.fix.patchType);
+      addToast({ type: 'success', title: 'Fix applied', detail: diagnosis.fix.label });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Fix failed', detail: err instanceof Error ? err.message : 'Unknown error' });
+    }
   };
 
   const handleDelete = async () => {
@@ -189,7 +193,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
 
   const isScalable = resource?.kind === 'Deployment' || resource?.kind === 'StatefulSet' || resource?.kind === 'ReplicaSet';
   const isRestartable = resource?.kind === 'Deployment';
-  const [detailTab, setDetailTab] = React.useState<'overview' | 'yaml' | 'events'>('overview');
+  const [detailTab, setDetailTab] = React.useState<'overview' | 'raw' | 'events'>('overview');
   const currentPath = namespace ? `/r/${gvrUrl}/${namespace}/${name}` : `/r/${gvrUrl}/_/${name}`;
   const [starred, setStarred] = React.useState(() => isFavorite(currentPath));
 
@@ -391,15 +395,15 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
 
         {/* Detail tabs */}
         <div className="flex gap-1 bg-slate-900 rounded-lg p-1 w-fit">
-          {(['overview', 'yaml', 'events'] as const).map((tab) => (
+          {(['overview', 'raw', 'events'] as const).map((tab) => (
             <button key={tab} onClick={() => setDetailTab(tab)} className={cn('px-4 py-1.5 text-xs rounded-md transition-colors capitalize', detailTab === tab ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
-              {tab === 'events' ? `Events (${sortedEvents.length})` : tab}
+              {tab === 'events' ? `Events (${sortedEvents.length})` : tab === 'raw' ? 'Raw YAML' : tab}
             </button>
           ))}
         </div>
 
-        {/* YAML tab */}
-        {detailTab === 'yaml' && (
+        {/* Raw YAML tab */}
+        {detailTab === 'raw' && (
           <div className="bg-slate-900 rounded-lg border border-slate-800">
             <div className="flex items-center justify-between px-4 py-2 border-b border-slate-800">
               <h2 className="text-sm font-semibold text-slate-100">Resource YAML</h2>

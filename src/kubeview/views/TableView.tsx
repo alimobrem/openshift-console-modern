@@ -212,8 +212,9 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
     return sorted;
   }, [filteredResources, sortState, columns]);
 
-  // Paginate
+  // Paginate — reset to page 0 when filters change
   const [currentPage, setCurrentPage] = React.useState(0);
+  React.useEffect(() => { setCurrentPage(0); }, [searchTerm, columnFilters, activeNamespace]);
   const paginatedResources = React.useMemo(() => {
     const start = currentPage * perPage;
     return sortedResources.slice(start, start + perPage);

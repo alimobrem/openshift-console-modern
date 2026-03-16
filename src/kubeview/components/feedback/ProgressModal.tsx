@@ -78,7 +78,7 @@ export function ProgressModal({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div
         ref={dialogRef}
         className="w-full max-w-lg rounded-lg bg-slate-800 shadow-xl"

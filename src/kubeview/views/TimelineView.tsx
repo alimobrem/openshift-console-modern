@@ -160,7 +160,7 @@ export default function TimelineView() {
             {Object.entries(groupedEvents).map(([dateKey, dateEvents]) => (
               <div key={dateKey}>
                 {/* Date header */}
-                <div className="sticky top-0 z-10 bg-slate-950/95 backdrop-blur-sm py-2 mb-3">
+                <div className="sticky top-0 z-10 bg-slate-950 py-2 mb-3">
                   <h2 className="text-sm font-semibold text-slate-100 uppercase tracking-wide">
                     {dateKey}
                   </h2>

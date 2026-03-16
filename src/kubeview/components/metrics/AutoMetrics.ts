@@ -142,7 +142,7 @@ export const resourceMetrics: ResourceMetrics[] = [
       {
         id: 'node-cpu',
         title: 'CPU Utilization',
-        query: 'instance:node_cpu_utilisation:rate5m{instance="${name}"}',
+        query: '1 - avg(rate(node_cpu_seconds_total{mode="idle",instance="${name}"}[5m]))',
         yAxisLabel: 'CPU %',
         yAxisFormat: 'percent',
         series: 'CPU',
@@ -150,7 +150,7 @@ export const resourceMetrics: ResourceMetrics[] = [
       {
         id: 'node-memory',
         title: 'Memory Usage',
-        query: 'node_memory_MemTotal_bytes{instance=~"${name}.*"} - node_memory_MemAvailable_bytes{instance=~"${name}.*"}',
+        query: 'node_memory_MemTotal_bytes{instance="${name}"} - node_memory_MemAvailable_bytes{instance="${name}"}',
         yAxisLabel: 'Memory',
         yAxisFormat: 'bytes',
         series: 'Used Memory',
