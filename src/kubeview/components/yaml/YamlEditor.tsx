@@ -9,6 +9,7 @@ import { autocompletion, type CompletionContext, type Completion } from '@codemi
 import { Save, FileDown, BookOpen, Puzzle, HelpCircle, X, Copy, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DiffPreview from './DiffPreview';
+import SchemaPanel from './SchemaPanel';
 import { snippets, resolveSnippet, type Snippet } from './SnippetEngine';
 
 export interface YamlEditorProps {
@@ -125,7 +126,7 @@ export default function YamlEditor({
   const [cursorPosition, setCursorPosition] = useState({ line: 1, column: 1 });
   const [showDiffPreview, setShowDiffPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [sidePanel, setSidePanel] = useState<'none' | 'snippets' | 'help'>('none');
+  const [sidePanel, setSidePanel] = useState<'none' | 'snippets' | 'help' | 'schema'>('none');
   const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
   useEffect(() => { setInternalValue(value); }, [value]);
@@ -213,6 +214,14 @@ export default function YamlEditor({
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setSidePanel(sidePanel === 'schema' ? 'none' : 'schema')}
+              className={cn('flex items-center gap-1 px-2 py-0.5 rounded transition-colors', sidePanel === 'schema' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800')}
+              title="API Schema"
+            >
+              <BookOpen className="w-3 h-3" />
+              Schema
+            </button>
+            <button
               onClick={() => setSidePanel(sidePanel === 'snippets' ? 'none' : 'snippets')}
               className={cn('flex items-center gap-1 px-2 py-0.5 rounded transition-colors', sidePanel === 'snippets' ? 'bg-blue-600 text-white' : 'hover:bg-slate-800')}
               title="Insert snippet"
@@ -246,6 +255,10 @@ export default function YamlEditor({
       {/* Side Panel */}
       {sidePanel !== 'none' && (
         <div className="w-72 flex-shrink-0 border-l border-slate-700 bg-slate-900 flex flex-col overflow-hidden">
+          {sidePanel === 'schema' ? (
+            <SchemaPanel gvk={resourceGvk} yamlContent={internalValue} />
+          ) : (
+          <>
           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700">
             <span className="text-sm font-semibold text-slate-200">
               {sidePanel === 'snippets' ? 'Snippets' : 'YAML Help'}
@@ -327,6 +340,8 @@ export default function YamlEditor({
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
       )}
 
