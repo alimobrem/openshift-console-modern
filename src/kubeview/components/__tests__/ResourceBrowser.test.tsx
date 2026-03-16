@@ -188,15 +188,24 @@ describe('KubeView ResourceBrowser', () => {
     expect(screen.queryByText('Core (v1)')).toBeNull();
   });
 
-  it('shows Cluster Pulse pinned item', () => {
+  it('shows built-in pages in pinned section', () => {
     renderBrowser();
     expect(screen.getByText('Cluster Pulse')).toBeDefined();
+    expect(screen.getByText('Timeline')).toBeDefined();
+    expect(screen.getByText('Dashboard')).toBeDefined();
   });
 
-  it('navigates to pulse on pinned click', () => {
+  it('navigates to pulse on page click', () => {
     renderBrowser();
     fireEvent.click(screen.getByText('Cluster Pulse'));
     expect(navigateMock).toHaveBeenCalledWith('/pulse');
+    expect(closeBrowserMock).toHaveBeenCalled();
+  });
+
+  it('navigates to timeline on page click', () => {
+    renderBrowser();
+    fireEvent.click(screen.getByText('Timeline'));
+    expect(navigateMock).toHaveBeenCalledWith('/timeline');
     expect(closeBrowserMock).toHaveBeenCalled();
   });
 

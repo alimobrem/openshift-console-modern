@@ -130,6 +130,13 @@ describe('KubeView CommandPalette', () => {
     expect(screen.getAllByText('nodes').length).toBeGreaterThanOrEqual(1);
   });
 
+  it('shows built-in pages', () => {
+    renderPalette();
+    expect(screen.getByText('Cluster Pulse')).toBeDefined();
+    expect(screen.getByText('Timeline')).toBeDefined();
+    expect(screen.getByText('Dashboard')).toBeDefined();
+  });
+
   it('shows resource types from registry', () => {
     renderPalette();
     expect(screen.getAllByText('nodes').length).toBeGreaterThanOrEqual(1);
@@ -137,11 +144,12 @@ describe('KubeView CommandPalette', () => {
     expect(screen.getAllByText('deployments').length).toBeGreaterThanOrEqual(1);
   });
 
-  it('filters resources by search query', () => {
+  it('filters by search query including pages', () => {
     renderPalette();
     const input = screen.getByPlaceholderText(/Search resources/);
-    fireEvent.change(input, { target: { value: 'Node' } });
-    expect(screen.getAllByText('nodes').length).toBeGreaterThanOrEqual(1);
+    fireEvent.change(input, { target: { value: 'timeline' } });
+    expect(screen.getByText('Timeline')).toBeDefined();
+    expect(screen.queryByText('nodes')).toBeNull();
     expect(screen.queryByText('deployments')).toBeNull();
   });
 
@@ -215,14 +223,15 @@ describe('KubeView CommandPalette', () => {
 
   it('keyboard navigation cycles through items', () => {
     renderPalette();
+    // First 3 items are pages (Pulse, Timeline, Dashboard), then resources
+    // down, down, up = index 1 (Timeline)
     fireEvent.keyDown(window, { key: 'ArrowDown' });
     fireEvent.keyDown(window, { key: 'ArrowDown' });
     fireEvent.keyDown(window, { key: 'ArrowUp' });
     fireEvent.keyDown(window, { key: 'Enter' });
-    // After down, down, up = index 1 (pods)
     expect(addTabMock).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: '/r/v1~pods',
+        path: '/timeline',
       }),
     );
   });
@@ -240,10 +249,14 @@ describe('KubeView CommandPalette', () => {
     expect(closeCommandPaletteMock).toHaveBeenCalled();
   });
 
-  it('handles empty registry gracefully', () => {
+  it('shows only pages when registry is null', () => {
     mockRegistry = null;
     renderPalette();
-    expect(screen.getByText('No results found')).toBeDefined();
+    // Built-in pages should still show
+    expect(screen.getByText('Cluster Pulse')).toBeDefined();
+    expect(screen.getByText('Timeline')).toBeDefined();
+    // No resources
+    expect(screen.queryByText('nodes')).toBeNull();
   });
 
   it('saves selected resources to recents', () => {

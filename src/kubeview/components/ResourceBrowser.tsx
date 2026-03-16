@@ -160,22 +160,30 @@ export function ResourceBrowser() {
           </div>
         </div>
 
-        {/* Pinned section */}
+        {/* Pages section */}
         <div className="border-b border-slate-700 p-3">
           <div className="mb-2 flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
             <Star className="h-3 w-3" />
-            Pinned
+            Pages
           </div>
-          <button
-            onClick={() => {
-              navigate('/pulse');
-              closeBrowser();
-            }}
-            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700"
-          >
-            <Icons.Activity className="h-4 w-4 text-emerald-400" />
-            Cluster Pulse
-          </button>
+          {[
+            { label: 'Cluster Pulse', icon: Icons.Activity, path: '/pulse', color: 'text-emerald-400' },
+            { label: 'Timeline', icon: Icons.Clock, path: '/timeline', color: 'text-blue-400' },
+            { label: 'Dashboard', icon: Icons.LayoutDashboard, path: '/dashboard', color: 'text-purple-400' },
+          ].map((page) => (
+            <button
+              key={page.path}
+              onClick={() => {
+                addTab({ title: page.label, icon: page.icon.displayName || '', path: page.path, pinned: false, closable: true });
+                navigate(page.path);
+                closeBrowser();
+              }}
+              className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700"
+            >
+              <page.icon className={`h-4 w-4 ${page.color}`} />
+              {page.label}
+            </button>
+          ))}
         </div>
 
         {/* Resource groups */}

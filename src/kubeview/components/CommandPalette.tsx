@@ -183,9 +183,21 @@ function getCommandItems(
   const cleanQuery = query.replace(/^[/:?]/, '').toLowerCase();
 
   if (mode === 'browse' || mode === 'default') {
-    // Show resource types from discovery
     const items: CommandItem[] = [];
 
+    // Built-in pages (always shown first)
+    const builtinPages: CommandItem[] = [
+      { type: 'nav', id: 'pulse', title: 'Cluster Pulse', subtitle: 'Health overview', icon: 'Activity', path: '/pulse' },
+      { type: 'nav', id: 'timeline', title: 'Timeline', subtitle: 'Cluster event feed', icon: 'Clock', path: '/timeline' },
+      { type: 'nav', id: 'dashboard', title: 'Dashboard', subtitle: 'Grafana-style panels', icon: 'LayoutDashboard', path: '/dashboard' },
+    ];
+
+    const matchingPages = builtinPages.filter((page) =>
+      !cleanQuery || page.title.toLowerCase().includes(cleanQuery) || page.subtitle!.toLowerCase().includes(cleanQuery)
+    );
+    items.push(...matchingPages);
+
+    // Resource types from discovery
     if (resourceRegistry) {
       const seen = new Set<string>();
       for (const [, resource] of resourceRegistry) {
@@ -213,7 +225,7 @@ function getCommandItems(
       }
     }
 
-    return items.slice(0, 20);
+    return items.slice(0, 25);
   }
 
   if (mode === 'action') {
@@ -286,7 +298,7 @@ function renderGroups(
   for (const item of items) {
     const group = item.type === 'recent' ? 'RECENT' :
                   item.type === 'resource' ? 'RESOURCES' :
-                  item.type === 'action' ? 'ACTIONS' : 'SUGGESTIONS';
+                  item.type === 'action' ? 'ACTIONS' : 'PAGES';
 
     if (!grouped.has(group)) {
       grouped.set(group, []);
