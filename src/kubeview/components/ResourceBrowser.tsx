@@ -9,7 +9,8 @@ import { cn } from '@/lib/utils';
 interface GroupedResources {
   [groupName: string]: Array<{
     kind: string;
-    plural: string;
+    plural?: string;
+    name?: string;
     group: string;
     version: string;
     namespaced: boolean;
@@ -89,7 +90,7 @@ export function ResourceBrowser() {
     return (
       group.toLowerCase().includes(query) ||
       groupedResources[group].some((r) =>
-        r.kind.toLowerCase().includes(query) || r.plural.toLowerCase().includes(query)
+        r.kind.toLowerCase().includes(query) || (r.plural || r.name || '').toLowerCase().includes(query)
       )
     );
   });
@@ -107,11 +108,12 @@ export function ResourceBrowser() {
   }
 
   function handleResourceClick(resource: any) {
+    const plural = resource.plural || resource.name || resource.kind;
     const path = resource.group
-      ? `/r/${resource.group}~${resource.version}~${resource.plural}`
-      : `/r/${resource.version}~${resource.plural}`;
+      ? `/r/${resource.group}~${resource.version}~${plural}`
+      : `/r/${resource.version}~${plural}`;
     addTab({
-      title: resource.plural,
+      title: plural,
       icon: getResourceIcon(resource.kind),
       path,
       pinned: false,
@@ -187,7 +189,7 @@ export function ResourceBrowser() {
               ? resources.filter(
                   (r) =>
                     r.kind.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    r.plural.toLowerCase().includes(searchQuery.toLowerCase())
+                    (r.plural || r.name || '').toLowerCase().includes(searchQuery.toLowerCase())
                 )
               : resources;
 
@@ -216,12 +218,12 @@ export function ResourceBrowser() {
                       const Icon = getIcon(getResourceIcon(resource.kind));
                       return (
                         <button
-                          key={`${resource.group}-${resource.version}-${resource.plural}`}
+                          key={`${resource.group}-${resource.version}-${resource.plural || resource.name}`}
                           onClick={() => handleResourceClick(resource)}
                           className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
                         >
                           <Icon className="h-3.5 w-3.5" />
-                          <span className="flex-1 truncate text-left">{resource.plural}</span>
+                          <span className="flex-1 truncate text-left">{resource.plural || resource.name}</span>
                         </button>
                       );
                     })}

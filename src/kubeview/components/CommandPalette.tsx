@@ -193,7 +193,7 @@ function getCommandItems(
         if (!seen.has(dedup)) {
           seen.add(dedup);
           const kind = resource.kind || '';
-          const plural = resource.plural || '';
+          const plural = resource.plural || resource.name || '';
           const match = !cleanQuery ||
             kind.toLowerCase().includes(cleanQuery) ||
             plural.toLowerCase().includes(cleanQuery);
@@ -201,12 +201,12 @@ function getCommandItems(
             items.push({
               type: 'resource',
               id: dedup,
-              title: resource.plural || resource.kind,
+              title: plural || kind,
               subtitle: resource.group ? `${resource.group}/${resource.version}` : resource.version,
               icon: getResourceIcon(resource.kind),
               path: resource.group
-                ? `/r/${resource.group}~${resource.version}~${resource.plural}`
-                : `/r/${resource.version}~${resource.plural}`,
+                ? `/r/${resource.group}~${resource.version}~${plural}`
+                : `/r/${resource.version}~${plural}`,
             });
           }
         }
