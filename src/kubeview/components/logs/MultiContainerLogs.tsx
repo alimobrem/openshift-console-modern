@@ -218,6 +218,7 @@ export default function MultiContainerLogs({
           </div>
         ) : (
           <LogStream
+            key={selectedContainer}
             namespace={namespace}
             podName={podName}
             containerName={selectedContainer}
