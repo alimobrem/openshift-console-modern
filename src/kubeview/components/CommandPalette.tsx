@@ -189,15 +189,17 @@ function getCommandItems(
     if (resourceRegistry) {
       const seen = new Set<string>();
       for (const [, resource] of resourceRegistry) {
-        const key = `${resource.kind}`;
-        if (!seen.has(key)) {
-          seen.add(key);
-          const match = !cleanQuery || key.toLowerCase().includes(cleanQuery);
+        const dedup = `${resource.group}/${resource.kind}`;
+        if (!seen.has(dedup)) {
+          seen.add(dedup);
+          const match = !cleanQuery ||
+            resource.kind.toLowerCase().includes(cleanQuery) ||
+            resource.plural.toLowerCase().includes(cleanQuery);
           if (match) {
             items.push({
               type: 'resource',
-              id: key,
-              title: resource.plural || key,
+              id: dedup,
+              title: resource.plural || resource.kind,
               subtitle: resource.group ? `${resource.group}/${resource.version}` : resource.version,
               icon: getResourceIcon(resource.kind),
               path: resource.group

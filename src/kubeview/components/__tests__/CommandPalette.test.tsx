@@ -234,8 +234,8 @@ describe('KubeView CommandPalette', () => {
     expect(recents[0].title).toBe('nodes');
   });
 
-  it('deduplicates resources by kind', () => {
-    // Add a duplicate Node with different GVR key
+  it('deduplicates resources by group+kind', () => {
+    // Add a duplicate Node in the same group — should be deduped
     mockRegistry!.set('core/v1/nodes-duplicate', {
       group: '',
       version: 'v1',
@@ -253,5 +253,27 @@ describe('KubeView CommandPalette', () => {
     fireEvent.change(input, { target: { value: 'Node' } });
     const nodeItems = screen.getAllByText('nodes');
     expect(nodeItems.length).toBe(1);
+  });
+
+  it('shows same-kind resources from different groups separately', () => {
+    // Add Node from config.openshift.io — different group, should NOT be deduped
+    mockRegistry!.set('config.openshift.io/v1/nodes', {
+      group: 'config.openshift.io',
+      version: 'v1',
+      kind: 'Node',
+      plural: 'nodes',
+      singularName: 'node',
+      namespaced: false,
+      verbs: ['get', 'list'],
+      shortNames: [],
+      categories: [],
+    });
+
+    renderPalette();
+    const input = screen.getByPlaceholderText(/Search resources/);
+    fireEvent.change(input, { target: { value: 'Node' } });
+    // Should show both: core nodes and config.openshift.io nodes
+    const nodeItems = screen.getAllByText('nodes');
+    expect(nodeItems.length).toBe(2);
   });
 });
