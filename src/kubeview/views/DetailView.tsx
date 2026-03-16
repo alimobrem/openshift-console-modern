@@ -270,13 +270,28 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
           </div>
           <div className="flex gap-2">
             {resource.kind === 'Pod' && namespace && (
-              <button
-                onClick={handleViewLogs}
-                className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5"
-              >
-                <FileText className="w-3 h-3" />
-                Logs
-              </button>
+              <>
+                <button
+                  onClick={handleViewLogs}
+                  className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5"
+                >
+                  <FileText className="w-3 h-3" />
+                  Logs
+                </button>
+                <button
+                  onClick={() => {
+                    const container = (spec.containers as any[])?.[0]?.name || '';
+                    const cmd = `oc exec -it ${name} -n ${namespace}${container ? ` -c ${container}` : ''} -- /bin/sh`;
+                    navigator.clipboard.writeText(cmd);
+                    addToast({ type: 'success', title: 'Terminal command copied', detail: cmd });
+                  }}
+                  className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5"
+                  title="Copy oc exec command"
+                >
+                  <Terminal className="w-3 h-3" />
+                  Terminal
+                </button>
+              </>
             )}
             {isScalable && (
               <div className="flex items-center gap-1">
@@ -298,6 +313,20 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
               >
                 <RotateCw className="w-3 h-3" />
                 Restart
+              </button>
+            )}
+            {resource.kind === 'Node' && (
+              <button
+                onClick={() => {
+                  const cmd = `oc debug node/${name}`;
+                  navigator.clipboard.writeText(cmd);
+                  addToast({ type: 'success', title: 'Debug command copied', detail: cmd });
+                }}
+                className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5"
+                title="Copy oc debug node command"
+              >
+                <Terminal className="w-3 h-3" />
+                Debug Node
               </button>
             )}
             {namespace && (
