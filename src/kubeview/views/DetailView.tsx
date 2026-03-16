@@ -18,6 +18,7 @@ import {
   GitBranch,
   Search,
   Copy,
+  Star,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sGet, k8sList, k8sDelete, k8sPatch } from '../engine/query';
@@ -26,6 +27,7 @@ import { diagnoseResource, type Diagnosis } from '../engine/diagnosis';
 import { buildApiPath } from '../hooks/useResourceUrl';
 import { useUIStore } from '../store/uiStore';
 import { jsonToYaml, resourceToYaml } from '../engine/yamlUtils';
+import { toggleFavorite, isFavorite } from '../engine/favorites';
 
 interface DetailViewProps {
   gvrKey: string;
@@ -186,6 +188,8 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
   const isScalable = resource?.kind === 'Deployment' || resource?.kind === 'StatefulSet' || resource?.kind === 'ReplicaSet';
   const isRestartable = resource?.kind === 'Deployment';
   const [detailTab, setDetailTab] = React.useState<'overview' | 'yaml' | 'events'>('overview');
+  const currentPath = namespace ? `/r/${gvrUrl}/${namespace}/${name}` : `/r/${gvrUrl}/_/${name}`;
+  const [starred, setStarred] = React.useState(() => isFavorite(currentPath));
 
   if (error) {
     return (
@@ -231,6 +235,18 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                 title="Copy name"
               >
                 <Copy className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const isNow = toggleFavorite({ path: currentPath, title: resource.metadata.name, kind: resource.kind, namespace: resource.metadata.namespace });
+                  setStarred(isNow);
+                  addToast({ type: 'success', title: isNow ? 'Added to favorites' : 'Removed from favorites' });
+                }}
+                className={cn('p-1 rounded transition-colors', starred ? 'text-yellow-400 hover:text-yellow-300' : 'text-slate-500 hover:text-yellow-400 hover:bg-slate-800')}
+                title={starred ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                <Star className={cn('w-3.5 h-3.5', starred && 'fill-current')} />
               </button>
               {resource.metadata.namespace && (
                 <span className="px-2 py-1 text-xs bg-purple-900/50 text-purple-300 rounded border border-purple-700">
@@ -513,16 +529,43 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
             {/* Labels */}
             {resource.metadata.labels && Object.keys(resource.metadata.labels).length > 0 && (
               <DetailSection title="Labels">
-                <div className="space-y-2">
+                <div className="space-y-1.5">
                   {Object.entries(resource.metadata.labels).map(([key, value]) => (
-                    <div key={key} className="flex items-start gap-2">
-                      <span className="text-xs text-slate-400 font-mono flex-shrink-0 w-48">
+                    <div key={key} className="flex items-center gap-2 group">
+                      <span className="text-xs text-slate-400 font-mono flex-shrink-0 w-48 truncate" title={key}>
                         {key}
                       </span>
-                      <span className="text-xs text-slate-200 font-mono">{value}</span>
+                      <span className="text-xs text-slate-200 font-mono flex-1">{value}</span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${key}=${value}`);
+                          addToast({ type: 'success', title: 'Label copied' });
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity"
+                        title="Copy label"
+                      >
+                        <Copy className="w-3 h-3" />
+                      </button>
                     </div>
                   ))}
                 </div>
+                <button
+                  onClick={async () => {
+                    const input = window.prompt('Add label (key=value):');
+                    if (!input || !input.includes('=')) return;
+                    const [k, ...vParts] = input.split('=');
+                    const v = vParts.join('=');
+                    try {
+                      await k8sPatch(apiPath, { metadata: { labels: { [k]: v } } });
+                      addToast({ type: 'success', title: `Label ${k}=${v} added` });
+                    } catch (err) {
+                      addToast({ type: 'error', title: 'Failed to add label', detail: err instanceof Error ? err.message : '' });
+                    }
+                  }}
+                  className="mt-2 text-xs text-blue-400 hover:text-blue-300"
+                >
+                  + Add label
+                </button>
               </DetailSection>
             )}
 

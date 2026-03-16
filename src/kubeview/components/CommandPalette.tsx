@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Search, Command } from 'lucide-react';
 import * as Icons from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
+import { getFavorites } from '../engine/favorites';
 import { useClusterStore } from '../store/clusterStore';
 import { cn } from '@/lib/utils';
 
@@ -185,7 +186,23 @@ function getCommandItems(
   if (mode === 'browse' || mode === 'default') {
     const items: CommandItem[] = [];
 
-    // Built-in pages (always shown first)
+    // Favorites (shown first if any)
+    const favorites = getFavorites();
+    const matchingFavorites = favorites.filter((f) =>
+      !cleanQuery || f.title.toLowerCase().includes(cleanQuery) || f.kind.toLowerCase().includes(cleanQuery)
+    );
+    for (const fav of matchingFavorites.slice(0, 5)) {
+      items.push({
+        type: 'recent' as const,
+        id: `fav-${fav.path}`,
+        title: fav.title,
+        subtitle: `${fav.kind}${fav.namespace ? ` · ${fav.namespace}` : ''} ★`,
+        icon: 'Star',
+        path: fav.path,
+      });
+    }
+
+    // Built-in pages
     const builtinPages: CommandItem[] = [
       { type: 'nav', id: 'welcome', title: 'Welcome', subtitle: 'Getting started guide', icon: 'Home', path: '/welcome' },
       { type: 'nav', id: 'pulse', title: 'Cluster Pulse', subtitle: 'Health overview', icon: 'Activity', path: '/pulse' },
@@ -306,7 +323,7 @@ function renderGroups(
   const grouped = new Map<string, CommandItem[]>();
 
   for (const item of items) {
-    const group = item.type === 'recent' ? 'RECENT' :
+    const group = item.type === 'recent' ? 'FAVORITES' :
                   item.type === 'resource' ? 'RESOURCES' :
                   item.type === 'action' ? 'ACTIONS' : 'PAGES';
 

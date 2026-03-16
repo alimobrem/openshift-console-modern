@@ -87,6 +87,55 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
   const [selectedRows, setSelectedRows] = React.useState<Set<string>>(new Set());
   const [perPage, setPerPage] = React.useState(25);
   const [previewResource, setPreviewResource] = React.useState<K8sResource | null>(null);
+  const [focusedRow, setFocusedRow] = React.useState(-1);
+
+  // Keyboard navigation for table
+  React.useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      // Skip if typing in an input
+      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+      const maxRow = paginatedResources.length - 1;
+
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedRow((prev) => Math.min(prev + 1, maxRow));
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedRow((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter' && focusedRow >= 0 && focusedRow <= maxRow) {
+        e.preventDefault();
+        const resource = paginatedResources[focusedRow];
+        if (resource) {
+          const gvrUrl = gvrKey.replace(/\//g, '~');
+          const ns = resource.metadata.namespace;
+          const name = resource.metadata.name;
+          const path = ns ? `/r/${gvrUrl}/${ns}/${name}` : `/r/${gvrUrl}/_/${name}`;
+          addTab({ title: name, path, pinned: false, closable: true });
+          navigate(path);
+        }
+      } else if (e.key === 'x' && focusedRow >= 0 && focusedRow <= maxRow) {
+        const resource = paginatedResources[focusedRow];
+        if (resource) {
+          const uid = resource.metadata.uid || '';
+          setSelectedRows((prev) => {
+            const next = new Set(prev);
+            if (next.has(uid)) next.delete(uid); else next.add(uid);
+            return next;
+          });
+        }
+      } else if (e.key === ' ' && focusedRow >= 0 && focusedRow <= maxRow) {
+        e.preventDefault();
+        setPreviewResource(paginatedResources[focusedRow] || null);
+      } else if (e.key === 'Escape') {
+        setPreviewResource(null);
+        setFocusedRow(-1);
+      }
+    }
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [focusedRow, paginatedResources, gvrKey, navigate, addTab]);
 
   // Column visibility & ordering
   const [hiddenColumns, setHiddenColumns] = React.useState<Set<string>>(new Set());
@@ -583,17 +632,19 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
               )}
             </thead>
             <tbody className="divide-y divide-slate-800">
-              {paginatedResources.map((resource) => {
+              {paginatedResources.map((resource, rowIndex) => {
                 const uid = resource.metadata.uid || '';
                 const isSelected = selectedRows.has(uid);
+                const isFocused = rowIndex === focusedRow;
 
                 return (
                   <tr
                     key={uid}
-                    onClick={(e) => handleRowClick(resource, e)}
+                    onClick={(e) => { setFocusedRow(rowIndex); handleRowClick(resource, e); }}
                     className={cn(
                       'hover:bg-slate-900/50 transition-colors cursor-pointer',
-                      isSelected && 'bg-slate-900/70'
+                      isSelected && 'bg-slate-900/70',
+                      isFocused && 'ring-1 ring-inset ring-blue-500/50 bg-blue-950/20'
                     )}
                   >
                     <td className="px-4 py-3">
