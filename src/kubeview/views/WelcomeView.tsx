@@ -49,12 +49,6 @@ export default function WelcomeView() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <QuickAction
-              icon={<HeartPulse className="w-6 h-6 text-blue-400" />}
-              title="Check Cluster Health"
-              description="See failing pods, unhealthy deployments, and warnings at a glance"
-              onClick={() => go('/pulse', 'Pulse')}
-            />
-            <QuickAction
               icon={<Search className="w-6 h-6 text-emerald-400" />}
               title="Find Resources"
               description="Press ⌘K to search any resource type — pods, services, secrets, CRDs"
@@ -65,6 +59,12 @@ export default function WelcomeView() {
               title="Create a Resource"
               description="Start from a YAML template with auto-complete snippets"
               onClick={() => go('/create/v1~pods', 'Create Pod')}
+            />
+            <QuickAction
+              icon={<GitBranch className="w-6 h-6 text-purple-400" />}
+              title="Troubleshoot Resource"
+              description="View dependencies, diagnose issues, and investigate correlations"
+              onClick={() => go('/r/v1~pods', 'Pods')}
             />
           </div>
         </div>
