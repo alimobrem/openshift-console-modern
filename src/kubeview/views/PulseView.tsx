@@ -119,13 +119,15 @@ export default function PulseView() {
   const handleNavigateToResource = (item: NeedsAttentionItem) => {
     const ns = item.resource.metadata.namespace;
     const name = item.resource.metadata.name;
-    const kind = item.resource.kind.toLowerCase();
+    const kind = item.resource.kind;
+    const apiVersion = item.resource.apiVersion || 'v1';
+    const [group, version] = apiVersion.includes('/')
+      ? apiVersion.split('/')
+      : ['', apiVersion];
+    const plural = kind.toLowerCase() + 's';
+    const gvr = group ? `${group}~${version}~${plural}` : `${version}~${plural}`;
 
-    if (ns) {
-      navigate(`/k8s/ns/${ns}/${kind}/${name}`);
-    } else {
-      navigate(`/k8s/${kind}/${name}`);
-    }
+    navigate(ns ? `/r/${gvr}/${ns}/${name}` : `/r/${gvr}/_/${name}`);
   };
 
   const isLoading = nodesLoading || podsLoading;
@@ -145,7 +147,10 @@ export default function PulseView() {
         {/* Health Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Nodes */}
-          <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
+          <div
+            onClick={() => navigate('/r/v1~nodes')}
+            className="bg-slate-900 rounded-lg border border-slate-800 p-4 cursor-pointer hover:border-slate-600 transition-colors"
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-slate-400">Nodes</span>
               {isLoading ? (
@@ -167,7 +172,10 @@ export default function PulseView() {
           </div>
 
           {/* Pods */}
-          <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
+          <div
+            onClick={() => navigate('/r/v1~pods')}
+            className="bg-slate-900 rounded-lg border border-slate-800 p-4 cursor-pointer hover:border-slate-600 transition-colors"
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-slate-400">Pods</span>
               {isLoading ? (
@@ -191,7 +199,10 @@ export default function PulseView() {
           </div>
 
           {/* Alerts */}
-          <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
+          <div
+            onClick={() => navigate('/timeline')}
+            className="bg-slate-900 rounded-lg border border-slate-800 p-4 cursor-pointer hover:border-slate-600 transition-colors"
+          >
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-slate-400">Alerts</span>
               {healthSummary.alerts > 0 ? (

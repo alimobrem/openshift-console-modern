@@ -11,9 +11,13 @@ import {
   Trash2,
   Terminal,
   FileCode,
+  ArrowLeft,
+  RotateCw,
+  Plus,
+  Minus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { k8sGet, k8sList, k8sDelete } from '../engine/query';
+import { k8sGet, k8sList, k8sDelete, k8sPatch } from '../engine/query';
 import type { K8sResource } from '../engine/renderers';
 import { diagnoseResource, type Diagnosis } from '../engine/diagnosis';
 import { buildApiPath } from '../hooks/useResourceUrl';
@@ -158,6 +162,33 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
     navigate(path);
   };
 
+  const handleScale = async (delta: number) => {
+    if (!resource) return;
+    const currentReplicas = (resource.spec as any)?.replicas ?? 0;
+    const newReplicas = Math.max(0, currentReplicas + delta);
+    try {
+      await k8sPatch(apiPath, { spec: { replicas: newReplicas } });
+      addToast({ type: 'success', title: `Scaled to ${newReplicas} replicas` });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Scale failed', detail: err instanceof Error ? err.message : 'Unknown error' });
+    }
+  };
+
+  const handleRestart = async () => {
+    if (!resource) return;
+    try {
+      await k8sPatch(apiPath, {
+        spec: { template: { metadata: { annotations: { 'kubectl.kubernetes.io/restartedAt': new Date().toISOString() } } } },
+      });
+      addToast({ type: 'success', title: `Rollout restart triggered` });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Restart failed', detail: err instanceof Error ? err.message : 'Unknown error' });
+    }
+  };
+
+  const isScalable = resource?.kind === 'Deployment' || resource?.kind === 'StatefulSet' || resource?.kind === 'ReplicaSet';
+  const isRestartable = resource?.kind === 'Deployment';
+
   if (error) {
     return (
       <div className="h-full flex items-center justify-center bg-slate-950">
@@ -188,6 +219,13 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         <div className="flex items-start justify-between">
           <div>
             <div className="flex items-center gap-3 mb-2">
+              <button
+                onClick={() => navigate(`/r/${gvrUrl}`)}
+                className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200"
+                title="Back to list"
+              >
+                <ArrowLeft className="w-5 h-5" />
+              </button>
               <h1 className="text-2xl font-bold text-slate-100">{resource.metadata.name}</h1>
               {resource.metadata.namespace && (
                 <span className="px-2 py-1 text-xs bg-purple-900/50 text-purple-300 rounded border border-purple-700">
@@ -208,6 +246,28 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
               >
                 <FileText className="w-3 h-3" />
                 Logs
+              </button>
+            )}
+            {isScalable && (
+              <div className="flex items-center gap-1">
+                <button onClick={() => handleScale(-1)} className="px-2 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700">
+                  <Minus className="w-3 h-3" />
+                </button>
+                <span className="px-2 py-1.5 text-xs bg-blue-900 text-blue-300 rounded font-mono">
+                  {(resource.spec as any)?.replicas ?? 0}
+                </span>
+                <button onClick={() => handleScale(1)} className="px-2 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+            {isRestartable && (
+              <button
+                onClick={handleRestart}
+                className="px-3 py-1.5 text-xs bg-orange-900 text-orange-300 rounded hover:bg-orange-800 flex items-center gap-1.5"
+              >
+                <RotateCw className="w-3 h-3" />
+                Restart
               </button>
             )}
             <button
@@ -307,6 +367,46 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                 />
               )}
             </DetailSection>
+
+            {/* Containers (Pods only) */}
+            {resource.kind === 'Pod' && spec.containers && (
+              <DetailSection title={`Containers (${(spec.containers as any[]).length})`}>
+                <div className="space-y-3">
+                  {(spec.containers as any[]).map((container: any) => {
+                    const containerStatus = (status.containerStatuses as any[] || []).find(
+                      (cs: any) => cs.name === container.name
+                    );
+                    const isReady = containerStatus?.ready === true;
+                    const restarts = containerStatus?.restartCount ?? 0;
+                    const state = containerStatus?.state;
+                    const stateLabel = state?.running ? 'Running' : state?.waiting ? state.waiting.reason || 'Waiting' : state?.terminated ? 'Terminated' : 'Unknown';
+
+                    return (
+                      <div key={container.name} className="flex items-start gap-4 py-2 border-b border-slate-800 last:border-b-0">
+                        <div className={`w-2 h-2 rounded-full mt-1.5 ${isReady ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-medium text-slate-200">{container.name}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${isReady ? 'bg-green-900 text-green-300' : 'bg-yellow-900 text-yellow-300'}`}>
+                              {stateLabel}
+                            </span>
+                            {restarts > 0 && (
+                              <span className="text-xs text-orange-400">{restarts} restart{restarts !== 1 ? 's' : ''}</span>
+                            )}
+                          </div>
+                          <div className="text-xs text-slate-400 font-mono truncate">{container.image}</div>
+                          {container.ports && (
+                            <div className="text-xs text-slate-500 mt-1">
+                              Ports: {(container.ports as any[]).map((p: any) => `${p.containerPort}/${p.protocol || 'TCP'}`).join(', ')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </DetailSection>
+            )}
 
             {/* Labels */}
             {resource.metadata.labels && Object.keys(resource.metadata.labels).length > 0 && (
