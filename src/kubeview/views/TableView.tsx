@@ -5,6 +5,7 @@ import { Search, ChevronUp, ChevronDown, Trash2, Tag, Plus, Filter, Columns3, X,
 import { cn } from '@/lib/utils';
 import { k8sList, k8sPatch, k8sDelete } from '../engine/query';
 import { jsonToYaml } from '../engine/yamlUtils';
+import ConfirmDialog from '../components/feedback/ConfirmDialog';
 import { useClusterStore } from '../store/clusterStore';
 import { useUIStore } from '../store/uiStore';
 import type { K8sResource, ColumnDef } from '../engine/renderers';
@@ -372,11 +373,11 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
     addToast({ type: 'success', title: `Exported ${sortedResources.length} ${resourceKind.toLowerCase()} as ${ext.toUpperCase()}` });
   }, [sortedResources, visibleColumns, resourceKind, addToast]);
 
+  const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = React.useState(false);
+
   // Bulk delete
   const handleBulkDelete = React.useCallback(async () => {
     if (selectedRows.size === 0) return;
-    const confirmed = window.confirm(`Delete ${selectedRows.size} selected resource${selectedRows.size !== 1 ? 's' : ''}?`);
-    if (!confirmed) return;
 
     let deleted = 0;
     let failed = 0;
@@ -483,7 +484,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
             {selectedRows.size > 0 && (
               <div className="flex items-center gap-2 mr-4">
                 <button
-                  onClick={handleBulkDelete}
+                  onClick={() => setShowBulkDeleteConfirm(true)}
                   className="px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700 flex items-center gap-1.5"
                 >
                   <Trash2 className="w-3 h-3" />
@@ -762,6 +763,19 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
         </div>
       )}
       </div>
+
+      {/* Bulk Delete Confirmation */}
+      {showBulkDeleteConfirm && (
+        <ConfirmDialog
+          open={showBulkDeleteConfirm}
+          title={`Delete ${selectedRows.size} resource${selectedRows.size !== 1 ? 's' : ''}`}
+          description={`Are you sure you want to delete ${selectedRows.size} selected resource${selectedRows.size !== 1 ? 's' : ''}? This action cannot be undone.`}
+          confirmLabel="Delete All"
+          variant="danger"
+          onConfirm={async () => { await handleBulkDelete(); setShowBulkDeleteConfirm(false); }}
+          onClose={() => setShowBulkDeleteConfirm(false)}
+        />
+      )}
 
       {/* Footer with pagination */}
       {sortedResources.length > 0 && (

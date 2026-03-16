@@ -114,6 +114,9 @@ export function CommandPalette() {
       } else if (e.key === 'Enter' && items[selectedIndex]) {
         e.preventDefault();
         handleSelect(items[selectedIndex]);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        closeCommandPalette();
       }
     };
 

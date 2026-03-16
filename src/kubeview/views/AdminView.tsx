@@ -37,35 +37,35 @@ export default function AdminView() {
 
   // Nodes
   const { data: nodes = [] } = useQuery<K8sResource[]>({
-    queryKey: ['admin', 'nodes'],
+    queryKey: ['k8s', 'list', '/api/v1/nodes'],
     queryFn: () => k8sList('/api/v1/nodes'),
     refetchInterval: 30000,
   });
 
   // ClusterOperators
   const { data: operators = [] } = useQuery<K8sResource[]>({
-    queryKey: ['admin', 'operators'],
+    queryKey: ['k8s', 'list', '/apis/config.openshift.io/v1/clusteroperators'],
     queryFn: () => k8sList('/apis/config.openshift.io/v1/clusteroperators').catch(() => []),
     refetchInterval: 30000,
   });
 
   // CRDs
   const { data: crds = [] } = useQuery<K8sResource[]>({
-    queryKey: ['admin', 'crds'],
+    queryKey: ['k8s', 'list', '/apis/apiextensions.k8s.io/v1/customresourcedefinitions'],
     queryFn: () => k8sList('/apis/apiextensions.k8s.io/v1/customresourcedefinitions'),
     staleTime: 60000,
   });
 
   // Resource Quotas
   const { data: quotas = [] } = useQuery<K8sResource[]>({
-    queryKey: ['admin', 'quotas'],
+    queryKey: ['k8s', 'list', '/api/v1/resourcequotas'],
     queryFn: () => k8sList('/api/v1/resourcequotas'),
     staleTime: 60000,
   });
 
   // Limit Ranges
   const { data: limitRanges = [] } = useQuery<K8sResource[]>({
-    queryKey: ['admin', 'limitranges'],
+    queryKey: ['k8s', 'list', '/api/v1/limitranges'],
     queryFn: () => k8sList('/api/v1/limitranges'),
     staleTime: 60000,
   });

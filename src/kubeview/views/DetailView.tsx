@@ -33,6 +33,7 @@ import { buildApiPath } from '../hooks/useResourceUrl';
 import { useUIStore } from '../store/uiStore';
 import { jsonToYaml, resourceToYaml } from '../engine/yamlUtils';
 import PodTerminal from '../components/PodTerminal';
+import ConfirmDialog from '../components/feedback/ConfirmDialog';
 import DataEditor from '../components/DataEditor';
 import { toggleFavorite, isFavorite } from '../engine/favorites';
 
@@ -134,13 +135,11 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
 
   const handleDelete = async () => {
     if (!resource) return;
-    const confirmed = window.confirm(`Delete ${resource.kind} "${resource.metadata.name}"?`);
-    if (!confirmed) return;
-
+    setDeleting(true);
     try {
       await k8sDelete(apiPath);
       addToast({ type: 'success', title: `${resource.kind} "${resource.metadata.name}" deleted` });
-      // Navigate back to list
+      setShowDeleteConfirm(false);
       navigate(`/r/${gvrUrl}`);
     } catch (err) {
       addToast({
@@ -148,6 +147,8 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         title: 'Delete failed',
         detail: err instanceof Error ? err.message : 'Unknown error',
       });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -202,6 +203,8 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
   const currentPath = namespace ? `/r/${gvrUrl}/${namespace}/${name}` : `/r/${gvrUrl}/_/${name}`;
   const [starred, setStarred] = React.useState(() => isFavorite(currentPath));
   const [showTerminal, setShowTerminal] = React.useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
 
   if (error) {
     return (
@@ -378,7 +381,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
               YAML
             </button>
             <button
-              onClick={handleDelete}
+              onClick={() => setShowDeleteConfirm(true)}
               className="px-3 py-1.5 text-xs bg-red-900/50 text-red-300 rounded hover:bg-red-900 flex items-center gap-1.5"
             >
               <Trash2 className="w-3 h-3" />
@@ -742,6 +745,20 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         )}
       </div>
     </div>
+
+    {/* Delete Confirmation */}
+    {showDeleteConfirm && resource && (
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title={`Delete ${resource.kind}`}
+        description={`Are you sure you want to delete "${resource.metadata.name}"${resource.metadata.namespace ? ` from ${resource.metadata.namespace}` : ''}? This action cannot be undone.`}
+        confirmLabel="Delete"
+        variant="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+        onClose={() => setShowDeleteConfirm(false)}
+      />
+    )}
 
     {/* Terminal */}
     {showTerminal && resource.kind === 'Pod' && namespace && (

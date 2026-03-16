@@ -31,31 +31,31 @@ export default function TroubleshootView() {
   const [activeTab, setActiveTab] = useState<Tab>('issues');
 
   const { data: pods = [], isLoading: podsLoading } = useQuery<K8sResource[]>({
-    queryKey: ['troubleshoot', 'pods'],
+    queryKey: ['k8s', 'list', '/api/v1/pods'],
     queryFn: () => k8sList<K8sResource>('/api/v1/pods'),
     refetchInterval: 30000,
   });
 
   const { data: deployments = [] } = useQuery<K8sResource[]>({
-    queryKey: ['troubleshoot', 'deployments'],
+    queryKey: ['k8s', 'list', '/apis/apps/v1/deployments'],
     queryFn: () => k8sList<K8sResource>('/apis/apps/v1/deployments'),
     refetchInterval: 30000,
   });
 
   const { data: nodes = [] } = useQuery<K8sResource[]>({
-    queryKey: ['troubleshoot', 'nodes'],
+    queryKey: ['k8s', 'list', '/api/v1/nodes'],
     queryFn: () => k8sList<K8sResource>('/api/v1/nodes'),
     refetchInterval: 30000,
   });
 
   const { data: pvcs = [] } = useQuery<K8sResource[]>({
-    queryKey: ['troubleshoot', 'pvcs'],
+    queryKey: ['k8s', 'list', '/api/v1/persistentvolumeclaims'],
     queryFn: () => k8sList<K8sResource>('/api/v1/persistentvolumeclaims'),
     refetchInterval: 30000,
   });
 
   const { data: events = [] } = useQuery<K8sResource[]>({
-    queryKey: ['troubleshoot', 'events'],
+    queryKey: ['k8s', 'list', '/api/v1/events'],
     queryFn: () => k8sList<K8sResource>('/api/v1/events?limit=100'),
     refetchInterval: 30000,
   });
