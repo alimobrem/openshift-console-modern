@@ -474,6 +474,80 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
     });
   }
 
+  // Spec object sub-fields (e.g., podSelector.matchLabels → formatted labels)
+  for (const r of sample) {
+    const spec = r.spec as Record<string, unknown> | undefined;
+    if (!spec) continue;
+    for (const key of Object.keys(spec)) {
+      const val = spec[key];
+      // Handle selector-like objects (podSelector, selector with matchLabels)
+      if (val && typeof val === 'object' && !Array.isArray(val)) {
+        const obj = val as Record<string, unknown>;
+        if (obj.matchLabels && typeof obj.matchLabels === 'object') {
+          addCol({
+            id: `spec_${key}_labels`,
+            header: formatHeader(key),
+            accessorFn: (resource) => {
+              const s = resource.spec as Record<string, unknown> | undefined;
+              const sel = s?.[key] as Record<string, unknown> | undefined;
+              const labels = sel?.matchLabels as Record<string, string> | undefined;
+              if (!labels || Object.keys(labels).length === 0) return '-';
+              return Object.entries(labels).map(([k, v]) => `${k.split('/').pop()}=${v}`).join(', ');
+            },
+            render: (value) => {
+              if (!value || value === '-') return React.createElement('span', { className: 'text-slate-500' }, '-');
+              const str = String(value);
+              return React.createElement('span', { className: 'text-xs text-slate-300 font-mono truncate block max-w-[200px]', title: str }, str.length > 40 ? str.slice(0, 37) + '...' : str);
+            },
+            sortable: true,
+            priority: 22 + cols.length,
+          });
+          break; // Only add one selector column
+        }
+      }
+    }
+  }
+
+  // Spec array counts (e.g., ingress rules, egress rules, ports)
+  for (const r of sample) {
+    const spec = r.spec as Record<string, unknown> | undefined;
+    if (!spec) continue;
+    for (const key of Object.keys(spec)) {
+      const val = spec[key];
+      if (Array.isArray(val)) {
+        // For policyTypes-like string arrays, show values inline
+        if (val.length > 0 && typeof val[0] === 'string') {
+          addCol({
+            id: `spec_${key}_values`,
+            header: formatHeader(key),
+            accessorFn: (resource) => {
+              const s = resource.spec as Record<string, unknown> | undefined;
+              const arr = s?.[key] as string[] | undefined;
+              return arr ? arr.join(', ') : '-';
+            },
+            render: renderAutoValue,
+            sortable: true,
+            priority: 23 + cols.length,
+          });
+        } else {
+          // For object arrays, show count
+          addCol({
+            id: `spec_${key}_count`,
+            header: `${formatHeader(key)} Rules`,
+            accessorFn: (resource) => {
+              const s = resource.spec as Record<string, unknown> | undefined;
+              const arr = s?.[key] as unknown[] | undefined;
+              return arr ? arr.length : 0;
+            },
+            render: (value) => React.createElement('span', { className: 'font-mono text-sm text-slate-300' }, String(value)),
+            sortable: true,
+            priority: 24 + cols.length,
+          });
+        }
+      }
+    }
+  }
+
   // Skip noisy status fields
   const statusSkip = new Set(['observedGeneration', 'conditions']);
 
