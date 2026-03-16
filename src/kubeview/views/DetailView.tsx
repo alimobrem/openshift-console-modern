@@ -33,6 +33,7 @@ import { buildApiPath } from '../hooks/useResourceUrl';
 import { useUIStore } from '../store/uiStore';
 import { jsonToYaml, resourceToYaml } from '../engine/yamlUtils';
 import PodTerminal from '../components/PodTerminal';
+import DataEditor from '../components/DataEditor';
 import { toggleFavorite, isFavorite } from '../engine/favorites';
 
 interface DetailViewProps {
@@ -598,6 +599,15 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                   })}
                 </div>
               </DetailSection>
+            )}
+
+            {/* Data Editor for ConfigMaps and Secrets */}
+            {(resource.kind === 'ConfigMap' || resource.kind === 'Secret') && (
+              <DataEditor
+                resourcePath={apiPath}
+                data={(resource.data || {}) as Record<string, string>}
+                kind={resource.kind as 'ConfigMap' | 'Secret'}
+              />
             )}
 
             {/* Labels */}
