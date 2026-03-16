@@ -284,6 +284,194 @@ export function renderConditions(value: unknown): ReactNode {
   );
 }
 
+/**
+ * Auto-detect columns from resource data for types without enhancers.
+ * Scans top-level fields, spec, and status to find useful columns.
+ */
+export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
+  if (resources.length === 0) return [];
+
+  const cols: ColumnDef[] = [];
+  const sample = resources.slice(0, 5);
+
+  // Skip these fields (already shown or not useful in tables)
+  const skip = new Set(['apiVersion', 'kind', 'metadata', '_gvrKey', 'managedFields']);
+
+  // Check top-level scalar fields (e.g., "type" on Secrets)
+  const topFields = new Set<string>();
+  for (const r of sample) {
+    for (const key of Object.keys(r)) {
+      if (skip.has(key)) continue;
+      const val = r[key];
+      if (val !== null && val !== undefined && typeof val !== 'object') {
+        topFields.add(key);
+      }
+    }
+  }
+
+  for (const field of topFields) {
+    cols.push({
+      id: `top_${field}`,
+      header: formatHeader(field),
+      accessorFn: (resource) => resource[field] ?? '-',
+      render: renderAutoValue,
+      sortable: true,
+      priority: 10 + cols.length,
+    });
+  }
+
+  // Check spec scalar fields
+  const specFields = new Set<string>();
+  for (const r of sample) {
+    const spec = r.spec as Record<string, unknown> | undefined;
+    if (!spec) continue;
+    for (const key of Object.keys(spec)) {
+      const val = spec[key];
+      if (val !== null && val !== undefined && typeof val !== 'object') {
+        specFields.add(key);
+      }
+    }
+  }
+
+  // Limit spec columns to most common ones
+  const specPriority = ['replicas', 'type', 'clusterIP', 'selector', 'host', 'schedule',
+    'completions', 'parallelism', 'suspend', 'nodeName', 'serviceAccountName',
+    'ports', 'loadBalancerIP', 'externalName', 'storageClassName', 'accessModes',
+    'capacity', 'reclaimPolicy', 'volumeBindingMode'];
+
+  const sortedSpecFields = [...specFields].sort((a, b) => {
+    const ai = specPriority.indexOf(a);
+    const bi = specPriority.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+
+  for (const field of sortedSpecFields.slice(0, 4)) {
+    cols.push({
+      id: `spec_${field}`,
+      header: formatHeader(field),
+      accessorFn: (resource) => {
+        const spec = resource.spec as Record<string, unknown> | undefined;
+        return spec?.[field] ?? '-';
+      },
+      render: renderAutoValue,
+      sortable: true,
+      priority: 20 + cols.length,
+    });
+  }
+
+  // Check status scalar fields
+  const statusFields = new Set<string>();
+  for (const r of sample) {
+    const status = r.status as Record<string, unknown> | undefined;
+    if (!status) continue;
+    for (const key of Object.keys(status)) {
+      const val = status[key];
+      if (val !== null && val !== undefined && typeof val !== 'object') {
+        statusFields.add(key);
+      }
+    }
+  }
+
+  const statusPriority = ['phase', 'ready', 'replicas', 'availableReplicas', 'readyReplicas',
+    'observedGeneration', 'conditions', 'loadBalancer'];
+
+  const sortedStatusFields = [...statusFields].sort((a, b) => {
+    const ai = statusPriority.indexOf(a);
+    const bi = statusPriority.indexOf(b);
+    return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+  });
+
+  for (const field of sortedStatusFields.slice(0, 3)) {
+    cols.push({
+      id: `status_${field}`,
+      header: formatHeader(field),
+      accessorFn: (resource) => {
+        const status = resource.status as Record<string, unknown> | undefined;
+        return status?.[field] ?? '-';
+      },
+      render: renderAutoValue,
+      sortable: true,
+      priority: 30 + cols.length,
+    });
+  }
+
+  // Check data keys count (for ConfigMaps/Secrets-like resources)
+  const hasData = sample.some(r => r.data && typeof r.data === 'object');
+  if (hasData) {
+    cols.push({
+      id: 'data_keys',
+      header: 'Data Keys',
+      accessorFn: (resource) => {
+        const data = resource.data as Record<string, unknown> | undefined;
+        return data ? Object.keys(data).length : 0;
+      },
+      render: (value) => {
+        const count = Number(value);
+        return React.createElement('span', { className: 'font-mono text-sm text-slate-300' }, count);
+      },
+      sortable: true,
+      priority: 15,
+    });
+  }
+
+  return cols;
+}
+
+function formatHeader(field: string): string {
+  // camelCase → Title Case
+  return field
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (s) => s.toUpperCase())
+    .trim();
+}
+
+function renderAutoValue(value: unknown): ReactNode {
+  if (value === null || value === undefined || value === '-') {
+    return React.createElement('span', { className: 'text-slate-500' }, '-');
+  }
+
+  const str = String(value);
+
+  // Boolean rendering
+  if (str === 'true') {
+    return React.createElement('span', { className: 'text-green-400' }, '✓');
+  }
+  if (str === 'false') {
+    return React.createElement('span', { className: 'text-slate-500' }, '✗');
+  }
+
+  // Phase/status-like values
+  const lower = str.toLowerCase();
+  if (['running', 'active', 'ready', 'available', 'bound', 'true'].includes(lower)) {
+    return React.createElement('span', { className: 'inline-flex items-center gap-1.5 text-sm' },
+      React.createElement('span', { className: 'w-2 h-2 rounded-full bg-green-500 inline-block' }),
+      str
+    );
+  }
+  if (['pending', 'waiting', 'unknown'].includes(lower)) {
+    return React.createElement('span', { className: 'inline-flex items-center gap-1.5 text-sm' },
+      React.createElement('span', { className: 'w-2 h-2 rounded-full bg-yellow-500 inline-block' }),
+      str
+    );
+  }
+  if (['failed', 'error', 'crashloopbackoff', 'imagepullbackoff'].includes(lower)) {
+    return React.createElement('span', { className: 'inline-flex items-center gap-1.5 text-sm' },
+      React.createElement('span', { className: 'w-2 h-2 rounded-full bg-red-500 inline-block' }),
+      str
+    );
+  }
+
+  // Truncate long values
+  if (str.length > 50) {
+    return React.createElement('span', {
+      className: 'text-sm text-slate-300 truncate block max-w-[200px]',
+      title: str,
+    }, str);
+  }
+
+  return React.createElement('span', { className: 'text-sm text-slate-300' }, str);
+}
+
 // Default columns that every resource gets
 export function getDefaultColumns(namespaced: boolean): ColumnDef[] {
   const cols: ColumnDef[] = [

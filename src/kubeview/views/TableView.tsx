@@ -1,7 +1,7 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronUp, ChevronDown, Trash2, Tag, Plus } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, Trash2, Tag, Plus, Filter, Columns3, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sList, k8sPatch, k8sDelete } from '../engine/query';
 import { useClusterStore } from '../store/clusterStore';
@@ -66,10 +66,10 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
     [resources, gvrKey]
   );
 
-  // Get columns for this resource type
+  // Get columns for this resource type (pass resources for auto-detection)
   const columns = React.useMemo(
-    () => getColumnsForResource(gvrKey, isNamespaced),
-    [gvrKey, isNamespaced]
+    () => getColumnsForResource(gvrKey, isNamespaced, stampedResources),
+    [gvrKey, isNamespaced, stampedResources]
   );
 
   // Get enhancer for inline actions
@@ -77,6 +77,8 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
 
   // State
   const [searchTerm, setSearchTerm] = React.useState('');
+  const [columnFilters, setColumnFilters] = React.useState<Record<string, string>>({});
+  const [showFilters, setShowFilters] = React.useState(false);
   const [sortState, setSortState] = React.useState<SortState>({
     column: enhancer?.defaultSort?.column || 'name',
     direction: enhancer?.defaultSort?.direction || 'asc',
@@ -84,29 +86,52 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
   const [selectedRows, setSelectedRows] = React.useState<Set<string>>(new Set());
   const [perPage, setPerPage] = React.useState(25);
 
-  // Filter resources by search term
+  // Column visibility & ordering
+  const [hiddenColumns, setHiddenColumns] = React.useState<Set<string>>(new Set());
+  const [showColumnPicker, setShowColumnPicker] = React.useState(false);
+
+  const visibleColumns = React.useMemo(
+    () => columns.filter((c) => !hiddenColumns.has(c.id)),
+    [columns, hiddenColumns]
+  );
+
+  // Filter resources by search term + column filters
   const filteredResources = React.useMemo(() => {
-    if (!searchTerm) return stampedResources;
+    let result = stampedResources;
 
-    const term = searchTerm.toLowerCase();
-    return stampedResources.filter((resource) => {
-      // Search in name
-      if (resource.metadata.name.toLowerCase().includes(term)) return true;
-
-      // Search in namespace
-      if (resource.metadata.namespace?.toLowerCase().includes(term)) return true;
-
-      // Search in labels
-      const labels = resource.metadata.labels || {};
-      for (const [key, value] of Object.entries(labels)) {
-        if (key.toLowerCase().includes(term) || value.toLowerCase().includes(term)) {
-          return true;
+    // Global search
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter((resource) => {
+        if (resource.metadata.name.toLowerCase().includes(term)) return true;
+        if (resource.metadata.namespace?.toLowerCase().includes(term)) return true;
+        const labels = resource.metadata.labels || {};
+        for (const [key, value] of Object.entries(labels)) {
+          if (key.toLowerCase().includes(term) || value.toLowerCase().includes(term)) return true;
         }
-      }
+        // Search in all visible column values
+        for (const col of visibleColumns) {
+          const val = String(col.accessorFn(resource) ?? '');
+          if (val.toLowerCase().includes(term)) return true;
+        }
+        return false;
+      });
+    }
 
-      return false;
-    });
-  }, [resources, searchTerm]);
+    // Per-column filters
+    for (const [colId, filterVal] of Object.entries(columnFilters)) {
+      if (!filterVal) continue;
+      const col = columns.find((c) => c.id === colId);
+      if (!col) continue;
+      const term = filterVal.toLowerCase();
+      result = result.filter((resource) => {
+        const val = String(col.accessorFn(resource) ?? '');
+        return val.toLowerCase().includes(term);
+      });
+    }
+
+    return result;
+  }, [stampedResources, searchTerm, columnFilters, visibleColumns, columns]);
 
   // Sort resources
   const sortedResources = React.useMemo(() => {
@@ -316,6 +341,61 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
                 className="pl-9 pr-3 py-1.5 text-sm bg-slate-900 border border-slate-700 rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
               />
             </div>
+            {/* Filter toggle */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={cn(
+                'p-1.5 rounded transition-colors',
+                showFilters ? 'bg-blue-600 text-white' : 'bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200'
+              )}
+              title="Column filters"
+            >
+              <Filter className="w-4 h-4" />
+            </button>
+            {/* Column picker */}
+            <div className="relative">
+              <button
+                onClick={() => setShowColumnPicker(!showColumnPicker)}
+                className="p-1.5 bg-slate-900 border border-slate-700 rounded text-slate-400 hover:text-slate-200 transition-colors"
+                title="Column picker"
+              >
+                <Columns3 className="w-4 h-4" />
+              </button>
+              {showColumnPicker && (
+                <>
+                  <div className="fixed inset-0 z-40" onClick={() => setShowColumnPicker(false)} />
+                  <div className="absolute right-0 top-full z-50 mt-1 w-56 rounded border border-slate-600 bg-slate-800 shadow-xl p-2 space-y-1 max-h-80 overflow-auto">
+                    <div className="text-xs text-slate-500 px-2 py-1 font-semibold">Show/Hide Columns</div>
+                    {columns.map((col) => (
+                      <label key={col.id} className="flex items-center gap-2 px-2 py-1.5 text-sm text-slate-300 hover:bg-slate-700 rounded cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={!hiddenColumns.has(col.id)}
+                          onChange={() => {
+                            setHiddenColumns((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(col.id)) next.delete(col.id);
+                              else next.add(col.id);
+                              return next;
+                            });
+                          }}
+                          className="rounded"
+                        />
+                        {col.header}
+                      </label>
+                    ))}
+                    {hiddenColumns.size > 0 && (
+                      <button
+                        onClick={() => setHiddenColumns(new Set())}
+                        className="w-full text-xs text-blue-400 hover:text-blue-300 py-1"
+                      >
+                        Show all
+                      </button>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -355,7 +435,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
                     className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500"
                   />
                 </th>
-                {columns.map((column) => (
+                {visibleColumns.map((column) => (
                   <th
                     key={column.id}
                     className={cn(
@@ -383,6 +463,24 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
                   </th>
                 )}
               </tr>
+              {/* Column filter row */}
+              {showFilters && (
+                <tr className="bg-slate-900/80">
+                  <th className="px-4 py-1" />
+                  {visibleColumns.map((column) => (
+                    <th key={`filter-${column.id}`} className="px-4 py-1">
+                      <input
+                        type="text"
+                        value={columnFilters[column.id] || ''}
+                        onChange={(e) => setColumnFilters((prev) => ({ ...prev, [column.id]: e.target.value }))}
+                        placeholder={`Filter ${column.header}...`}
+                        className="w-full px-2 py-1 text-xs bg-slate-800 border border-slate-700 rounded text-slate-200 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </th>
+                  ))}
+                  {enhancer?.inlineActions && enhancer.inlineActions.length > 0 && <th className="px-4 py-1" />}
+                </tr>
+              )}
             </thead>
             <tbody className="divide-y divide-slate-800">
               {paginatedResources.map((resource) => {
@@ -405,7 +503,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
                         className="w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-2 focus:ring-blue-500"
                       />
                     </td>
-                    {columns.map((column) => {
+                    {visibleColumns.map((column) => {
                       const value = column.accessorFn(resource);
                       return (
                         <td key={column.id} className="px-4 py-3">

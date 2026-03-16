@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { type ColumnDef, type K8sResource, getDefaultColumns } from '../renderers/index';
+import { type ColumnDef, type K8sResource, getDefaultColumns, autoDetectColumns } from '../renderers/index';
 
 export interface DetailSection {
   id: string;
@@ -53,26 +53,31 @@ export function getEnhancer(gvrKey: string): ResourceEnhancer | undefined {
   return enhancers.find((e) => e.matches.some((pattern) => matchesPattern(gvrKey, pattern)));
 }
 
-export function getColumnsForResource(gvrKey: string, namespaced: boolean): ColumnDef[] {
+export function getColumnsForResource(gvrKey: string, namespaced: boolean, resources?: K8sResource[]): ColumnDef[] {
   const enhancer = getEnhancer(gvrKey);
-
   const defaultCols = getDefaultColumns(namespaced);
 
-  if (!enhancer) {
+  let extraCols: ColumnDef[];
+
+  if (enhancer) {
+    extraCols = enhancer.columns;
+  } else if (resources && resources.length > 0) {
+    // Auto-detect columns from actual data
+    extraCols = autoDetectColumns(resources);
+  } else {
     return defaultCols;
   }
 
-  // Merge enhancer columns with defaults
-  // Enhancer columns are inserted before the "Age" column
+  // Insert extra columns before the "Age" column
   const ageIndex = defaultCols.findIndex((c: { id: string }) => c.id === 'age');
 
   if (ageIndex === -1) {
-    return [...defaultCols, ...enhancer.columns];
+    return [...defaultCols, ...extraCols];
   }
 
   return [
     ...defaultCols.slice(0, ageIndex),
-    ...enhancer.columns,
+    ...extraCols,
     ...defaultCols.slice(ageIndex),
   ];
 }
