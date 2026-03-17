@@ -332,21 +332,10 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
         await k8sPatch(resourcePath, { spec: { unschedulable: true } });
         addToast({ type: 'warning', title: `Drain started for "${resourceName}"`, detail: 'Node cordoned. Pod eviction requires manual intervention.' });
       } else if (action === 'delete-single') {
-        if (!confirm(`Delete ${kind} "${resourceName}"${resourceNs ? ` from ${resourceNs}` : ''}? This cannot be undone.`)) {
-          setInlineActionLoading(null);
-          return;
-        }
-        await k8sDelete(resourcePath);
-        // Optimistically remove from cache immediately
-        queryClient.setQueriesData({ queryKey: ['k8s', 'list'] }, (old: any) => {
-          if (!old || !Array.isArray(old)) return old;
-          return old.filter((r: any) => r.metadata?.uid !== resource.metadata?.uid);
-        });
-        // Show teardown progress for resources with dependents
-        if (['Deployment', 'StatefulSet', 'DaemonSet', 'ReplicaSet', 'Job'].includes(kind)) {
-          setDeleteProgress({ name: resourceName, ns: resourceNs || 'default', kind });
-        }
-        addToast({ type: 'success', title: `${kind} "${resourceName}" deleted` });
+        // Show ConfirmDialog instead of native confirm()
+        setPendingDelete({ resource, path: resourcePath });
+        setInlineActionLoading(null);
+        return; // Don't proceed — ConfirmDialog will call executeDelete
       }
       queryClient.invalidateQueries({ queryKey: ['k8s', 'list'] });
     } catch (err) {
@@ -400,7 +389,36 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
 
   const [showBulkDeleteConfirm, setShowBulkDeleteConfirm] = React.useState(false);
   const [deleteProgress, setDeleteProgress] = React.useState<{ name: string; ns: string; kind: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = React.useState<{ resource: any; path: string } | null>(null);
+  const [singleDeleting, setSingleDeleting] = React.useState(false);
   const [showExport, setShowExport] = React.useState(false);
+
+  const executeDelete = React.useCallback(async () => {
+    if (!pendingDelete) return;
+    setSingleDeleting(true);
+    try {
+      await k8sDelete(pendingDelete.path);
+      // Optimistically remove from cache
+      queryClient.setQueriesData({ queryKey: ['k8s', 'list'] }, (old: any) => {
+        if (!old || !Array.isArray(old)) return old;
+        return old.filter((r: any) => r.metadata?.uid !== pendingDelete.resource.metadata?.uid);
+      });
+      const kind = pendingDelete.resource.kind || '';
+      const name = pendingDelete.resource.metadata?.name || '';
+      const ns = pendingDelete.resource.metadata?.namespace || 'default';
+      addToast({ type: 'success', title: `${kind} "${name}" deleted` });
+      // Show teardown progress for resources with dependents
+      if (['Deployment', 'StatefulSet', 'DaemonSet', 'ReplicaSet', 'Job'].includes(kind)) {
+        setDeleteProgress({ name, ns, kind });
+      }
+      setPendingDelete(null);
+      queryClient.invalidateQueries({ queryKey: ['k8s', 'list'] });
+    } catch (err) {
+      addToast({ type: 'error', title: 'Delete failed', detail: err instanceof Error ? err.message : 'Unknown error' });
+    } finally {
+      setSingleDeleting(false);
+    }
+  }, [pendingDelete, queryClient, addToast]);
 
   // Bulk delete
   const handleBulkDelete = React.useCallback(async () => {
@@ -822,6 +840,20 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
             />
           </div>
         </div>
+      )}
+
+      {/* Single Delete Confirmation */}
+      {pendingDelete && (
+        <ConfirmDialog
+          open={!!pendingDelete}
+          title={`Delete ${pendingDelete.resource.kind}`}
+          description={`Are you sure you want to delete "${pendingDelete.resource.metadata?.name}"${pendingDelete.resource.metadata?.namespace ? ` from ${pendingDelete.resource.metadata.namespace}` : ''}? This cannot be undone.`}
+          confirmLabel="Delete"
+          variant="danger"
+          loading={singleDeleting}
+          onConfirm={executeDelete}
+          onClose={() => setPendingDelete(null)}
+        />
       )}
 
       {/* Bulk Delete Confirmation */}

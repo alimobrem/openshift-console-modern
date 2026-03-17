@@ -65,6 +65,7 @@
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^8.24.0",
     "@typescript-eslint/parser": "^8.24.0",
+    "@vitest/coverage-v8": "^4.1.0",
     "@vitest/ui": "^4.0.18",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.21.0",
