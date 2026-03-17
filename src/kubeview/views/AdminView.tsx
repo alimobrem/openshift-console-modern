@@ -11,8 +11,9 @@ import type { K8sResource } from '../engine/renderers';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useUIStore } from '../store/uiStore';
 import { K8S_BASE as BASE } from '../engine/gvr';
+import ClusterConfig from '../components/ClusterConfig';
 
-type Tab = 'overview' | 'quotas' | 'updates' | 'snapshots';
+type Tab = 'overview' | 'config' | 'updates' | 'snapshots' | 'quotas';
 
 // --- Snapshot types & logic (merged from ConfigCompareView) ---
 
@@ -341,6 +342,7 @@ export default function AdminView() {
 
   const tabs: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
     { id: 'overview', label: 'Overview', icon: <Settings className="w-3.5 h-3.5" /> },
+    { id: 'config', label: 'Cluster Config', icon: <Database className="w-3.5 h-3.5" /> },
     { id: 'updates', label: `Updates${availableUpdates.length > 0 ? ` (${availableUpdates.length})` : ''}`, icon: <ArrowUpCircle className="w-3.5 h-3.5" /> },
     { id: 'snapshots', label: `Snapshots (${savedSnapshots.length})`, icon: <GitCompare className="w-3.5 h-3.5" /> },
     { id: 'quotas', label: `Quotas (${quotas.length})`, icon: <Shield className="w-3.5 h-3.5" /> },
@@ -445,6 +447,9 @@ export default function AdminView() {
             </div>
           </>
         )}
+
+        {/* ===== CLUSTER CONFIG ===== */}
+        {activeTab === 'config' && <ClusterConfig />}
 
         {/* ===== UPDATES ===== */}
         {activeTab === 'updates' && (
