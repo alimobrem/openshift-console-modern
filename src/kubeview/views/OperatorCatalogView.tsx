@@ -60,6 +60,7 @@ export default function OperatorCatalogView() {
   const [installing, setInstalling] = useState(false);
   const [selectedChannel, setSelectedChannel] = useState('');
   const [installNs, setInstallNs] = useState('openshift-operators');
+  const [installingOp, setInstallingOp] = useState<{ name: string; ns: string; displayName: string } | null>(null);
 
   // Fetch all package manifests
   const { data: packages = [], isLoading } = useQuery<PackageManifest[]>({
@@ -160,8 +161,10 @@ export default function OperatorCatalogView() {
         },
       });
 
-      addToast({ type: 'success', title: 'Operator installed', detail: `${pkg.status.channels?.[0]?.currentCSVDesc?.displayName || pkg.metadata.name} installing in ${ns}` });
+      const displayName = pkg.status.channels?.[0]?.currentCSVDesc?.displayName || pkg.metadata.name;
+      addToast({ type: 'success', title: 'Subscription created', detail: `${displayName} installing in ${ns}` });
       queryClient.invalidateQueries({ queryKey: ['readiness', 'subscriptions'] });
+      setInstallingOp({ name: pkg.metadata.name, ns, displayName });
       setSelectedOp(null);
     } catch (err) {
       addToast({ type: 'error', title: 'Install failed', detail: err instanceof Error ? err.message : 'Unknown error' });
@@ -195,6 +198,91 @@ export default function OperatorCatalogView() {
     }
   }, [selectedOp]);
 
+  // Track install progress
+  const { data: installSub } = useQuery({
+    queryKey: ['install-progress', installingOp?.name, installingOp?.ns],
+    queryFn: () => installingOp ? k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installingOp.ns}/subscriptions/${installingOp.name}`).catch(() => null) : null,
+    enabled: !!installingOp,
+    refetchInterval: 3000,
+  });
+
+  const { data: installCsv } = useQuery({
+    queryKey: ['install-csv', installSub?.status?.installedCSV, installingOp?.ns],
+    queryFn: () => installSub?.status?.installedCSV ? k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installingOp!.ns}/clusterserviceversions/${installSub.status.installedCSV}`).catch(() => null) : null,
+    enabled: !!installSub?.status?.installedCSV && !!installingOp,
+    refetchInterval: 3000,
+  });
+
+  const installPhase = React.useMemo(() => {
+    if (!installingOp) return null;
+    if (!installSub) return 'creating';
+    if (!installSub.status?.installedCSV) return 'pending';
+    if (!installCsv) return 'installing';
+    const csvPhase = installCsv.status?.phase;
+    if (csvPhase === 'Succeeded') return 'succeeded';
+    if (csvPhase === 'Failed') return 'failed';
+    return 'installing';
+  }, [installingOp, installSub, installCsv]);
+
+  // Auto-close on success after 3s
+  useEffect(() => {
+    if (installPhase === 'succeeded') {
+      const timer = setTimeout(() => {
+        addToast({ type: 'success', title: `${installingOp?.displayName} is ready`, detail: 'Operator installed and running' });
+        queryClient.invalidateQueries({ queryKey: ['readiness', 'subscriptions'] });
+        setInstallingOp(null);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [installPhase]);
+
+  // Install progress banner
+  const installProgressBanner = installingOp && (
+    <div className={cn('rounded-lg border p-4 flex items-center gap-4',
+      installPhase === 'succeeded' ? 'bg-green-950/30 border-green-800' :
+      installPhase === 'failed' ? 'bg-red-950/30 border-red-800' :
+      'bg-blue-950/30 border-blue-800'
+    )}>
+      {installPhase === 'succeeded' ? <CheckCircle className="w-6 h-6 text-green-400 shrink-0" /> :
+       installPhase === 'failed' ? <XCircle className="w-6 h-6 text-red-400 shrink-0" /> :
+       <Loader2 className="w-6 h-6 text-blue-400 animate-spin shrink-0" />}
+      <div className="flex-1">
+        <div className="text-sm font-medium text-slate-200">{installingOp.displayName}</div>
+        <div className="text-xs text-slate-400 mt-0.5">
+          {installPhase === 'creating' && 'Creating subscription...'}
+          {installPhase === 'pending' && 'Waiting for install plan approval...'}
+          {installPhase === 'installing' && `Installing CSV ${installSub?.status?.installedCSV || ''}...`}
+          {installPhase === 'succeeded' && 'Operator installed and ready'}
+          {installPhase === 'failed' && `Failed: ${installCsv?.status?.message || 'Unknown error'}`}
+        </div>
+        {/* Progress steps */}
+        <div className="flex items-center gap-1 mt-2">
+          {['creating', 'pending', 'installing', 'succeeded'].map((step, i) => {
+            const steps = ['creating', 'pending', 'installing', 'succeeded'];
+            const currentIdx = steps.indexOf(installPhase || '');
+            const stepIdx = i;
+            const done = stepIdx < currentIdx || installPhase === 'succeeded';
+            const active = stepIdx === currentIdx;
+            return (
+              <React.Fragment key={step}>
+                <div className={cn('flex items-center gap-1',
+                  done ? 'text-green-400' : active ? 'text-blue-400' : 'text-slate-600'
+                )}>
+                  {done ? <CheckCircle className="w-3 h-3" /> : active ? <Loader2 className="w-3 h-3 animate-spin" /> : <div className="w-3 h-3 rounded-full border border-slate-600" />}
+                  <span className="text-[10px]">{step === 'creating' ? 'Subscribe' : step === 'pending' ? 'Plan' : step === 'installing' ? 'Install' : 'Ready'}</span>
+                </div>
+                {i < 3 && <div className={cn('flex-1 h-px mx-1', done ? 'bg-green-700' : 'bg-slate-700')} />}
+              </React.Fragment>
+            );
+          })}
+        </div>
+      </div>
+      <button onClick={() => setInstallingOp(null)} className="text-xs text-slate-400 hover:text-slate-200 shrink-0">
+        {installPhase === 'succeeded' || installPhase === 'failed' ? 'Close' : 'Hide'}
+      </button>
+    </div>
+  );
+
   // Detail view
   if (selectedOp) {
     const desc = selectedOp.status.channels?.find(c => c.name === selectedOp.status.defaultChannel)?.currentCSVDesc
@@ -211,6 +299,8 @@ export default function OperatorCatalogView() {
           <button onClick={() => setSelectedOp(null)} className="flex items-center gap-2 text-sm text-slate-400 hover:text-slate-200">
             <ArrowLeft className="w-4 h-4" /> Back to catalog
           </button>
+
+          {installProgressBanner}
 
           <div className="flex items-start gap-4">
             {desc?.icon?.[0]?.base64data ? (
@@ -292,6 +382,8 @@ export default function OperatorCatalogView() {
           <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2"><Puzzle className="w-6 h-6 text-violet-500" /> Operator Catalog</h1>
           <p className="text-sm text-slate-400 mt-1">{dedupedPackages.length} operators available from {catalogs.length} sources</p>
         </div>
+
+        {installProgressBanner}
 
         {/* Search + filters */}
         <div className="flex items-center gap-3 flex-wrap">
