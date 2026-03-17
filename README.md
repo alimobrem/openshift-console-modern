@@ -7,44 +7,55 @@ A next-generation OpenShift Console built with React, TypeScript, and real-time 
 ## Features
 
 ### Cluster Pulse — Your Landing Page
-See only what matters: failing pods, degraded operators, unhealthy deployments, unready nodes, and cluster CPU/memory at a glance. When everything is healthy, it tells you so.
+See only what matters: failing pods, degraded operators, unhealthy deployments, unready nodes, and cluster CPU/memory at a glance. Namespace-scoped and cluster-wide stats are clearly separated.
+
+### Operator Catalog & One-Click Install
+Browse 500+ operators from Red Hat, Certified, and Community sources. Search, filter, and install with one click — creates Namespace, OperatorGroup, and Subscription automatically. Real-time install progress tracking (Subscribe → Plan → Install → Ready). Post-install guidance shows what custom resources to create next.
+
+### Production Readiness Checklist
+31 automated checks across 6 categories — all auto-detected from the live cluster. Covers HA control plane, storage, identity providers, encryption, monitoring, logging, autoscaling, and more. Failed checks link directly to the operator catalog or configuration page.
 
 ### Auto-Generated Resource Tables
-Every resource type in your cluster gets a fully functional table with sortable columns, search, per-column filters, bulk operations, keyboard navigation (j/k/Enter), CSV/JSON export, and a preview panel — all auto-detected from the resource data.
+Every resource type gets a fully functional table with sortable columns, search, per-column filters, bulk operations, keyboard navigation (j/k/Enter), CSV/JSON export, and per-row delete with teardown progress.
 
 ![Table View](docs/screenshots/table-view.png)
 
-### Interactive Troubleshooting
-Auto-diagnose cluster issues with interactive runbooks. Six built-in playbooks cover CrashLoopBackOff, ImagePull errors, pending pods, deployment rollout failures, node issues, and storage problems — each showing affected resources inline with direct action buttons.
+### Overview Pages
+- **Workloads**: Deployments, StatefulSets, DaemonSets, Pods, Jobs, CronJobs with health status and inline logs
+- **Networking**: Services, Routes, Ingresses, exposed endpoints with HTTPS badges, network policy warnings
+- **Compute**: Per-node metrics with utilization bars, Machine Management (Machines, MachineSets, Health Checks, Autoscaling with setup guidance)
+- **Storage**: PVCs, PVs, StorageClasses with capacity breakdown
 
-![Troubleshoot View](docs/screenshots/troubleshoot.png)
+![Compute View](docs/screenshots/compute.png)
+![Workloads View](docs/screenshots/workloads.png)
 
-### Administration — Config, Updates, Snapshots
-Configure OAuth identity providers, proxy settings, image registries, scheduler profiles, TLS security. Initiate cluster upgrades, change update channels, capture and compare config snapshots.
+### Smart Diagnosis with Log Analysis
+CrashLoopBackOff diagnoses now show the actual error from pod logs. 10 error patterns detected: Permission denied, Connection refused, OOM, DNS failure, read-only filesystem, wrong architecture, and more — each with specific fix suggestions.
+
+### Administration
+- **Operators tab**: ClusterOperator health with version, status, and degraded messages
+- **Cluster Config**: Edit OAuth, Proxy, Image registries, Ingress, Scheduler, TLS — all with real API patches
+- **Updates**: View available versions, change channel, initiate upgrades
+- **Snapshots**: Capture cluster state, persist to localStorage, compare side-by-side
+- **Quotas**: Resource quotas and limit ranges
 
 ![Admin View](docs/screenshots/admin-updates.png)
 
+### Deployment-Level Logs
+Click "Logs" on any Deployment — see logs from all pods with tabs to switch between them or view merged output.
+
 ### Prometheus Alerts
-View firing alerts with direct links to affected resources, browse alerting rules with copyable PromQL, and manage Alertmanager silences.
-
-![Alerts View](docs/screenshots/alerts.png)
-
-### Timeline
-Chronological event feed with time range filters and type filtering. Click any event to navigate to the involved resource.
-
-![Timeline View](docs/screenshots/timeline.png)
+View firing alerts with links to affected resources, browse rules with copyable PromQL, manage silences.
 
 ### YAML Editor
-Edit resources with syntax highlighting, live validation, diff view, context-aware snippets for 12+ resource types, and OpenAPI schema documentation.
-
-![YAML Editor](docs/screenshots/yaml-editor.png)
+Edit resources with syntax highlighting, validation, diff view, and 23 templates including operator subscriptions, autoscaler configs, and logging stack setup.
 
 ### And More
-- **Resource Detail**: Inline actions (scale, restart, terminal, logs, YAML), smart diagnosis, conditions, events
+- **Troubleshooting**: Interactive runbooks with affected resources inline
+- **Timeline**: Chronological event feed with namespace filtering
 - **Dependency Graph**: Interactive SVG with blast radius analysis
-- **Operators**: ClusterOperator health and version tracking
-- **Storage**: PVC/PV status, capacity by storage class
-- **Access Control**: RBAC overview with cluster-admin audit
+- **Quick Deploy**: Form-based deploy with DeployProgress tracking
+- **Helm Charts**: Catalog with one-click install via Job
 
 ## Tech Stack
 
@@ -53,20 +64,12 @@ Edit resources with syntax highlighting, live validation, diff view, context-awa
 | **Framework** | React 19 + TypeScript 5.9 |
 | **Bundler** | Rspack 1.7 (Rust-based, ~1s builds) |
 | **State** | Zustand (client) + TanStack Query (server) |
+| **Real-time** | WebSocket watches + polling fallback |
 | **Styling** | Tailwind CSS 3.4 |
+| **Testing** | Vitest + jsdom + MSW (902 tests) |
 | **Icons** | Lucide React |
-| **Editor** | CodeMirror 6 |
-| **Routing** | React Router 7 |
-| **Testing** | Vitest + jsdom (646 tests) |
 
 ## Getting Started
-
-### Prerequisites
-- Node.js 24.x or higher
-- Access to an OpenShift cluster
-- `oc` CLI installed
-
-### Setup
 
 ```bash
 # Install dependencies
@@ -82,111 +85,34 @@ oc proxy --port=8001 &
 npm run dev
 ```
 
-Open [http://localhost:9000](http://localhost:9000) in your browser.
+## Testing
 
-### Scripts
-
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Development server with HMR |
-| `npm run build` | Production build |
-| `npm test` | Run 646 tests |
-| `npm run type-check` | TypeScript type checking |
+```bash
+npm test              # Run 902 tests
+npm run type-check    # TypeScript checking
+```
 
 ## Architecture
 
 ```
 src/kubeview/
-├── engine/              # Core logic
-│   ├── query.ts         # k8sList, k8sGet, k8sPatch, k8sDelete
-│   ├── discovery.ts     # API discovery with Promise.allSettled
-│   ├── gvr.ts           # GVR URL encoding/decoding
-│   ├── watch.ts         # WebSocket watch manager
-│   ├── actions.ts       # Resource action registry
-│   ├── diagnosis.ts     # Auto-diagnosis rules
-│   ├── schema.ts        # OpenAPI schema resolution
-│   ├── renderers/       # Auto-column detection, status utils
-│   └── enhancers/       # Kind-specific column enhancers
-├── views/               # Page components
-│   ├── PulseView.tsx    # Landing page — active issues + metrics
-│   ├── TableView.tsx    # Universal resource table
-│   ├── DetailView.tsx   # Resource detail + actions
-│   ├── AdminView.tsx    # Config, updates, snapshots, quotas
-│   ├── AlertsView.tsx   # Prometheus alerts + rules + silences
-│   └── ...              # Troubleshoot, Timeline, Storage, etc.
-├── components/          # Shared UI
-│   ├── Shell.tsx        # Layout: CommandBar + TabBar + Dock
-│   ├── ClusterConfig.tsx # OAuth, Proxy, Image, Ingress, Scheduler, API Server
-│   ├── CommandPalette.tsx
-│   ├── ResourceBrowser.tsx
-│   └── yaml/            # YAML editor with autocomplete + schema
-├── hooks/               # Shared hooks
-│   ├── useNavigateTab.ts
-│   └── useClusterHealthData.ts
-├── store/               # State
-│   ├── uiStore.ts       # Tabs, toasts, namespace, dock (persisted)
-│   └── clusterStore.ts  # API discovery registry
-└── App.tsx              # Routes
+├── engine/              # Query, discovery, diagnosis, actions, renderers
+├── views/               # 15 page components
+├── components/          # Shared UI (ClusterConfig, DeployProgress, etc.)
+├── hooks/               # useK8sListWatch, useNavigateTab, etc.
+├── store/               # Zustand (uiStore, clusterStore)
+└── App.tsx              # 23 routes
 ```
 
-### Key Patterns
+## Stats
 
-- **Single source of truth**: `K8sResource` type in `renderers/index.tsx`, `ResourceType` in `discovery.ts`
-- **Tab deduplication**: All navigation via `useNavigateTab()` — clicking the same resource reuses the existing tab
-- **Merge-patch for CRDs**: OpenShift `config.openshift.io` resources use `application/merge-patch+json`, not strategic-merge-patch
-- **Error resilience**: All API error handlers have try-catch around JSON parse (handles HTML 502/503 from proxies)
-- **Dark theme only**: `slate-*` palette, inline CSS in `index.html` prevents white flash
-
-## Routes
-
-| Route | View |
-|-------|------|
-| `/welcome` | Welcome / Getting started |
-| `/pulse` | Cluster Pulse (landing page) |
-| `/troubleshoot` | Troubleshoot with runbooks |
-| `/alerts` | Prometheus alerts |
-| `/timeline` | Event timeline |
-| `/storage` | Storage overview |
-| `/access-control` | RBAC overview |
-| `/operators` | ClusterOperator health |
-| `/admin` | Administration (config, updates, snapshots, quotas) |
-| `/r/:gvr` | Resource list (any type) |
-| `/r/:gvr/:ns/:name` | Resource detail |
-| `/yaml/:gvr/:ns/:name` | YAML editor |
-| `/logs/:ns/:name` | Pod logs |
-| `/node-logs/:name` | Node logs (audit, journal, CRI-O) |
-| `/metrics/:gvr/:ns/:name` | Prometheus metrics |
-| `/deps/:gvr/:ns/:name` | Dependency graph |
-| `/investigate/:gvr/:ns/:name` | Correlation analysis |
-| `/create/:gvr` | Create from YAML template |
-
-## Testing
-
-```bash
-# Run all 646 tests
-npm test
-
-# Run tests in watch mode
-npx vitest
-
-# Run specific test file
-npx vitest run src/kubeview/engine/__tests__/actions.test.ts
-```
-
-Test coverage spans:
-- Engine: query, actions, diagnosis, discovery, renderers, schema, enhancers
-- Store: uiStore (tabs, toasts), clusterStore (discovery)
-- Components: CommandPalette, ResourceBrowser, Toast, TabBar
-- Hooks: useResourceUrl
-
-## Contributing
-
-1. All fixes must include tests
-2. No mock data — all data from real K8s APIs
-3. No stub toasts — every action makes a real API call
-4. Use `slate-*` colors (dark theme only)
-5. Use `useNavigateTab()` for navigation (never raw `navigate()`)
-6. Use `application/merge-patch+json` for OpenShift CRD patches
+- **100+** production files
+- **902** tests across 58 files
+- **23** routes
+- **23** YAML templates
+- **31** production readiness checks
+- **500+** operators in catalog
+- **10** error pattern detections
 
 ## License
 
