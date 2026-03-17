@@ -392,6 +392,38 @@ spec:
     outputRefs:
     - default-lokistack`,
   },
+  {
+    prefix: 'sub-oadp',
+    label: 'OADP Operator (Backup)',
+    description: 'Install OpenShift API for Data Protection for etcd and application backup',
+    body: `apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: redhat-oadp-operator
+  namespace: openshift-adp
+spec:
+  channel: \${1:stable-1.4}
+  name: redhat-oadp-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: \${2:Automatic}`,
+  },
+  {
+    prefix: 'sub-quay',
+    label: 'Quay Operator',
+    description: 'Install Red Hat Quay for enterprise container registry',
+    body: `apiVersion: operators.coreos.com/v1alpha1
+kind: Subscription
+metadata:
+  name: quay-operator
+  namespace: openshift-operators
+spec:
+  channel: \${1:stable-3.13}
+  name: quay-operator
+  source: redhat-operators
+  sourceNamespace: openshift-marketplace
+  installPlanApproval: \${2:Automatic}`,
+  },
 ];
 
 /**

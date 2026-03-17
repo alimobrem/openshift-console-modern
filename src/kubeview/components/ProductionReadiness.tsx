@@ -428,9 +428,10 @@ export default function ProductionReadiness() {
     results.push({
       id: 'etcd-backup', category: 'Reliability',
       title: 'Etcd Backup',
-      description: 'Scheduled backups of etcd data for disaster recovery',
+      description: 'Etcd stores all cluster state (resources, secrets, config). Without backups, a failed etcd means rebuilding the entire cluster. Schedule automated backups to a secure external location.',
       status: etcdBackup ? 'pass' : 'warn',
-      detail: etcdBackup ? 'Backup configured' : 'No automated backup — manual recovery only',
+      detail: etcdBackup ? 'Backup configured' : 'No automated backup configured. Run periodic backups via CronJob or use OADP (OpenShift API for Data Protection). Manual backup: ssh to a control plane node and run /usr/local/bin/cluster-backup.sh /home/core/backup',
+      action: etcdBackup ? undefined : { label: 'Setup OADP', path: '/create/operators.coreos.com~v1alpha1~subscriptions' },
     });
 
     // OPERATORS / OBSERVABILITY STACK
