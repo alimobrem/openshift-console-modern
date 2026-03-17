@@ -218,7 +218,7 @@ describe('DetailView', () => {
     });
   });
 
-  it('does not show Logs button for Deployments', async () => {
+  it('shows Logs button for Deployments (workload-level logs)', async () => {
     mockK8sGet.mockResolvedValue(makeDeployment());
 
     renderDetailView({ gvrKey: 'apps/v1/deployments', namespace: 'default', name: 'my-deployment' });
@@ -226,7 +226,7 @@ describe('DetailView', () => {
     await waitFor(() => {
       expect(screen.getAllByText('my-deployment').length).toBeGreaterThanOrEqual(1);
     });
-    expect(screen.queryByText('Logs')).toBeNull();
+    expect(screen.getByText('Logs')).toBeDefined();
   });
 
   it('shows scale controls for Deployments', async () => {

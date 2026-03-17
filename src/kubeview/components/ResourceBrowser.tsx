@@ -168,8 +168,11 @@ export function ResourceBrowser() {
           </div>
           {[
             { label: 'Cluster Pulse', icon: Icons.Activity, path: '/pulse', color: 'text-emerald-400' },
-            { label: 'Timeline', icon: Icons.Clock, path: '/timeline', color: 'text-blue-400' },
+            { label: 'Workloads', icon: Icons.Package, path: '/workloads', color: 'text-blue-400' },
+            { label: 'Networking', icon: Icons.Globe, path: '/networking', color: 'text-cyan-400' },
+            { label: 'Compute', icon: Icons.Server, path: '/compute', color: 'text-blue-400' },
             { label: 'Storage', icon: Icons.HardDrive, path: '/storage', color: 'text-orange-400' },
+            { label: 'Timeline', icon: Icons.Clock, path: '/timeline', color: 'text-blue-400' },
             { label: 'Access Control', icon: Icons.Shield, path: '/access-control', color: 'text-indigo-400' },
             { label: 'Operators', icon: Icons.Puzzle, path: '/operators', color: 'text-violet-400' },
             { label: 'Alerts', icon: Icons.Bell, path: '/alerts', color: 'text-red-400' },

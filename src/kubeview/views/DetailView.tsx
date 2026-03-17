@@ -200,7 +200,13 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
 
   const handleViewLogs = () => {
     if (!namespace) return;
-    go(`/logs/${namespace}/${name}`, `${name} (Logs)`);
+    if (isWorkload) {
+      // For workloads, pass the label selector so LogsView can find all pods
+      const selector = selectorLabels ? Object.entries(selectorLabels).map(([k, v]) => `${k}=${v}`).join(',') : `app=${name}`;
+      go(`/logs/${namespace}/${name}?selector=${encodeURIComponent(selector)}&kind=${resource?.kind}`, `${name} (Logs)`);
+    } else {
+      go(`/logs/${namespace}/${name}`, `${name} (Logs)`);
+    }
   };
 
   const handleViewMetrics = () => {
@@ -347,7 +353,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
           </div>
           <div className="flex items-center gap-2">
             {/* Primary actions — always visible */}
-            {resource.kind === 'Pod' && namespace && (
+            {(resource.kind === 'Pod' || isWorkload) && namespace && (
               <button onClick={handleViewLogs} className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5">
                 <FileText className="w-3 h-3" /> Logs
               </button>
