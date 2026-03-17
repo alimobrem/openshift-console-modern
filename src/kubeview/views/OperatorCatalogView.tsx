@@ -357,11 +357,13 @@ export default function OperatorCatalogView() {
 
   const { data: installedCsv } = useQuery({
     queryKey: ['csv-detail', installedCsvName, installedCsvNs],
-    queryFn: () => installedCsvName && installedCsvNs
-      ? k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installedCsvNs}/clusterserviceversions/${installedCsvName}`).catch(() => null)
-      : null,
+    queryFn: async () => {
+      if (!installedCsvName || !installedCsvNs) return null;
+      return k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installedCsvNs}/clusterserviceversions/${installedCsvName}`).catch(() => null);
+    },
     enabled: !!installedCsvName && !!installedCsvNs,
-    staleTime: 60000,
+    staleTime: 30000,
+    refetchOnMount: true,
   });
 
   const providedApis = useMemo(() => {
@@ -489,6 +491,12 @@ export default function OperatorCatalogView() {
           )}
 
           {/* Provided APIs — show for installed operators */}
+          {isInstalled && !installedCsv && (
+            <div className="bg-slate-900 rounded-lg border border-slate-800 p-4 text-center">
+              <Loader2 className="w-5 h-5 text-blue-400 animate-spin mx-auto mb-2" />
+              <p className="text-xs text-slate-500">Loading operator details...</p>
+            </div>
+          )}
           {isInstalled && providedApis.length > 0 && (
             <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
               <div className="px-4 py-3 border-b border-slate-800">
