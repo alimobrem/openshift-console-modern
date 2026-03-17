@@ -27,6 +27,29 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
+      const isChunkError = this.state.error?.name === 'ChunkLoadError' || this.state.error?.message?.includes('Loading chunk');
+
+      // Auto-reload on chunk load errors (stale JS after rebuild)
+      if (isChunkError) {
+        return (
+          <div className="flex items-center justify-center h-full bg-slate-950 p-8">
+            <div className="max-w-md text-center">
+              <RefreshCw className="w-10 h-10 text-blue-400 mx-auto mb-4" />
+              <h2 className="text-lg font-semibold text-slate-100 mb-2">Page update available</h2>
+              <p className="text-sm text-slate-400 mb-4">
+                The application was updated. Please reload to get the latest version.
+              </p>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-2 text-sm bg-blue-600 hover:bg-blue-500 text-white rounded-md transition-colors"
+              >
+                Reload Page
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div className="flex items-center justify-center h-full bg-slate-950 p-8">
           <div className="max-w-md text-center">
