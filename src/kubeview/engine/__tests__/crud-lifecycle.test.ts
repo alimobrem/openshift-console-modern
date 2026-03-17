@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { k8sCreate, k8sDelete } from '../query';
-import { buildApiPath } from '../../hooks/useResourceUrl';
+import { k8sList, k8sCreate, k8sDelete } from '../query';
+import { buildApiPath, buildApiPathFromResource } from '../../hooks/useResourceUrl';
 import { kindToPlural } from '../renderers/index';
 
 const mockFetch = vi.fn();
@@ -344,5 +344,98 @@ describe('end-to-end path correctness', () => {
 
   it('StorageClass pluralization is correct', async () => {
     expect(kindToPlural('StorageClass')).toBe('storageclasses');
+  });
+});
+
+describe('list → delete lifecycle (simulates TableView flow)', () => {
+  // This tests the EXACT flow: k8sList returns items, we use
+  // buildApiPathFromResource to build the delete path, then k8sDelete.
+  // This catches the bug where list items lack apiVersion/kind.
+
+  it('Deployment: list → pick resource → delete', async () => {
+    // 1. k8sList returns items with apiVersion/kind stamped from list
+    mockOk({
+      apiVersion: 'apps/v1', kind: 'DeploymentList', metadata: {},
+      items: [{ metadata: { name: 'nginx', namespace: 'default', uid: '123' } }],
+    });
+    const resources = await k8sList<any>('/apis/apps/v1/deployments');
+    expect(resources[0].apiVersion).toBe('apps/v1');
+    expect(resources[0].kind).toBe('Deployment');
+
+    // 2. Build delete path from the listed resource
+    const resource = resources[0];
+    const deletePath = buildApiPathFromResource(resource);
+    expect(deletePath).toBe('/apis/apps/v1/namespaces/default/deployments/nginx');
+
+    // 3. Delete (scale + delete)
+    mockOk({}); // scale PATCH
+    mockOk({ status: 'Success' }); // DELETE
+    await k8sDelete(deletePath);
+    expect(mockFetch.mock.calls[2][1].method).toBe('DELETE');
+  });
+
+  it('Pod: list → pick resource → delete', async () => {
+    mockOk({
+      apiVersion: 'v1', kind: 'PodList', metadata: {},
+      items: [{ metadata: { name: 'web-abc', namespace: 'prod', uid: '456' } }],
+    });
+    const resources = await k8sList<any>('/api/v1/pods');
+    expect(resources[0].apiVersion).toBe('v1');
+    expect(resources[0].kind).toBe('Pod');
+
+    const deletePath = buildApiPathFromResource(resources[0]);
+    expect(deletePath).toBe('/api/v1/namespaces/prod/pods/web-abc');
+
+    mockOk({ status: 'Success' }); // no scale for pods
+    await k8sDelete(deletePath);
+  });
+
+  it('ConfigMap: list → pick resource → delete', async () => {
+    mockOk({
+      apiVersion: 'v1', kind: 'ConfigMapList', metadata: {},
+      items: [{ metadata: { name: 'my-config', namespace: 'default', uid: '789' } }],
+    });
+    const resources = await k8sList<any>('/api/v1/configmaps');
+    expect(resources[0].apiVersion).toBe('v1');
+    expect(resources[0].kind).toBe('ConfigMap');
+
+    const deletePath = buildApiPathFromResource(resources[0]);
+    expect(deletePath).toBe('/api/v1/namespaces/default/configmaps/my-config');
+
+    mockOk({ status: 'Success' });
+    await k8sDelete(deletePath);
+  });
+
+  it('Node: list → pick cluster-scoped → delete', async () => {
+    mockOk({
+      apiVersion: 'v1', kind: 'NodeList', metadata: {},
+      items: [{ metadata: { name: 'worker-1', uid: 'n1' } }],
+    });
+    const resources = await k8sList<any>('/api/v1/nodes');
+    expect(resources[0].apiVersion).toBe('v1');
+    expect(resources[0].kind).toBe('Node');
+
+    const deletePath = buildApiPathFromResource(resources[0]);
+    expect(deletePath).toBe('/api/v1/nodes/worker-1');
+    expect(deletePath).not.toContain('namespaces');
+
+    mockOk({ status: 'Success' });
+    await k8sDelete(deletePath);
+  });
+
+  it('Ingress: list → delete (pluralization)', async () => {
+    mockOk({
+      apiVersion: 'networking.k8s.io/v1', kind: 'IngressList', metadata: {},
+      items: [{ metadata: { name: 'my-ing', namespace: 'default', uid: 'i1' } }],
+    });
+    const resources = await k8sList<any>('/apis/networking.k8s.io/v1/ingresses');
+    expect(resources[0].kind).toBe('Ingress');
+
+    const deletePath = buildApiPathFromResource(resources[0]);
+    expect(deletePath).toContain('/ingresses/my-ing');
+    expect(deletePath).not.toContain('ingresss');
+
+    mockOk({ status: 'Success' });
+    await k8sDelete(deletePath);
   });
 });

@@ -51,7 +51,15 @@ export async function k8sList<T>(
   }
 
   const data: K8sListResponse<T> = await response.json();
-  return data.items;
+
+  // K8s list items often omit apiVersion/kind — stamp from list metadata
+  const itemApiVersion = data.apiVersion;
+  const itemKind = data.kind?.replace(/List$/, '') || '';
+  return data.items.map((item: any) => ({
+    ...item,
+    apiVersion: item.apiVersion || itemApiVersion,
+    kind: item.kind || itemKind,
+  }));
 }
 
 /**

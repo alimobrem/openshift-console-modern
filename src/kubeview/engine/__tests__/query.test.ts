@@ -31,26 +31,59 @@ describe('k8sList', () => {
 
     const result = await k8sList('/api/v1/pods');
     expect(result).toHaveLength(2);
-    expect(result[0]).toEqual({ metadata: { name: 'a' } });
+    expect(result[0].metadata.name).toBe('a');
     expect(mockFetch).toHaveBeenCalledWith('/api/kubernetes/api/v1/pods');
   });
 
+  it('stamps apiVersion and kind from list onto items', async () => {
+    mockOk({
+      apiVersion: 'v1', kind: 'PodList', metadata: {},
+      items: [{ metadata: { name: 'nginx', namespace: 'default' } }],
+    });
+
+    const result = await k8sList<any>('/api/v1/pods');
+    expect(result[0].apiVersion).toBe('v1');
+    expect(result[0].kind).toBe('Pod');
+  });
+
+  it('stamps apiVersion and kind for grouped resources', async () => {
+    mockOk({
+      apiVersion: 'apps/v1', kind: 'DeploymentList', metadata: {},
+      items: [{ metadata: { name: 'nginx' } }],
+    });
+
+    const result = await k8sList<any>('/apis/apps/v1/deployments');
+    expect(result[0].apiVersion).toBe('apps/v1');
+    expect(result[0].kind).toBe('Deployment');
+  });
+
+  it('preserves existing apiVersion/kind if present on items', async () => {
+    mockOk({
+      apiVersion: 'v1', kind: 'PodList', metadata: {},
+      items: [{ apiVersion: 'v1', kind: 'Pod', metadata: { name: 'a' } }],
+    });
+
+    const result = await k8sList<any>('/api/v1/pods');
+    expect(result[0].apiVersion).toBe('v1');
+    expect(result[0].kind).toBe('Pod');
+  });
+
   it('injects namespace into path', async () => {
-    mockOk({ items: [] });
+    mockOk({ apiVersion: 'v1', kind: 'PodList', items: [] });
 
     await k8sList('/api/v1/pods', 'kube-system');
     expect(mockFetch).toHaveBeenCalledWith('/api/kubernetes/api/v1/namespaces/kube-system/pods');
   });
 
   it('skips namespace injection for "all"', async () => {
-    mockOk({ items: [] });
+    mockOk({ apiVersion: 'v1', kind: 'PodList', items: [] });
 
     await k8sList('/api/v1/pods', 'all');
     expect(mockFetch).toHaveBeenCalledWith('/api/kubernetes/api/v1/pods');
   });
 
   it('skips namespace injection if already present', async () => {
-    mockOk({ items: [] });
+    mockOk({ apiVersion: 'v1', kind: 'PodList', items: [] });
 
     await k8sList('/api/v1/namespaces/default/pods', 'other');
     expect(mockFetch).toHaveBeenCalledWith('/api/kubernetes/api/v1/namespaces/default/pods');
