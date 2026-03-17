@@ -350,6 +350,32 @@ export default function OperatorCatalogView() {
     </div>
   );
 
+  // Fetch CSV for installed operator to get provided APIs
+  const selectedSub = selectedOp ? subscriptions.find((s: any) => (s.spec?.name || s.metadata?.name) === selectedOp.metadata.name) : null;
+  const installedCsvName = selectedSub?.status?.installedCSV;
+  const installedCsvNs = selectedSub?.metadata?.namespace;
+
+  const { data: installedCsv } = useQuery({
+    queryKey: ['csv-detail', installedCsvName, installedCsvNs],
+    queryFn: () => installedCsvName && installedCsvNs
+      ? k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installedCsvNs}/clusterserviceversions/${installedCsvName}`).catch(() => null)
+      : null,
+    enabled: !!installedCsvName && !!installedCsvNs,
+    staleTime: 60000,
+  });
+
+  const providedApis = useMemo(() => {
+    if (!installedCsv) return [];
+    const owned = installedCsv.spec?.customresourcedefinitions?.owned || [];
+    // Deduplicate by kind (some appear with multiple versions)
+    const seen = new Set<string>();
+    return owned.filter((crd: any) => {
+      if (seen.has(crd.kind)) return false;
+      seen.add(crd.kind);
+      return true;
+    });
+  }, [installedCsv]);
+
   // Detail view
   if (selectedOp) {
     const desc = selectedOp.status.channels?.find(c => c.name === selectedOp.status.defaultChannel)?.currentCSVDesc
@@ -423,6 +449,39 @@ export default function OperatorCatalogView() {
                   {installing ? 'Installing...' : 'Install'}
                 </button>
                 <span className="text-xs text-slate-500">Creates Namespace, OperatorGroup, and Subscription</span>
+              </div>
+            </div>
+          )}
+
+          {/* Provided APIs — show for installed operators */}
+          {isInstalled && providedApis.length > 0 && (
+            <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
+              <div className="px-4 py-3 border-b border-slate-800">
+                <h2 className="text-sm font-semibold text-slate-100">Provided APIs ({providedApis.length})</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Custom resources managed by this operator — create instances to configure it</p>
+              </div>
+              <div className="divide-y divide-slate-800">
+                {providedApis.map((crd: any) => {
+                  const gvrUrl = `${crd.name.split('.').slice(1).join('.')}~${crd.version}~${crd.name.split('.')[0]}`;
+                  return (
+                    <div key={`${crd.kind}-${crd.version}`} className="px-4 py-3 flex items-start gap-3">
+                      <Package className="w-4 h-4 text-blue-400 shrink-0 mt-1" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-slate-200">{crd.kind}</div>
+                        <div className="text-xs text-slate-500 mt-0.5">{crd.description || crd.name}</div>
+                        <div className="text-[10px] text-slate-600 font-mono mt-0.5">{crd.name} ({crd.version})</div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button onClick={() => go(`/r/${gvrUrl}`, crd.kind)} className="px-2.5 py-1 text-xs text-slate-300 border border-slate-700 rounded hover:border-slate-600 hover:text-slate-200">
+                          Browse
+                        </button>
+                        <button onClick={() => go(`/create/${gvrUrl}`, `Create ${crd.kind}`)} className="px-2.5 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-500 flex items-center gap-1">
+                          Create <ArrowRight className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}
