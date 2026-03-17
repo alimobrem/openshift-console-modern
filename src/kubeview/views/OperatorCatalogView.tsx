@@ -169,6 +169,16 @@ export default function OperatorCatalogView() {
     setInstalling(false);
   };
 
+  // Catalog source counts (must be before conditional return)
+  const catalogs = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const p of dedupedPackages) {
+      const key = p.status.catalogSource.replace(/-4\.\d+$/, '');
+      counts[key] = (counts[key] || 0) + 1;
+    }
+    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  }, [dedupedPackages]);
+
   // Initialize channel/ns when operator is selected
   React.useEffect(() => {
     if (selectedOp) {
@@ -274,16 +284,6 @@ export default function OperatorCatalogView() {
       </div>
     );
   }
-
-  // Catalog list
-  const catalogs = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const p of dedupedPackages) {
-      const key = p.status.catalogSource.replace(/-4\.\d+$/, '');
-      counts[key] = (counts[key] || 0) + 1;
-    }
-    return Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  }, [dedupedPackages]);
 
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">
