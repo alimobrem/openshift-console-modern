@@ -99,54 +99,6 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
   const [previewResource, setPreviewResource] = React.useState<K8sResource | null>(null);
   const [focusedRow, setFocusedRow] = React.useState(-1);
 
-  // Keyboard navigation for table
-  React.useEffect(() => {
-    function handler(e: KeyboardEvent) {
-      // Skip if typing in an input
-      if ((e.target as HTMLElement).tagName === 'INPUT') return;
-
-      const maxRow = paginatedResources.length - 1;
-
-      if (e.key === 'j' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        setFocusedRow((prev) => Math.min(prev + 1, maxRow));
-      } else if (e.key === 'k' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        setFocusedRow((prev) => Math.max(prev - 1, 0));
-      } else if (e.key === 'Enter' && focusedRow >= 0 && focusedRow <= maxRow) {
-        e.preventDefault();
-        const resource = paginatedResources[focusedRow];
-        if (resource) {
-          const gvrUrl = gvrKey.replace(/\//g, '~');
-          const ns = resource.metadata.namespace;
-          const name = resource.metadata.name;
-          const path = ns ? `/r/${gvrUrl}/${ns}/${name}` : `/r/${gvrUrl}/_/${name}`;
-          addTab({ title: name, path, pinned: false, closable: true });
-          navigate(path);
-        }
-      } else if (e.key === 'x' && focusedRow >= 0 && focusedRow <= maxRow) {
-        const resource = paginatedResources[focusedRow];
-        if (resource) {
-          const uid = resource.metadata.uid || '';
-          setSelectedRows((prev) => {
-            const next = new Set(prev);
-            if (next.has(uid)) next.delete(uid); else next.add(uid);
-            return next;
-          });
-        }
-      } else if (e.key === ' ' && focusedRow >= 0 && focusedRow <= maxRow) {
-        e.preventDefault();
-        setPreviewResource(paginatedResources[focusedRow] || null);
-      } else if (e.key === 'Escape') {
-        setPreviewResource(null);
-        setFocusedRow(-1);
-      }
-    }
-
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [focusedRow, paginatedResources, gvrKey, navigate, addTab]);
-
   // Column visibility & ordering
   const [hiddenColumns, setHiddenColumns] = React.useState<Set<string>>(new Set());
   const [showColumnPicker, setShowColumnPicker] = React.useState(false);
@@ -230,6 +182,54 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
   }, [sortedResources, currentPage, perPage]);
 
   const totalPages = Math.ceil(sortedResources.length / perPage);
+
+  // Keyboard navigation for table
+  React.useEffect(() => {
+    function handler(e: KeyboardEvent) {
+      // Skip if typing in an input
+      if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+      const maxRow = paginatedResources.length - 1;
+
+      if (e.key === 'j' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedRow((prev) => Math.min(prev + 1, maxRow));
+      } else if (e.key === 'k' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedRow((prev) => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter' && focusedRow >= 0 && focusedRow <= maxRow) {
+        e.preventDefault();
+        const resource = paginatedResources[focusedRow];
+        if (resource) {
+          const gvrUrl = gvrKey.replace(/\//g, '~');
+          const ns = resource.metadata.namespace;
+          const name = resource.metadata.name;
+          const path = ns ? `/r/${gvrUrl}/${ns}/${name}` : `/r/${gvrUrl}/_/${name}`;
+          addTab({ title: name, path, pinned: false, closable: true });
+          navigate(path);
+        }
+      } else if (e.key === 'x' && focusedRow >= 0 && focusedRow <= maxRow) {
+        const resource = paginatedResources[focusedRow];
+        if (resource) {
+          const uid = resource.metadata.uid || '';
+          setSelectedRows((prev) => {
+            const next = new Set(prev);
+            if (next.has(uid)) next.delete(uid); else next.add(uid);
+            return next;
+          });
+        }
+      } else if (e.key === ' ' && focusedRow >= 0 && focusedRow <= maxRow) {
+        e.preventDefault();
+        setPreviewResource(paginatedResources[focusedRow] || null);
+      } else if (e.key === 'Escape') {
+        setPreviewResource(null);
+        setFocusedRow(-1);
+      }
+    }
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [focusedRow, paginatedResources, gvrKey, navigate, addTab]);
 
   // Extract resource kind for display
   const resourceKind = React.useMemo(() => {
