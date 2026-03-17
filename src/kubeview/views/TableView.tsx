@@ -383,7 +383,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
     if (selectedRows.size === 0) return;
 
     let deleted = 0;
-    let failed = 0;
+    const errors: string[] = [];
     for (const uid of selectedRows) {
       const resource = stampedResources.find((r) => r.metadata.uid === uid);
       if (!resource) continue;
@@ -399,15 +399,16 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
       try {
         await k8sDelete(resourcePath);
         deleted++;
-      } catch {
-        failed++;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Unknown error';
+        errors.push(`${resource.metadata.name}: ${msg}`);
       }
     }
 
     setSelectedRows(new Set());
     queryClient.invalidateQueries({ queryKey: ['k8s', 'list'] });
-    if (failed > 0) {
-      addToast({ type: 'warning', title: `Deleted ${deleted}, failed ${failed}`, detail: `${failed} resource${failed !== 1 ? 's' : ''} could not be deleted` });
+    if (errors.length > 0) {
+      addToast({ type: 'error', title: `Deleted ${deleted}, failed ${errors.length}`, detail: errors.join('\n') });
     } else {
       addToast({ type: 'success', title: `Deleted ${deleted} resource${deleted !== 1 ? 's' : ''}` });
     }
