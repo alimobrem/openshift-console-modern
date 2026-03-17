@@ -23,6 +23,7 @@ import {
   HardDrive,
   ArrowRight,
   MoreHorizontal,
+  Box,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sGet, k8sList, k8sDelete, k8sPatch } from '../engine/query';
@@ -69,6 +70,20 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
     queryKey: ['detail', apiPath],
     queryFn: () => k8sGet<K8sResource>(apiPath),
     refetchInterval: 30000,
+  });
+
+  // Fetch managed pods for workloads (Deployment/StatefulSet/DaemonSet)
+  const isWorkload = resource?.kind === 'Deployment' || resource?.kind === 'StatefulSet' || resource?.kind === 'DaemonSet';
+  const selectorLabels = (resource?.spec as any)?.selector?.matchLabels as Record<string, string> | undefined;
+  const { data: managedPods = [] } = useQuery<K8sResource[]>({
+    queryKey: ['managed-pods', namespace, name, resource?.kind],
+    queryFn: async () => {
+      if (!selectorLabels || !namespace) return [];
+      const labelSelector = Object.entries(selectorLabels).map(([k, v]) => `${k}=${v}`).join(',');
+      return k8sList<K8sResource>(`/api/v1/namespaces/${namespace}/pods?labelSelector=${encodeURIComponent(labelSelector)}`);
+    },
+    enabled: !!resource && isWorkload && !!selectorLabels && !!namespace,
+    refetchInterval: 15000,
   });
 
   // Fetch related events using field selector
@@ -399,14 +414,25 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                           💡 {diagnosis.suggestion}
                         </p>
                       )}
-                      {diagnosis.fix && (
-                        <button
-                          onClick={() => handleApplyFix(diagnosis)}
-                          className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                          {diagnosis.fix.label}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {diagnosis.fix && (
+                          <button
+                            onClick={() => handleApplyFix(diagnosis)}
+                            disabled={actionLoading === 'fix'}
+                            className="px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {actionLoading === 'fix' ? 'Applying...' : diagnosis.fix.label}
+                          </button>
+                        )}
+                        {resource?.kind === 'Pod' && namespace && (
+                          <button onClick={handleViewLogs} className="px-3 py-1 text-xs text-blue-400 hover:text-blue-300 border border-slate-700 rounded hover:border-slate-600">
+                            View Logs
+                          </button>
+                        )}
+                        <button onClick={() => go('/troubleshoot', 'Troubleshoot')} className="px-3 py-1 text-xs text-slate-400 hover:text-slate-300 border border-slate-700 rounded hover:border-slate-600">
+                          Troubleshoot
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -705,6 +731,54 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                       <div className="text-sm text-blue-400 font-medium">{related.name}</div>
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Managed Pods (workloads only) */}
+            {isWorkload && managedPods.length > 0 && (
+              <div className="bg-slate-900 rounded-lg border border-slate-800">
+                <div className="px-4 py-3 border-b border-slate-800">
+                  <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+                    <Box className="w-4 h-4 text-blue-400" />
+                    Pods ({managedPods.length})
+                  </h2>
+                </div>
+                <div className="divide-y divide-slate-800 max-h-64 overflow-auto">
+                  {managedPods.map((pod: any) => {
+                    const podPhase = pod.status?.phase || 'Pending';
+                    const containers = pod.status?.containerStatuses || [];
+                    const ready = containers.filter((c: any) => c.ready).length;
+                    const total = containers.length || 1;
+                    const waiting = containers.find((c: any) => c.state?.waiting)?.state?.waiting;
+                    const restarts = containers.reduce((sum: number, c: any) => sum + (c.restartCount || 0), 0);
+
+                    return (
+                      <button
+                        key={pod.metadata.uid}
+                        onClick={() => go(`/r/v1~pods/${pod.metadata.namespace}/${pod.metadata.name}`, pod.metadata.name)}
+                        className="w-full px-4 py-2 text-left hover:bg-slate-800/50 transition-colors flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className={cn('w-2 h-2 rounded-full shrink-0',
+                            podPhase === 'Running' && ready === total ? 'bg-green-500' :
+                            podPhase === 'Failed' ? 'bg-red-500' : 'bg-yellow-500'
+                          )} />
+                          <span className="text-sm text-slate-200 truncate">{pod.metadata.name}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          {waiting && <span className="text-[10px] text-yellow-400">{waiting.reason}</span>}
+                          {restarts > 0 && <span className="text-[10px] text-slate-500">{restarts} restarts</span>}
+                          <span className={cn('text-xs font-mono', ready === total ? 'text-green-400' : 'text-yellow-400')}>{ready}/{total}</span>
+                          <span className={cn('text-[10px] px-1.5 py-0.5 rounded',
+                            podPhase === 'Running' ? 'bg-green-900/50 text-green-300' :
+                            podPhase === 'Failed' ? 'bg-red-900/50 text-red-300' :
+                            'bg-yellow-900/50 text-yellow-300'
+                          )}>{podPhase}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
