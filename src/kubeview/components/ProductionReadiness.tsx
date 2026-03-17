@@ -101,6 +101,54 @@ export default function ProductionReadiness() {
     staleTime: 60000,
   });
 
+  const { data: imageRegistry } = useQuery({
+    queryKey: ['readiness', 'imageregistry'],
+    queryFn: () => k8sGet<any>('/apis/imageregistry.operator.openshift.io/v1/configs/cluster').catch(() => null),
+    staleTime: 60000,
+  });
+
+  const { data: limitRanges = [] } = useQuery<any[]>({
+    queryKey: ['k8s', 'list', '/api/v1/limitranges'],
+    queryFn: () => k8sList('/api/v1/limitranges').catch(() => []),
+    staleTime: 60000,
+  });
+
+  const { data: pdbs = [] } = useQuery<any[]>({
+    queryKey: ['k8s', 'list', '/apis/policy/v1/poddisruptionbudgets'],
+    queryFn: () => k8sList('/apis/policy/v1/poddisruptionbudgets').catch(() => []),
+    staleTime: 60000,
+  });
+
+  const { data: externalSecrets = [] } = useQuery<any[]>({
+    queryKey: ['readiness', 'externalsecrets'],
+    queryFn: () => k8sList('/apis/external-secrets.io/v1beta1/externalsecrets').catch(() => []),
+    staleTime: 60000,
+  });
+
+  const { data: sealedSecrets = [] } = useQuery<any[]>({
+    queryKey: ['readiness', 'sealedsecrets'],
+    queryFn: () => k8sList('/apis/bitnami.com/v1alpha1/sealedsecrets').catch(() => []),
+    staleTime: 60000,
+  });
+
+  const { data: proxy } = useQuery({
+    queryKey: ['admin', 'config', 'proxy'],
+    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/proxies/cluster').catch(() => null),
+    staleTime: 60000,
+  });
+
+  const { data: dns } = useQuery({
+    queryKey: ['readiness', 'dns'],
+    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/dnses/cluster').catch(() => null),
+    staleTime: 60000,
+  });
+
+  const { data: etcdBackup } = useQuery({
+    queryKey: ['readiness', 'etcdbackup'],
+    queryFn: () => k8sList('/apis/config.openshift.io/v1/backups').then((items: any[]) => items.length > 0).catch(() => false),
+    staleTime: 60000,
+  });
+
   // --- Run checks ---
   const checks = React.useMemo<Check[]>(() => {
     const results: Check[] = [];
@@ -280,10 +328,10 @@ export default function ProductionReadiness() {
       action: { label: 'View Updates', path: '/admin' },
     });
 
-    // INGRESS
+    // INGRESS & NETWORKING
     const hasCustomCert = !!(ingress?.spec?.componentRoutes?.some((r: any) => r.servingCertKeyPairSecret) || ingress?.spec?.defaultCertificate);
     results.push({
-      id: 'ingress-cert', category: 'Security',
+      id: 'ingress-cert', category: 'Networking',
       title: 'Custom Ingress Certificate',
       description: 'Replace self-signed default certificate with a trusted CA certificate',
       status: hasCustomCert ? 'pass' : 'warn',
@@ -291,8 +339,84 @@ export default function ProductionReadiness() {
       action: { label: 'Configure Ingress', path: '/admin' },
     });
 
+    const domain = ingress?.spec?.domain || '';
+    const isDefaultDomain = domain.includes('.devcluster.') || domain.includes('.example.com') || !domain;
+    results.push({
+      id: 'custom-domain', category: 'Networking',
+      title: 'Custom Ingress Domain',
+      description: 'Configure a custom apps domain instead of the default',
+      status: domain && !isDefaultDomain ? 'pass' : domain ? 'warn' : 'fail',
+      detail: domain || 'No domain configured',
+      action: { label: 'Configure', path: '/admin' },
+    });
+
+    const proxyConfigured = !!(proxy?.spec?.httpProxy || proxy?.spec?.httpsProxy);
+    if (proxyConfigured) {
+      results.push({
+        id: 'proxy', category: 'Networking',
+        title: 'Cluster Proxy',
+        description: 'Cluster-wide proxy settings configured',
+        status: 'pass',
+        detail: `HTTP: ${proxy?.spec?.httpProxy || '—'}, HTTPS: ${proxy?.spec?.httpsProxy || '—'}`,
+      });
+    }
+
+    // SECRETS MANAGEMENT
+    const hasExternalSecrets = externalSecrets.length > 0;
+    const hasSealedSecrets = sealedSecrets.length > 0;
+    const hasSecretsMgmt = hasExternalSecrets || hasSealedSecrets;
+    results.push({
+      id: 'secrets-mgmt', category: 'Security',
+      title: 'Secrets Management',
+      description: 'External secrets operator (Vault, AWS Secrets Manager) or Sealed Secrets for GitOps-safe secret handling',
+      status: hasSecretsMgmt ? 'pass' : 'warn',
+      detail: hasExternalSecrets ? `${externalSecrets.length} ExternalSecret${externalSecrets.length !== 1 ? 's' : ''}` : hasSealedSecrets ? `${sealedSecrets.length} SealedSecret${sealedSecrets.length !== 1 ? 's' : ''}` : 'No external secrets operator detected — secrets stored as base64 in etcd',
+    });
+
+    // IMAGE REGISTRY
+    const registryManagementState = imageRegistry?.spec?.managementState;
+    const registryStorage = imageRegistry?.spec?.storage;
+    const hasRegistryStorage = registryStorage && !registryStorage.emptyDir;
+    results.push({
+      id: 'image-registry', category: 'Storage',
+      title: 'Internal Image Registry',
+      description: 'Image registry with persistent storage (not emptyDir)',
+      status: registryManagementState === 'Removed' ? 'warn' : hasRegistryStorage ? 'pass' : registryManagementState ? 'warn' : 'unknown',
+      detail: registryManagementState === 'Removed' ? 'Registry removed' : hasRegistryStorage ? `Storage: ${Object.keys(registryStorage).filter(k => k !== 'managementState')[0] || 'configured'}` : registryStorage?.emptyDir ? 'Using emptyDir — data lost on restart' : 'Checking...',
+      action: { label: 'View Registry', path: '/r/imageregistry.operator.openshift.io~v1~configs/_/cluster' },
+    });
+
+    // RELIABILITY - more checks
+    const userLimitRanges = limitRanges.filter((lr: any) => !lr.metadata?.namespace?.startsWith('openshift-') && !lr.metadata?.namespace?.startsWith('kube-'));
+    results.push({
+      id: 'limit-ranges', category: 'Reliability',
+      title: 'Default Resource Limits',
+      description: 'LimitRanges set default CPU/memory for containers without explicit limits',
+      status: userLimitRanges.length > 0 ? 'pass' : 'warn',
+      detail: `${userLimitRanges.length} LimitRange${userLimitRanges.length !== 1 ? 's' : ''} in user namespaces`,
+      action: { label: 'View Quotas', path: '/admin' },
+    });
+
+    const userPdbs = pdbs.filter((p: any) => !p.metadata?.namespace?.startsWith('openshift-') && !p.metadata?.namespace?.startsWith('kube-'));
+    results.push({
+      id: 'pod-disruption-budgets', category: 'Reliability',
+      title: 'Pod Disruption Budgets',
+      description: 'PDBs protect critical workloads during node drains and updates',
+      status: userPdbs.length > 0 ? 'pass' : 'warn',
+      detail: `${userPdbs.length} PDB${userPdbs.length !== 1 ? 's' : ''} in user namespaces`,
+      action: { label: 'Create PDB', path: '/create/policy~v1~poddisruptionbudgets' },
+    });
+
+    results.push({
+      id: 'etcd-backup', category: 'Reliability',
+      title: 'Etcd Backup',
+      description: 'Scheduled backups of etcd data for disaster recovery',
+      status: etcdBackup ? 'pass' : 'warn',
+      detail: etcdBackup ? 'Backup configured' : 'No automated backup — manual recovery only',
+    });
+
     return results;
-  }, [nodes, clusterVersion, oauth, apiServer, storageClasses, netpols, quotas, healthChecks, clusterAutoscaler, kubeadminSecret, monitoringPods, logForwarder, ingress]);
+  }, [nodes, clusterVersion, oauth, apiServer, storageClasses, netpols, quotas, healthChecks, clusterAutoscaler, kubeadminSecret, monitoringPods, logForwarder, ingress, imageRegistry, limitRanges, pdbs, externalSecrets, sealedSecrets, proxy, etcdBackup]);
 
   // Summary
   const passCount = checks.filter(c => c.status === 'pass').length;
