@@ -54,9 +54,33 @@ export default function ComputeView() {
     refetchInterval: 30000,
   });
 
+  const { data: machines = [] } = useQuery<K8sResource[]>({
+    queryKey: ['k8s', 'list', '/apis/machine.openshift.io/v1beta1/machines'],
+    queryFn: () => k8sList('/apis/machine.openshift.io/v1beta1/machines').catch(() => []),
+    staleTime: 60000,
+  });
+
   const { data: machineSets = [] } = useQuery<K8sResource[]>({
     queryKey: ['k8s', 'list', '/apis/machine.openshift.io/v1beta1/machinesets'],
     queryFn: () => k8sList('/apis/machine.openshift.io/v1beta1/machinesets').catch(() => []),
+    staleTime: 60000,
+  });
+
+  const { data: healthChecks = [] } = useQuery<K8sResource[]>({
+    queryKey: ['k8s', 'list', '/apis/machine.openshift.io/v1beta1/machinehealthchecks'],
+    queryFn: () => k8sList('/apis/machine.openshift.io/v1beta1/machinehealthchecks').catch(() => []),
+    staleTime: 60000,
+  });
+
+  const { data: machineAutoscalers = [] } = useQuery<K8sResource[]>({
+    queryKey: ['k8s', 'list', '/apis/autoscaling.openshift.io/v1beta1/machineautoscalers'],
+    queryFn: () => k8sList('/apis/autoscaling.openshift.io/v1beta1/machineautoscalers').catch(() => []),
+    staleTime: 60000,
+  });
+
+  const { data: clusterAutoscaler = [] } = useQuery<K8sResource[]>({
+    queryKey: ['k8s', 'list', '/apis/autoscaling.openshift.io/v1/clusterautoscalers'],
+    queryFn: () => k8sList('/apis/autoscaling.openshift.io/v1/clusterautoscalers').catch(() => []),
     staleTime: 60000,
   });
 
@@ -271,32 +295,145 @@ export default function ComputeView() {
           </div>
         </div>
 
-        {/* MachineSets */}
-        {machineSets.length > 0 && (
+        {/* Machine Management */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* MachineSets */}
           <div className="bg-slate-900 rounded-lg border border-slate-800">
-            <div className="px-4 py-3 border-b border-slate-800">
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-slate-100">MachineSets ({machineSets.length})</h2>
+              <button onClick={() => go('/r/machine.openshift.io~v1beta1~machinesets', 'MachineSets')} className="text-xs text-blue-400 hover:text-blue-300">View all →</button>
             </div>
-            <div className="divide-y divide-slate-800">
-              {machineSets.map((ms: any) => {
+            <div className="divide-y divide-slate-800 max-h-64 overflow-auto">
+              {machineSets.length === 0 ? <div className="px-4 py-6 text-center text-sm text-slate-500">No MachineSets</div> : machineSets.map((ms: any) => {
                 const desired = ms.spec?.replicas ?? 0;
                 const ready = ms.status?.readyReplicas ?? 0;
-                const available = ms.status?.availableReplicas ?? 0;
+                // Find autoscaler for this machineset
+                const autoscaler = machineAutoscalers.find((a: any) => a.spec?.scaleTargetRef?.name === ms.metadata.name);
                 return (
                   <button key={ms.metadata.uid} onClick={() => go(`/r/machine.openshift.io~v1beta1~machinesets/${ms.metadata.namespace}/${ms.metadata.name}`, ms.metadata.name)}
                     className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-800/50 text-left">
-                    <div className="flex items-center gap-2">
-                      <div className={cn('w-2 h-2 rounded-full', ready === desired ? 'bg-green-500' : 'bg-yellow-500')} />
-                      <span className="text-sm text-slate-200">{ms.metadata.name}</span>
-                      <span className="text-xs text-slate-500">{ms.metadata.namespace}</span>
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={cn('w-2 h-2 rounded-full shrink-0', ready === desired ? 'bg-green-500' : 'bg-yellow-500')} />
+                      <span className="text-sm text-slate-200 truncate">{ms.metadata.name}</span>
+                      {autoscaler && <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/50 text-blue-300 rounded shrink-0">autoscaled {autoscaler.spec?.minReplicas}-{autoscaler.spec?.maxReplicas}</span>}
                     </div>
-                    <span className={cn('text-xs font-mono', ready === desired ? 'text-green-400' : 'text-yellow-400')}>{ready}/{desired} ready</span>
+                    <span className={cn('text-xs font-mono shrink-0', ready === desired ? 'text-green-400' : 'text-yellow-400')}>{ready}/{desired}</span>
                   </button>
                 );
               })}
             </div>
           </div>
-        )}
+
+          {/* Machines */}
+          <div className="bg-slate-900 rounded-lg border border-slate-800">
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-100">Machines ({machines.length})</h2>
+              <button onClick={() => go('/r/machine.openshift.io~v1beta1~machines', 'Machines')} className="text-xs text-blue-400 hover:text-blue-300">View all →</button>
+            </div>
+            <div className="divide-y divide-slate-800 max-h-64 overflow-auto">
+              {machines.length === 0 ? <div className="px-4 py-6 text-center text-sm text-slate-500">No Machines</div> : machines.map((m: any) => {
+                const phase = m.status?.phase || 'Unknown';
+                const instanceType = m.spec?.providerSpec?.value?.instanceType || '';
+                const nodeRef = m.status?.nodeRef?.name || '';
+                return (
+                  <button key={m.metadata.uid} onClick={() => go(`/r/machine.openshift.io~v1beta1~machines/${m.metadata.namespace}/${m.metadata.name}`, m.metadata.name)}
+                    className="w-full flex items-center justify-between px-4 py-2.5 hover:bg-slate-800/50 text-left">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className={cn('w-2 h-2 rounded-full shrink-0', phase === 'Running' ? 'bg-green-500' : phase === 'Provisioning' ? 'bg-yellow-500' : 'bg-red-500')} />
+                      <div className="min-w-0">
+                        <span className="text-sm text-slate-200 truncate block">{m.metadata.name}</span>
+                        {nodeRef && <span className="text-[10px] text-slate-500 truncate block">{nodeRef}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {instanceType && <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded font-mono">{instanceType}</span>}
+                      <span className={cn('text-[10px] px-1.5 py-0.5 rounded',
+                        phase === 'Running' ? 'bg-green-900/50 text-green-300' :
+                        phase === 'Provisioning' ? 'bg-yellow-900/50 text-yellow-300' :
+                        'bg-red-900/50 text-red-300'
+                      )}>{phase}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* MachineHealthChecks */}
+          <div className="bg-slate-900 rounded-lg border border-slate-800">
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-100">Machine Health Checks ({healthChecks.length})</h2>
+              <button onClick={() => go('/r/machine.openshift.io~v1beta1~machinehealthchecks', 'HealthChecks')} className="text-xs text-blue-400 hover:text-blue-300">View all →</button>
+            </div>
+            <div className="divide-y divide-slate-800 max-h-64 overflow-auto">
+              {healthChecks.length === 0 ? <div className="px-4 py-6 text-center text-sm text-slate-500">No health checks configured</div> : healthChecks.map((hc: any) => {
+                const maxUnhealthy = hc.spec?.maxUnhealthy || '100%';
+                const conditions = (hc.spec?.unhealthyConditions || []) as Array<{ type: string; status: string; timeout: string }>;
+                const currentHealthy = hc.status?.currentHealthy ?? 0;
+                const expectedMachines = hc.status?.expectedMachines ?? 0;
+                return (
+                  <button key={hc.metadata.uid} onClick={() => go(`/r/machine.openshift.io~v1beta1~machinehealthchecks/${hc.metadata.namespace}/${hc.metadata.name}`, hc.metadata.name)}
+                    className="w-full px-4 py-3 hover:bg-slate-800/50 text-left">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm text-slate-200">{hc.metadata.name}</span>
+                      <span className={cn('text-xs font-mono', currentHealthy === expectedMachines ? 'text-green-400' : 'text-yellow-400')}>
+                        {currentHealthy}/{expectedMachines} healthy
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                      <span>Max unhealthy: {maxUnhealthy}</span>
+                      {conditions.map((c, i) => <span key={i}>{c.type}≠{c.status} → {c.timeout}</span>)}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Autoscaling */}
+          <div className="bg-slate-900 rounded-lg border border-slate-800">
+            <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-slate-100">Autoscaling</h2>
+              {clusterAutoscaler.length > 0 && <span className="text-[10px] px-1.5 py-0.5 bg-green-900/50 text-green-300 rounded">Enabled</span>}
+            </div>
+            <div className="p-4 space-y-3">
+              {clusterAutoscaler.length === 0 && machineAutoscalers.length === 0 ? (
+                <div className="text-center py-4">
+                  <div className="text-sm text-slate-500 mb-2">Autoscaling is not configured</div>
+                  <div className="text-xs text-slate-600">Create a ClusterAutoscaler and MachineAutoscaler resources to enable automatic node scaling based on workload demand.</div>
+                  <button onClick={() => go('/create/v1~pods', 'Create')} className="text-xs text-blue-400 hover:text-blue-300 mt-3 flex items-center gap-1 mx-auto">
+                    Configure autoscaling <ArrowRight className="w-3 h-3" />
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {clusterAutoscaler.map((ca: any) => (
+                    <div key={ca.metadata.uid} className="p-3 bg-slate-800/50 rounded border border-slate-700">
+                      <div className="text-sm text-slate-200 mb-2">Cluster Autoscaler</div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div><span className="text-slate-500">Min nodes:</span> <span className="text-slate-300">{ca.spec?.resourceLimits?.minNodesTotal ?? '—'}</span></div>
+                        <div><span className="text-slate-500">Max nodes:</span> <span className="text-slate-300">{ca.spec?.resourceLimits?.maxNodesTotal ?? '—'}</span></div>
+                        <div><span className="text-slate-500">Scale down:</span> <span className="text-slate-300">{ca.spec?.scaleDown?.enabled ? 'enabled' : 'disabled'}</span></div>
+                        <div><span className="text-slate-500">Delay:</span> <span className="text-slate-300">{ca.spec?.scaleDown?.delayAfterAdd ?? '—'}</span></div>
+                      </div>
+                    </div>
+                  ))}
+                  {machineAutoscalers.length > 0 && (
+                    <div>
+                      <div className="text-xs text-slate-500 mb-2">Machine Autoscalers ({machineAutoscalers.length})</div>
+                      {machineAutoscalers.map((ma: any) => (
+                        <div key={ma.metadata.uid} className="flex items-center justify-between py-1.5">
+                          <span className="text-sm text-slate-300">{ma.spec?.scaleTargetRef?.name || ma.metadata.name}</span>
+                          <span className="text-xs text-slate-400 font-mono">{ma.spec?.minReplicas}–{ma.spec?.maxReplicas} replicas</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
