@@ -34,7 +34,7 @@ import { buildApiPath } from '../hooks/useResourceUrl';
 import { useUIStore } from '../store/uiStore';
 import { jsonToYaml, resourceToYaml } from '../engine/yamlUtils';
 import PodTerminal from '../components/PodTerminal';
-import ConfirmDialog from '../components/feedback/ConfirmDialog';
+import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import DataEditor from '../components/DataEditor';
 import { toggleFavorite, isFavorite } from '../engine/favorites';
 import { useNavigateTab } from '../hooks/useNavigateTab';

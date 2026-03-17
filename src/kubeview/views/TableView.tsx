@@ -5,7 +5,7 @@ import { Search, ChevronUp, ChevronDown, Trash2, Tag, Plus, Filter, Columns3, X,
 import { cn } from '@/lib/utils';
 import { k8sList, k8sPatch, k8sDelete } from '../engine/query';
 import { jsonToYaml } from '../engine/yamlUtils';
-import ConfirmDialog from '../components/feedback/ConfirmDialog';
+import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import { useClusterStore } from '../store/clusterStore';
 import { useUIStore } from '../store/uiStore';
 import type { K8sResource, ColumnDef } from '../engine/renderers';
