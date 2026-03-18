@@ -468,9 +468,14 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                             View Logs
                           </button>
                         )}
-                        <button onClick={() => go('/pulse', 'Pulse')} className="px-3 py-1 text-xs text-slate-400 hover:text-slate-300 border border-slate-700 rounded hover:border-slate-600">
-                          Diagnose
+                        <button onClick={handleViewYaml} className="px-3 py-1 text-xs text-slate-400 hover:text-slate-300 border border-slate-700 rounded hover:border-slate-600">
+                          Edit YAML
                         </button>
+                        {namespace && (
+                          <button onClick={() => go(`/investigate/${gvrUrl}/${namespace}/${name}`, `${name} (Investigate)`)} className="px-3 py-1 text-xs text-slate-400 hover:text-slate-300 border border-slate-700 rounded hover:border-slate-600">
+                            Dependencies
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
