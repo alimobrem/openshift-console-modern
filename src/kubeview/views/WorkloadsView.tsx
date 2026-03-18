@@ -24,6 +24,7 @@ export default function WorkloadsView() {
   const { data: jobs = [] } = useK8sListWatch({ apiPath: '/apis/batch/v1/jobs', namespace: nsFilter });
   const { data: cronjobs = [] } = useK8sListWatch({ apiPath: '/apis/batch/v1/cronjobs', namespace: nsFilter });
   const { data: replicasets = [] } = useK8sListWatch({ apiPath: '/apis/apps/v1/replicasets', namespace: nsFilter });
+  const { data: pdbs = [] } = useK8sListWatch({ apiPath: '/apis/policy/v1/poddisruptionbudgets', namespace: nsFilter });
 
   // Pod status breakdown
   const podStats = React.useMemo(() => {
@@ -339,21 +340,8 @@ export default function WorkloadsView() {
           </Panel>
         )}
 
-        {/* Guidance */}
-        <Panel title="Workload Best Practices" icon={<Info className="w-4 h-4 text-blue-500" />}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="space-y-2">
-              <Tip title="Set resource requests and limits" desc="Every container should have CPU/memory requests for scheduling and limits for OOM protection" />
-              <Tip title="Configure liveness and readiness probes" desc="Probes enable automatic restart of unhealthy containers and safe traffic routing" />
-              <Tip title="Use PodDisruptionBudgets" desc="PDBs prevent voluntary disruptions (node drains, upgrades) from taking down too many pods" />
-            </div>
-            <div className="space-y-2">
-              <Tip title="Set pod anti-affinity for HA" desc="Spread replicas across nodes with podAntiAffinity to survive node failures" />
-              <Tip title="Use RollingUpdate strategy" desc="Avoid Recreate strategy in production — it causes downtime during updates" />
-              <Tip title="Clean up completed Jobs" desc={`${oldReplicaSets.length} old ReplicaSets and completed Jobs consume API resources. Set ttlSecondsAfterFinished on Jobs.`} />
-            </div>
-          </div>
-        </Panel>
+        {/* Workload Health Audit */}
+        <WorkloadHealthAudit deployments={deployments as any[]} pdbs={pdbs as any[]} go={go} />
       </div>
     </div>
   );
@@ -378,6 +366,269 @@ function Panel({ title, icon, children }: { title: string; icon: React.ReactNode
         <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">{icon}{title}</h2>
       </div>
       <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+// ===== Workload Health Audit =====
+
+interface AuditCheck {
+  id: string;
+  title: string;
+  description: string;
+  why: string;
+  passing: any[];
+  failing: any[];
+  yamlExample: string;
+}
+
+function WorkloadHealthAudit({ deployments, pdbs, go }: { deployments: any[]; pdbs: any[]; go: (path: string, title: string) => void }) {
+  const [expandedCheck, setExpandedCheck] = React.useState<string | null>(null);
+
+  // PDB label selectors for matching
+  const pdbSelectors = React.useMemo(() =>
+    pdbs.map((pdb: any) => ({
+      name: pdb.metadata.name,
+      ns: pdb.metadata.namespace,
+      labels: pdb.spec?.selector?.matchLabels || {},
+    })),
+  [pdbs]);
+
+  const hasPDB = (deploy: any) => {
+    const deployLabels = deploy.spec?.selector?.matchLabels || {};
+    const ns = deploy.metadata.namespace;
+    return pdbSelectors.some(pdb =>
+      pdb.ns === ns && Object.entries(pdb.labels).every(([k, v]) => deployLabels[k] === v)
+    );
+  };
+
+  const checks: AuditCheck[] = React.useMemo(() => {
+    const allChecks: AuditCheck[] = [];
+
+    // 1. Resource requests/limits
+    const noLimits = deployments.filter(d => {
+      const containers = d.spec?.template?.spec?.containers || [];
+      return containers.some((c: any) => !c.resources?.requests?.cpu || !c.resources?.limits?.memory);
+    });
+    allChecks.push({
+      id: 'resource-limits',
+      title: 'Resource Requests & Limits',
+      description: 'Every container should have CPU/memory requests (for scheduling) and limits (for OOM protection)',
+      why: 'Without requests, the scheduler cannot place pods optimally. Without limits, a single pod can consume all node resources and starve other workloads.',
+      passing: deployments.filter(d => !noLimits.includes(d)),
+      failing: noLimits,
+      yamlExample: `spec:
+  template:
+    spec:
+      containers:
+      - name: my-app
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"`,
+    });
+
+    // 2. Liveness probes
+    const noLiveness = deployments.filter(d => {
+      const containers = d.spec?.template?.spec?.containers || [];
+      return containers.some((c: any) => !c.livenessProbe);
+    });
+    allChecks.push({
+      id: 'liveness-probe',
+      title: 'Liveness Probes',
+      description: 'Liveness probes detect when a container is stuck and automatically restart it',
+      why: 'Without a liveness probe, a container that deadlocks or enters an infinite loop will never be restarted. Kubernetes only restarts containers that crash (exit non-zero).',
+      passing: deployments.filter(d => !noLiveness.includes(d)),
+      failing: noLiveness,
+      yamlExample: `spec:
+  template:
+    spec:
+      containers:
+      - name: my-app
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 3`,
+    });
+
+    // 3. Readiness probes
+    const noReadiness = deployments.filter(d => {
+      const containers = d.spec?.template?.spec?.containers || [];
+      return containers.some((c: any) => !c.readinessProbe);
+    });
+    allChecks.push({
+      id: 'readiness-probe',
+      title: 'Readiness Probes',
+      description: 'Readiness probes control when a pod receives traffic from Services',
+      why: 'Without a readiness probe, pods receive traffic immediately on start — before the application is ready. This causes errors during deployments and restarts.',
+      passing: deployments.filter(d => !noReadiness.includes(d)),
+      failing: noReadiness,
+      yamlExample: `spec:
+  template:
+    spec:
+      containers:
+      - name: my-app
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5`,
+    });
+
+    // 4. PodDisruptionBudgets
+    const multiReplicaDeploys = deployments.filter(d => (d.spec?.replicas ?? 0) > 1);
+    const noPDB = multiReplicaDeploys.filter(d => !hasPDB(d));
+    allChecks.push({
+      id: 'pdb',
+      title: 'PodDisruptionBudgets',
+      description: 'PDBs prevent voluntary disruptions (node drains, upgrades) from taking down too many pods at once',
+      why: 'During cluster upgrades or node maintenance, all pods on a node are evicted. Without a PDB, all replicas of a deployment could be evicted simultaneously, causing downtime.',
+      passing: multiReplicaDeploys.filter(d => hasPDB(d)),
+      failing: noPDB,
+      yamlExample: `apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: my-app-pdb
+spec:
+  minAvailable: 1    # or maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: my-app    # must match deployment selector`,
+    });
+
+    // 5. Replicas > 1 for HA
+    const singleReplica = deployments.filter(d => (d.spec?.replicas ?? 0) === 1);
+    allChecks.push({
+      id: 'replicas',
+      title: 'Multiple Replicas',
+      description: 'Production workloads should run 2+ replicas for high availability',
+      why: 'A single replica means any pod restart, node failure, or upgrade causes downtime. With 2+ replicas, traffic is served even when one pod is unavailable.',
+      passing: deployments.filter(d => (d.spec?.replicas ?? 0) > 1),
+      failing: singleReplica,
+      yamlExample: `spec:
+  replicas: 2    # minimum for HA, 3+ recommended`,
+    });
+
+    // 6. Rolling update strategy
+    const recreateStrategy = deployments.filter(d => d.spec?.strategy?.type === 'Recreate');
+    allChecks.push({
+      id: 'strategy',
+      title: 'Rolling Update Strategy',
+      description: 'Avoid Recreate strategy in production — it causes downtime during updates',
+      why: 'Recreate strategy terminates all old pods before creating new ones. During that gap, the application is completely unavailable.',
+      passing: deployments.filter(d => !recreateStrategy.includes(d)),
+      failing: recreateStrategy,
+      yamlExample: `spec:
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1`,
+    });
+
+    return allChecks;
+  }, [deployments, pdbSelectors]);
+
+  if (deployments.length === 0) return null;
+
+  const totalPassing = checks.reduce((s, c) => s + (c.failing.length === 0 ? 1 : 0), 0);
+  const score = Math.round((totalPassing / checks.length) * 100);
+
+  return (
+    <div className="bg-slate-900 rounded-lg border border-slate-800">
+      <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+          <Activity className="w-4 h-4 text-blue-400" /> Workload Health Audit
+        </h2>
+        <div className="flex items-center gap-2">
+          <span className={cn('text-sm font-bold', score === 100 ? 'text-green-400' : score >= 60 ? 'text-amber-400' : 'text-red-400')}>{score}%</span>
+          <span className="text-xs text-slate-500">{totalPassing}/{checks.length} passing</span>
+        </div>
+      </div>
+      <div className="divide-y divide-slate-800">
+        {checks.map((check) => {
+          const pass = check.failing.length === 0;
+          const expanded = expandedCheck === check.id;
+          return (
+            <div key={check.id}>
+              <button
+                onClick={() => setExpandedCheck(expanded ? null : check.id)}
+                className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-slate-800/30 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  {pass ? <CheckCircle className="w-4 h-4 text-green-400 shrink-0" /> : <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
+                  <div>
+                    <span className="text-sm text-slate-200">{check.title}</span>
+                    <span className="text-xs text-slate-500 ml-2">
+                      {pass ? `${check.passing.length} pass` : `${check.failing.length} of ${check.failing.length + check.passing.length} need attention`}
+                    </span>
+                  </div>
+                </div>
+                <span className="text-xs text-slate-600">{expanded ? '▾' : '▸'}</span>
+              </button>
+
+              {expanded && (
+                <div className="px-4 pb-4 space-y-3">
+                  <p className="text-xs text-slate-400">{check.description}</p>
+
+                  {/* Why it matters */}
+                  <div className="bg-blue-950/20 border border-blue-900/50 rounded p-3">
+                    <div className="text-xs font-medium text-blue-300 mb-1">Why it matters</div>
+                    <p className="text-xs text-slate-400">{check.why}</p>
+                  </div>
+
+                  {/* Failing workloads */}
+                  {check.failing.length > 0 && (
+                    <div>
+                      <div className="text-xs text-amber-400 font-medium mb-1.5">Missing ({check.failing.length})</div>
+                      <div className="space-y-1 max-h-32 overflow-auto">
+                        {check.failing.slice(0, 10).map((d: any) => (
+                          <button key={d.metadata.uid} onClick={() => go(`/yaml/apps~v1~deployments/${d.metadata.namespace}/${d.metadata.name}`, `${d.metadata.name} (YAML)`)}
+                            className="flex items-center justify-between w-full py-1 px-2 rounded hover:bg-slate-800/50 text-left transition-colors">
+                            <div className="flex items-center gap-2">
+                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0" />
+                              <span className="text-xs text-slate-300">{d.metadata.name}</span>
+                              <span className="text-[10px] text-slate-600">{d.metadata.namespace}</span>
+                            </div>
+                            <span className="text-[10px] text-blue-400">Edit YAML →</span>
+                          </button>
+                        ))}
+                        {check.failing.length > 10 && <div className="text-[10px] text-slate-600 px-2">+{check.failing.length - 10} more</div>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Passing workloads */}
+                  {check.passing.length > 0 && (
+                    <div>
+                      <div className="text-xs text-green-400 font-medium mb-1">Passing ({check.passing.length})</div>
+                      <div className="flex flex-wrap gap-1">
+                        {check.passing.slice(0, 8).map((d: any) => (
+                          <span key={d.metadata.uid} className="text-[10px] px-1.5 py-0.5 bg-green-900/30 text-green-400 rounded">{d.metadata.name}</span>
+                        ))}
+                        {check.passing.length > 8 && <span className="text-[10px] text-slate-600">+{check.passing.length - 8} more</span>}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* YAML example */}
+                  <div>
+                    <div className="text-xs text-slate-500 font-medium mb-1">How to fix — add to your Deployment YAML:</div>
+                    <pre className="text-[11px] text-emerald-400 font-mono bg-slate-950 p-3 rounded overflow-x-auto">{check.yamlExample}</pre>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
