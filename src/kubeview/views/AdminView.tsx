@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Settings, Server, Puzzle, FileCode, Shield, Database, ArrowRight,
   CheckCircle, XCircle, RefreshCw, Download, Upload, GitCompare, Loader2, Minus,
-  ArrowUpCircle, AlertTriangle, AlertCircle,
+  ArrowUpCircle, AlertTriangle, AlertCircle, Clock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sList, k8sGet, k8sPatch } from '../engine/query';
@@ -12,10 +12,11 @@ import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useUIStore } from '../store/uiStore';
 import { K8S_BASE as BASE } from '../engine/gvr';
 import ClusterConfig from '../components/ClusterConfig';
+const TimelineViewLazy = React.lazy(() => import('./TimelineView'));
 import ProductionReadiness from '../components/ProductionReadiness';
 import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 
-type Tab = 'overview' | 'readiness' | 'operators' | 'config' | 'updates' | 'snapshots' | 'quotas';
+type Tab = 'overview' | 'readiness' | 'operators' | 'config' | 'updates' | 'snapshots' | 'quotas' | 'timeline';
 
 // --- Snapshot types & logic (merged from ConfigCompareView) ---
 
@@ -478,6 +479,7 @@ export default function AdminView() {
     { id: 'updates', label: `Updates${availableUpdates.length > 0 ? ` (${availableUpdates.length})` : ''}`, icon: <ArrowUpCircle className="w-3.5 h-3.5" /> },
     { id: 'snapshots', label: `Snapshots (${savedSnapshots.length})`, icon: <GitCompare className="w-3.5 h-3.5" /> },
     { id: 'quotas', label: `Quotas (${quotas.length})`, icon: <Shield className="w-3.5 h-3.5" /> },
+    { id: 'timeline', label: 'Timeline', icon: <Clock className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -1008,6 +1010,12 @@ export default function AdminView() {
               )}
             </Panel>
           </div>
+        )}
+
+        {activeTab === 'timeline' && (
+          <React.Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-blue-400 animate-spin" /></div>}>
+            <TimelineViewLazy />
+          </React.Suspense>
         )}
       </div>
       {confirmDialog && (

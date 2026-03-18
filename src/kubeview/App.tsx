@@ -199,8 +199,8 @@ export default function ShiftOpsApp() {
             {/* Config Compare — merged into Admin */}
             <Route path="config-compare" element={<Navigate to="/admin" replace />} />
 
-            {/* Timeline */}
-            <Route path="timeline" element={<TimelineView />} />
+            {/* Timeline — merged into Admin */}
+            <Route path="timeline" element={<Navigate to="/admin?tab=timeline" replace />} />
 
             {/* Catch-all */}
             <Route path="*" element={<Navigate to="/pulse" replace />} />
