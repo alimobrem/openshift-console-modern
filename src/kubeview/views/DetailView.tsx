@@ -369,38 +369,38 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
               {resource.kind} · {resource.apiVersion}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {/* Primary actions — always visible */}
+          <div className="flex items-center gap-1.5">
+            {/* Primary actions — consistent icon+label style */}
             {(resource.kind === 'Pod' || isWorkload) && namespace && (
-              <button onClick={handleViewLogs} className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5">
-                <FileText className="w-3 h-3" /> Logs
+              <button onClick={handleViewLogs} className="px-2.5 py-1.5 text-xs text-slate-400 rounded hover:bg-slate-800 hover:text-slate-200 flex items-center gap-1.5 transition-colors">
+                <FileText className="w-3.5 h-3.5" /> Logs
               </button>
             )}
             {(resource.kind === 'Pod' || resource.kind === 'Node') && (
-              <button onClick={() => setShowTerminal(true)} className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5">
-                <Terminal className="w-3 h-3" /> Terminal
+              <button onClick={() => setShowTerminal(true)} className="px-2.5 py-1.5 text-xs text-slate-400 rounded hover:bg-slate-800 hover:text-slate-200 flex items-center gap-1.5 transition-colors">
+                <Terminal className="w-3.5 h-3.5" /> Terminal
               </button>
             )}
             {isScalable && (
-              <div className="flex items-center gap-1">
-                <button onClick={() => handleScale(-1)} disabled={!!actionLoading} className="px-2 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 disabled:opacity-50">
+              <div className="flex items-center gap-0.5 px-1 py-0.5 rounded bg-slate-800/50">
+                <button onClick={() => handleScale(-1)} disabled={!!actionLoading} className="px-1.5 py-1 text-slate-400 rounded hover:bg-slate-700 hover:text-slate-200 transition-colors disabled:opacity-30">
                   <Minus className="w-3 h-3" />
                 </button>
-                <span className={cn('px-2 py-1.5 text-xs bg-blue-900 text-blue-300 rounded font-mono', actionLoading === 'scale' && 'animate-pulse')}>
+                <span className={cn('px-2 py-0.5 text-xs font-mono text-slate-300', actionLoading === 'scale' && 'animate-pulse')}>
                   {(resource.spec as any)?.replicas ?? 0}
                 </span>
-                <button onClick={() => handleScale(1)} disabled={!!actionLoading} className="px-2 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 disabled:opacity-50">
+                <button onClick={() => handleScale(1)} disabled={!!actionLoading} className="px-1.5 py-1 text-slate-400 rounded hover:bg-slate-700 hover:text-slate-200 transition-colors disabled:opacity-30">
                   <Plus className="w-3 h-3" />
                 </button>
               </div>
             )}
             {isRestartable && (
-              <button onClick={handleRestart} disabled={!!actionLoading} className="px-3 py-1.5 text-xs bg-orange-900 text-orange-300 rounded hover:bg-orange-800 flex items-center gap-1.5 disabled:opacity-50">
-                <RotateCw className={cn('w-3 h-3', actionLoading === 'restart' && 'animate-spin')} /> {actionLoading === 'restart' ? 'Restarting...' : 'Restart'}
+              <button onClick={handleRestart} disabled={!!actionLoading} className="px-2.5 py-1.5 text-xs text-slate-400 rounded hover:bg-slate-800 hover:text-orange-400 flex items-center gap-1.5 transition-colors disabled:opacity-50">
+                <RotateCw className={cn('w-3.5 h-3.5', actionLoading === 'restart' && 'animate-spin')} /> {actionLoading === 'restart' ? 'Restarting...' : 'Restart'}
               </button>
             )}
-            <button onClick={handleViewYaml} className="px-3 py-1.5 text-xs bg-slate-800 text-slate-200 rounded hover:bg-slate-700 flex items-center gap-1.5">
-              <FileCode className="w-3 h-3" /> YAML
+            <button onClick={handleViewYaml} className="px-2.5 py-1.5 text-xs text-slate-400 rounded hover:bg-slate-800 hover:text-blue-400 flex items-center gap-1.5 transition-colors">
+              <FileCode className="w-3.5 h-3.5" /> YAML
             </button>
 
             {/* More actions dropdown */}
