@@ -231,6 +231,16 @@ export default function ComputeView() {
           />
         </div>
 
+        {/* Compute Health Audit */}
+        <ComputeHealthAudit
+          nodes={nodes as any[]}
+          healthChecks={healthChecks as any[]}
+          clusterAutoscaler={clusterAutoscaler as any[]}
+          machineAutoscalers={machineAutoscalers as any[]}
+          nodeDetails={nodeDetails}
+          go={go}
+        />
+
         {/* Cluster overview cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
           <StatCard label="Nodes" value={`${readyCount}/${nodes.length}`} issues={unreadyNodes.length + pressureNodes.length} onClick={() => go('/r/v1~nodes', 'Nodes')} />
@@ -621,16 +631,6 @@ export default function ComputeView() {
             </div>
           </div>
         </div>
-
-        {/* Compute Health Audit */}
-        <ComputeHealthAudit
-          nodes={nodes as any[]}
-          healthChecks={healthChecks as any[]}
-          clusterAutoscaler={clusterAutoscaler as any[]}
-          machineAutoscalers={machineAutoscalers as any[]}
-          nodeDetails={nodeDetails}
-          go={go}
-        />
       </div>
     </div>
   );

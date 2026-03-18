@@ -193,6 +193,16 @@ export default function NetworkingView() {
           />
         </div>
 
+        {/* Networking Health Audit */}
+        <NetworkingHealthAudit
+          routes={routes as any[]}
+          services={services as any[]}
+          netpols={netpols as any[]}
+          ingressControllers={ingressControllers as any[]}
+          nsFilter={nsFilter}
+          go={go}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Exposed Endpoints */}
           <Panel title={`Exposed Endpoints (${exposedEndpoints.length})`} icon={<ExternalLink className="w-4 h-4 text-blue-400" />}>
@@ -359,16 +369,6 @@ export default function NetworkingView() {
             </div>
           )}
         </Panel>
-
-        {/* Networking Health Audit */}
-        <NetworkingHealthAudit
-          routes={routes as any[]}
-          services={services as any[]}
-          netpols={netpols as any[]}
-          ingressControllers={ingressControllers as any[]}
-          nsFilter={nsFilter}
-          go={go}
-        />
       </div>
     </div>
   );

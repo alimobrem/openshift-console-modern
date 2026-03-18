@@ -208,6 +208,9 @@ export default function WorkloadsView() {
           />
         </div>
 
+        {/* Workload Health Audit */}
+        <WorkloadHealthAudit deployments={deployments as any[]} pdbs={pdbs as any[]} go={go} />
+
         {/* Pod Status Breakdown */}
         <Panel title="Pod Status" icon={<Box className="w-4 h-4 text-blue-400" />}>
           <div className="space-y-2">
@@ -339,9 +342,6 @@ export default function WorkloadsView() {
             </div>
           </Panel>
         )}
-
-        {/* Workload Health Audit */}
-        <WorkloadHealthAudit deployments={deployments as any[]} pdbs={pdbs as any[]} go={go} />
       </div>
     </div>
   );

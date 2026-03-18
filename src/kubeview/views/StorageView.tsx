@@ -196,6 +196,16 @@ export default function StorageView() {
           />
         </div>
 
+        {/* Storage Health Audit */}
+        <StorageHealthAudit
+          pvcs={pvcs as any[]}
+          storageClasses={storageClasses as any[]}
+          volumeSnapshots={volumeSnapshots as any[]}
+          volumeSnapshotClasses={volumeSnapshotClasses as any[]}
+          resourceQuotas={resourceQuotas as any[]}
+          go={go}
+        />
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Storage Classes detail */}
           <Panel title="Storage Classes" icon={<Database className="w-4 h-4 text-purple-500" />}>
@@ -371,16 +381,6 @@ export default function StorageView() {
             </div>
           </Panel>
         )}
-
-        {/* Storage Health Audit */}
-        <StorageHealthAudit
-          pvcs={pvcs as any[]}
-          storageClasses={storageClasses as any[]}
-          volumeSnapshots={volumeSnapshots as any[]}
-          volumeSnapshotClasses={volumeSnapshotClasses as any[]}
-          resourceQuotas={resourceQuotas as any[]}
-          go={go}
-        />
       </div>
     </div>
   );
