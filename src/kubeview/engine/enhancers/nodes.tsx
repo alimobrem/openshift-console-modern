@@ -91,51 +91,82 @@ export const nodeEnhancer: ResourceEnhancer = {
       priority: 12,
     },
     {
-      id: 'os',
-      header: 'OS/Arch',
+      id: 'cpu',
+      header: 'CPU',
       accessorFn: (resource) => {
-        const status = resource.status as Record<string, unknown> | undefined;
-        const nodeInfo = status?.nodeInfo as Record<string, unknown> | undefined;
-        const os = nodeInfo?.operatingSystem ?? '-';
-        const arch = nodeInfo?.architecture ?? '-';
-        return `${os}/${arch}`;
+        const cap = (resource.status as any)?.capacity?.cpu;
+        return cap ? String(cap) : '-';
       },
-      render: (value) => {
-        if (!value || value === '-/-') {
-          return <span className="text-slate-500">-</span>;
-        }
-
-        return <span className="text-xs text-slate-300">{String(value)}</span>;
+      render: (value) => <span className="font-mono text-xs text-slate-300">{String(value)} cores</span>,
+      sortable: true,
+      priority: 12,
+    },
+    {
+      id: 'memory',
+      header: 'Memory',
+      accessorFn: (resource) => {
+        const cap = (resource.status as any)?.capacity?.memory;
+        if (!cap) return '-';
+        const match = String(cap).match(/^(\d+)/);
+        if (!match) return cap;
+        const ki = parseInt(match[1]);
+        return `${Math.round(ki / 1024 / 1024)} Gi`;
       },
-      sortable: false,
+      render: (value) => <span className="font-mono text-xs text-slate-300">{String(value)}</span>,
+      sortable: true,
       priority: 13,
     },
     {
       id: 'pods',
       header: 'Pods',
       accessorFn: (resource) => {
-        const status = resource.status as Record<string, unknown> | undefined;
-        const allocatable = status?.allocatable as Record<string, unknown> | undefined;
-        const capacity = status?.capacity as Record<string, unknown> | undefined;
-
-        const allocatablePods = allocatable?.pods ? String(allocatable.pods) : '-';
-        const capacityPods = capacity?.pods ? String(capacity.pods) : '-';
-
-        return `${allocatablePods}/${capacityPods}`;
+        const allocatable = (resource.status as any)?.allocatable?.pods || '-';
+        return String(allocatable);
+      },
+      render: (value) => <span className="font-mono text-xs text-slate-300">{String(value)}</span>,
+      sortable: true,
+      priority: 14,
+    },
+    {
+      id: 'taints',
+      header: 'Taints',
+      accessorFn: (resource) => {
+        const taints = ((resource.spec as any)?.taints || []) as Array<{ key: string; effect: string }>;
+        return taints.length > 0 ? taints.map(t => `${t.key.split('/').pop()}:${t.effect}`).join(', ') : 'None';
       },
       render: (value) => {
-        if (!value || value === '-/-') {
-          return <span className="text-slate-500">-</span>;
-        }
-
+        const v = String(value);
+        if (v === 'None') return <span className="text-xs text-slate-600">None</span>;
+        const taints = v.split(', ');
         return (
-          <span className="font-mono text-sm text-slate-300" title="Allocatable/Capacity">
-            {String(value)}
-          </span>
+          <div className="flex flex-wrap gap-1">
+            {taints.map((t, i) => (
+              <span key={i} className={`text-[10px] px-1 py-0.5 rounded font-mono ${
+                t.includes('NoExecute') ? 'bg-red-900/30 text-red-400' :
+                t.includes('NoSchedule') ? 'bg-yellow-900/30 text-yellow-400' :
+                'bg-slate-800 text-slate-500'
+              }`}>{t}</span>
+            ))}
+          </div>
         );
       },
       sortable: false,
-      priority: 14,
+      priority: 15,
+    },
+    {
+      id: 'age',
+      header: 'Age',
+      accessorFn: (resource) => {
+        const ts = resource.metadata.creationTimestamp;
+        if (!ts) return '-';
+        const ms = Date.now() - new Date(ts).getTime();
+        const days = Math.floor(ms / 86400000);
+        if (days > 0) return `${days}d`;
+        return `${Math.floor(ms / 3600000)}h`;
+      },
+      render: (value) => <span className="text-xs text-slate-500">{String(value)}</span>,
+      sortable: true,
+      priority: 16,
     },
   ],
 

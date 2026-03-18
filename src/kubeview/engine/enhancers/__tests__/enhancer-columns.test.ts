@@ -136,13 +136,16 @@ describe('nodeEnhancer', () => {
     expect(nodeEnhancer.matches).toContain('v1/nodes');
   });
 
-  it('has status, roles, version, os, pods columns', () => {
+  it('has status, roles, version, cpu, memory, pods, taints, age columns', () => {
     const ids = nodeEnhancer.columns.map((c) => c.id);
     expect(ids).toContain('status');
     expect(ids).toContain('roles');
     expect(ids).toContain('version');
-    expect(ids).toContain('os');
+    expect(ids).toContain('cpu');
+    expect(ids).toContain('memory');
     expect(ids).toContain('pods');
+    expect(ids).toContain('taints');
+    expect(ids).toContain('age');
   });
 
   it('extracts kubelet version', () => {
@@ -150,19 +153,24 @@ describe('nodeEnhancer', () => {
     expect(access(nodeEnhancer, 'version', node)).toBe('v1.30.0');
   });
 
-  it('extracts OS/arch', () => {
-    const node = { status: { nodeInfo: { operatingSystem: 'linux', architecture: 'amd64' } } };
-    expect(access(nodeEnhancer, 'os', node)).toBe('linux/amd64');
+  it('extracts CPU capacity', () => {
+    const node = { status: { capacity: { cpu: '8' } } };
+    expect(access(nodeEnhancer, 'cpu', node)).toBe('8');
   });
 
-  it('extracts pod capacity', () => {
-    const node = {
-      status: {
-        allocatable: { pods: '250' },
-        capacity: { pods: '250' },
-      },
-    };
-    expect(access(nodeEnhancer, 'pods', node)).toBe('250/250');
+  it('extracts pod allocatable', () => {
+    const node = { status: { allocatable: { pods: '250' } } };
+    expect(access(nodeEnhancer, 'pods', node)).toBe('250');
+  });
+
+  it('extracts taints', () => {
+    const node = { spec: { taints: [{ key: 'node-role.kubernetes.io/master', effect: 'NoSchedule' }] } };
+    expect(access(nodeEnhancer, 'taints', node)).toContain('NoSchedule');
+  });
+
+  it('shows None for nodes without taints', () => {
+    const node = { spec: {}, metadata: { creationTimestamp: '2025-01-01T00:00:00Z' } };
+    expect(access(nodeEnhancer, 'taints', node)).toBe('None');
   });
 
   it('has cordon-toggle and drain inline actions', () => {

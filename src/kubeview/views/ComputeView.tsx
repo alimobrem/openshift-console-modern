@@ -304,6 +304,19 @@ export default function ComputeView() {
                           <span className="text-slate-200 truncate max-w-[200px]" title={nd.name}>{nd.name}</span>
                           {nd.unschedulable && <Ban className="w-3 h-3 text-yellow-500" title="Cordoned" />}
                         </div>
+                        {nd.taints.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {nd.taints.map((t: any, i: number) => (
+                              <span key={i} className={cn('text-[10px] px-1 py-0.5 rounded font-mono',
+                                t.effect === 'NoSchedule' ? 'bg-yellow-900/30 text-yellow-400' :
+                                t.effect === 'NoExecute' ? 'bg-red-900/30 text-red-400' :
+                                'bg-slate-800 text-slate-500'
+                              )} title={`${t.key}=${t.value || ''}:${t.effect}`}>
+                                {t.key.split('/').pop()}:{t.effect}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1.5">
