@@ -88,8 +88,9 @@ export function CommandBar() {
           className="flex items-center gap-2 group"
           title="Home"
         >
-          <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
-            <Layers className="w-3.5 h-3.5 text-white" />
+          <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center relative">
+            <span className="text-white font-extrabold text-sm leading-none">S</span>
+            <div className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-400" />
           </div>
           <span className="text-sm font-semibold text-slate-200 group-hover:text-white transition-colors hidden md:inline">
             Shift<span className="text-blue-400">Ops</span>
