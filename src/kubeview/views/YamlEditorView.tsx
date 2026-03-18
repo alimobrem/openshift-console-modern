@@ -85,6 +85,11 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
   const gvrParts = gvrKey.split('/');
   const kind = gvrParts[gvrParts.length - 1];
 
+  // Build GVK for schema panel
+  const resourceGvk = gvrParts.length === 3
+    ? { group: gvrParts[0], version: gvrParts[1], kind: kind.replace(/s$/, '').replace(/^./, c => c.toUpperCase()) }
+    : { group: '', version: gvrParts[0], kind: kind.replace(/s$/, '').replace(/^./, c => c.toUpperCase()) };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full bg-slate-950">
@@ -148,6 +153,7 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
           originalValue={originalYaml}
           showDiff={true}
           height="100%"
+          resourceGvk={resourceGvk}
         />
       </div>
     </div>
