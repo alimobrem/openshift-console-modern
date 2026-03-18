@@ -311,10 +311,11 @@ export default function AdminView() {
     const roles = new Map<string, number>();
     for (const n of nodes) {
       const labels = n.metadata.labels || {};
-      for (const [k] of Object.entries(labels)) {
-        if (k.startsWith('node-role.kubernetes.io/')) {
-          roles.set(k.replace('node-role.kubernetes.io/', ''), (roles.get(k.replace('node-role.kubernetes.io/', '')) || 0) + 1);
-        }
+      const nodeRoleKeys = Object.keys(labels).filter(k => k.startsWith('node-role.kubernetes.io/')).map(k => k.replace('node-role.kubernetes.io/', ''));
+      // Merge master + control-plane into "control-plane"
+      const normalized = new Set(nodeRoleKeys.map(r => r === 'master' ? 'control-plane' : r));
+      for (const role of normalized) {
+        roles.set(role, (roles.get(role) || 0) + 1);
       }
     }
     return [...roles.entries()].sort((a, b) => b[1] - a[1]);
