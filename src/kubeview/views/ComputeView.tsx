@@ -263,15 +263,8 @@ export default function ComputeView() {
         {/* Node table */}
         <div className="bg-slate-900 rounded-lg border border-slate-800 overflow-hidden">
           <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-slate-100">All Nodes ({nodes.length})</h2>
-            <div className="flex items-center gap-3">
-              {machineSets.length > 0 && (
-                <button onClick={() => go('/r/machine.openshift.io~v1beta1~machinesets', 'MachineSets')} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
-                  {machineSets.length} MachineSets <ArrowRight className="w-3 h-3" />
-                </button>
-              )}
-              <button onClick={() => go('/r/v1~nodes', 'Nodes')} className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">Table view <ArrowRight className="w-3 h-3" /></button>
-            </div>
+            <h2 className="text-sm font-semibold text-slate-100">Nodes ({nodes.length})</h2>
+            <button onClick={() => go('/r/v1~nodes', 'Nodes')} className="text-xs text-blue-400 hover:text-blue-300">View all →</button>
           </div>
 
           <div className="overflow-x-auto">
