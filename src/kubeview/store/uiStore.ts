@@ -160,14 +160,21 @@ export const useUIStore = create<UIState>()(
         if (newTabs.length === 0) return; // Don't close last tab
 
         let newActiveTabId = activeTabId;
+        let navigateTo: string | null = null;
         if (activeTabId === id) {
-          // Find the next tab to activate
+          // Find the next tab, or fall back to first pinned/any tab
           const closedIndex = tabs.findIndex((t) => t.id === id);
-          const nextTab = newTabs[closedIndex] || newTabs[closedIndex - 1];
-          newActiveTabId = nextTab.id;
+          const nextTab = newTabs[closedIndex] || newTabs[closedIndex - 1] || newTabs[0];
+          newActiveTabId = nextTab?.id || 'pulse';
+          navigateTo = nextTab?.path || '/pulse';
         }
 
         set({ tabs: newTabs, activeTabId: newActiveTabId });
+
+        // Navigate to the new active tab (uses window.location for React Router)
+        if (navigateTo && window.location.pathname !== navigateTo) {
+          window.location.href = navigateTo;
+        }
       },
 
       setActiveTab: (id) => {
