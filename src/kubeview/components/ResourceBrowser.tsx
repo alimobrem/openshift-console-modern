@@ -112,7 +112,7 @@ export function ResourceBrowser() {
       ? `/r/${resource.group}~${resource.version}~${plural}`
       : `/r/${resource.version}~${plural}`;
     addTab({
-      title: plural,
+      title: plural.charAt(0).toUpperCase() + plural.slice(1),
       icon: getResourceIconName(resource.kind),
       path,
       pinned: false,

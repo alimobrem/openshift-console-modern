@@ -37,6 +37,7 @@ const OperatorCatalogView = lazy(() => import('./views/OperatorCatalogView'));
 const WorkloadsView = lazy(() => import('./views/WorkloadsView'));
 const NetworkingView = lazy(() => import('./views/NetworkingView'));
 const ComputeView = lazy(() => import('./views/ComputeView'));
+const BuildsView = lazy(() => import('./views/BuildsView'));
 
 function LoadingFallback() {
   return (
@@ -184,6 +185,7 @@ export default function ShiftOpsApp() {
             <Route path="compute" element={<Suspense fallback={<LoadingFallback />}><ComputeView /></Suspense>} />
             <Route path="dashboard" element={<Navigate to="/pulse" replace />} />
             <Route path="storage" element={<Suspense fallback={<LoadingFallback />}><StorageView /></Suspense>} />
+            <Route path="builds" element={<Suspense fallback={<LoadingFallback />}><BuildsView /></Suspense>} />
             <Route path="access-control" element={<Suspense fallback={<LoadingFallback />}><AccessControlView /></Suspense>} />
             <Route path="users" element={<Suspense fallback={<LoadingFallback />}><UserManagementView /></Suspense>} />
             <Route path="operators" element={<Navigate to="/admin" replace />} />

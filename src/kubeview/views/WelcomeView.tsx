@@ -1,7 +1,7 @@
 import {
   HeartPulse, Clock, Search, GitBranch, Terminal, FilePlus,
   Keyboard, ArrowRight, Zap, Eye, Shield, Bell, Settings,
-  HardDrive, Activity, Cpu, Package, Globe, Server, Puzzle, Users,
+  HardDrive, Activity, Cpu, Package, Globe, Server, Puzzle, Users, Hammer,
 } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
@@ -80,6 +80,7 @@ export default function WelcomeView() {
             <PageLink icon={<Globe className="w-5 h-5 text-cyan-400" />} title="Networking" description="Routes, services, ingress, network policies, 6 checks" onClick={() => go('/networking', 'Networking')} />
             <PageLink icon={<Server className="w-5 h-5 text-blue-400" />} title="Compute" description="Nodes, machines, MachineConfig, autoscaling, 6 checks" onClick={() => go('/compute', 'Compute')} />
             <PageLink icon={<HardDrive className="w-5 h-5 text-orange-400" />} title="Storage" description="PVCs, StorageClasses, CSI drivers, snapshots, 6 checks" onClick={() => go('/storage', 'Storage')} />
+            <PageLink icon={<Hammer className="w-5 h-5 text-orange-500" />} title="Builds" description="BuildConfigs, Builds, ImageStreams, build triggers" onClick={() => go('/builds', 'Builds')} />
             <PageLink icon={<Shield className="w-5 h-5 text-indigo-400" />} title="Access Control" description="RBAC audit, recent changes, cluster-admin tracking" onClick={() => go('/access-control', 'Access Control')} />
             <PageLink icon={<Users className="w-5 h-5 text-teal-400" />} title="User Management" description="Users, groups, impersonation, identity audit, sessions" onClick={() => go('/users', 'Users')} />
             <PageLink icon={<Settings className="w-5 h-5 text-slate-400" />} title="Administration" description="Readiness (67 checks), config (10 sections), updates, snapshots" onClick={() => go('/admin', 'Administration')} />

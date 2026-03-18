@@ -7,6 +7,11 @@ import { useClusterStore } from '../store/clusterStore';
 import { cn } from '@/lib/utils';
 import { getResourceIcon } from '../engine/iconRegistry';
 
+/** Capitalize first letter of each word: "deployments" → "Deployments", "poddisruptionbudgets" → "Poddisruptionbudgets" */
+function titleCase(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
 interface CommandItem {
   type: 'resource' | 'action' | 'recent' | 'nav';
   id: string;
@@ -211,6 +216,7 @@ function getCommandItems(
       { type: 'nav', id: 'storage', title: 'Storage', subtitle: 'PVs, PVCs, StorageClasses', icon: 'HardDrive', path: '/storage' },
       { type: 'nav', id: 'access-control', title: 'Access Control', subtitle: 'RBAC roles, bindings, service accounts', icon: 'Shield', path: '/access-control' },
       { type: 'nav', id: 'alerts', title: 'Alerts', subtitle: 'Prometheus alerts, rules, silences', icon: 'Bell', path: '/alerts' },
+      { type: 'nav', id: 'builds', title: 'Builds', subtitle: 'BuildConfigs, Builds, ImageStreams', icon: 'Hammer', path: '/builds' },
       { type: 'nav', id: 'software', title: 'Software', subtitle: 'Installed software, operators, deploy, Helm, templates', icon: 'Package', path: '/create/v1~pods' },
       { type: 'nav', id: 'admin', title: 'Administration', subtitle: 'Operators, cluster config, updates, snapshots, quotas', icon: 'Settings', path: '/admin' },
       { type: 'nav', id: 'users', title: 'User Management', subtitle: 'Users, groups, service accounts, impersonation', icon: 'Users', path: '/users' },
@@ -245,7 +251,7 @@ function getCommandItems(
             const item: CommandItem = {
               type: 'resource',
               id: dedup,
-              title: plural || kind,
+              title: titleCase(plural || kind),
               subtitle: resource.group ? `${resource.group}/${resource.version}` : resource.version,
               icon: getResourceIconName(resource.kind),
               path: resource.group

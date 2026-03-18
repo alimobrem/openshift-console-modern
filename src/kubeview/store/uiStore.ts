@@ -127,7 +127,8 @@ export const useUIStore = create<UIState>()(
         // Normalize path: strip trailing slash (except root)
         const normalizedPath = tab.path.length > 1 && tab.path.endsWith('/') ? tab.path.slice(0, -1) : tab.path;
         // Ensure title is never empty
-        const title = tab.title?.trim() || normalizedPath.split('/').filter(Boolean).pop() || 'Untitled';
+        const raw = tab.title?.trim() || normalizedPath.split('/').filter(Boolean).pop() || 'Untitled';
+        const title = raw.charAt(0).toUpperCase() + raw.slice(1);
         tab = { ...tab, path: normalizedPath, title };
 
         // Reuse existing tab with same path
