@@ -212,11 +212,10 @@ function getCommandItems(
       { type: 'nav', id: 'storage', title: 'Storage', subtitle: 'PVs, PVCs, StorageClasses', icon: 'HardDrive', path: '/storage' },
       { type: 'nav', id: 'access-control', title: 'Access Control', subtitle: 'RBAC roles, bindings, service accounts', icon: 'Shield', path: '/access-control' },
       { type: 'nav', id: 'alerts', title: 'Alerts', subtitle: 'Prometheus alerts, rules, silences', icon: 'Bell', path: '/alerts' },
-      { type: 'nav', id: 'operatorhub', title: 'Operator Catalog', subtitle: 'Browse and install operators from OperatorHub', icon: 'Puzzle', path: '/operatorhub' },
+      { type: 'nav', id: 'software', title: 'Software', subtitle: 'Installed software, operators, deploy, Helm, templates', icon: 'Package', path: '/create/v1~pods' },
       { type: 'nav', id: 'admin', title: 'Administration', subtitle: 'Operators, cluster config, updates, snapshots, quotas', icon: 'Settings', path: '/admin' },
       { type: 'nav', id: 'troubleshoot', title: 'Troubleshoot', subtitle: 'Auto-diagnose cluster issues', icon: 'Stethoscope', path: '/troubleshoot' },
       { type: 'nav', id: 'config-compare', title: 'Config Snapshots', subtitle: 'Capture & compare cluster config', icon: 'GitCompare', path: '/admin' },
-      { type: 'nav', id: 'create', title: 'Create Resource', subtitle: 'Create from YAML', icon: 'FilePlus', path: '/create/v1~pods' },
       { type: 'nav', id: 'users', title: 'User Management', subtitle: 'Users, groups, service accounts, impersonation', icon: 'Users', path: '/users' },
     ];
 

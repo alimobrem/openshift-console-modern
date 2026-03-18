@@ -49,7 +49,7 @@ export function StatusBar() {
       }
       if (parts.length >= 4) return `${parts[parts.length - 1]}`;
     }
-    if (path.startsWith('/create/')) return 'Create Resource';
+    if (path.startsWith('/create/')) return 'Software';
     if (path.startsWith('/yaml/')) return 'YAML Editor';
     if (path.startsWith('/logs/')) return 'Logs';
     if (path.startsWith('/metrics/')) return 'Metrics';

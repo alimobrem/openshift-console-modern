@@ -85,9 +85,8 @@ export default function WelcomeView() {
             <PageLink icon={<HardDrive className="w-5 h-5 text-orange-400" />} title="Storage" description="PVCs, PVs, StorageClasses, capacity" onClick={() => go('/storage', 'Storage')} />
             <PageLink icon={<Shield className="w-5 h-5 text-indigo-400" />} title="Access Control" description="RBAC roles, cluster-admin audit" onClick={() => go('/access-control', 'Access Control')} />
             <PageLink icon={<Users className="w-5 h-5 text-teal-400" />} title="User Management" description="Users, groups, service accounts, impersonation" onClick={() => go('/users', 'Users')} />
-            <PageLink icon={<Puzzle className="w-5 h-5 text-violet-400" />} title="Operator Catalog" description="Browse and install 500+ operators" onClick={() => go('/operatorhub', 'Operator Catalog')} />
+            <PageLink icon={<Package className="w-5 h-5 text-blue-400" />} title="Software" description="Installed software, operators, deploy, Helm, templates" onClick={() => go('/create/v1~pods', 'Software')} />
             <PageLink icon={<Settings className="w-5 h-5 text-slate-400" />} title="Administration" description="Readiness, operators, config, updates, snapshots" onClick={() => go('/admin', 'Administration')} />
-            <PageLink icon={<FilePlus className="w-5 h-5 text-amber-400" />} title="Create Resource" description="YAML templates with autocomplete" onClick={() => go('/create/v1~pods', 'Create')} />
           </div>
         </div>
 
