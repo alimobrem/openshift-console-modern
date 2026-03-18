@@ -46,10 +46,10 @@ export default function WelcomeView() {
               onClick={openCommandPalette}
             />
             <QuickAction
-              icon={<GitBranch className="w-6 h-6 text-orange-400" />}
-              title="Troubleshoot Issues"
-              description="Auto-diagnose problems with interactive runbooks and namespace health"
-              onClick={() => go('/pulse', 'Pulse')}
+              icon={<Shield className="w-6 h-6 text-orange-400" />}
+              title="Production Readiness"
+              description="31 automated checks — HA, security, monitoring, storage, and reliability"
+              onClick={() => go('/admin', 'Admin')}
             />
           </div>
         </div>
