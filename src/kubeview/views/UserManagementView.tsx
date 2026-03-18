@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Users, User, Shield, Key, ArrowRight, CheckCircle, AlertCircle, AlertTriangle,
   UserCheck, Search, Activity, Clock, Lock,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { k8sList, k8sGet } from '../engine/query';
+import { k8sList, k8sGet, k8sDelete } from '../engine/query';
+import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import type { K8sResource } from '../engine/renderers';
 import { useUIStore } from '../store/uiStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 
 export default function UserManagementView() {
   const go = useNavigateTab();
+  const queryClient = useQueryClient();
   const addToast = useUIStore((s) => s.addToast);
   const impersonateUser = useUIStore((s) => s.impersonateUser);
   const setImpersonation = useUIStore((s) => s.setImpersonation);
@@ -45,6 +47,16 @@ export default function UserManagementView() {
     queryKey: ['clusterrolebindings', 'list'],
     queryFn: () => k8sList('/apis/rbac.authorization.k8s.io/v1/clusterrolebindings').catch(() => []),
     staleTime: 120000,
+  });
+
+  // Check if kubeadmin secret exists (more reliable than checking user)
+  const { data: kubeadminSecret } = useQuery({
+    queryKey: ['users', 'kubeadmin-secret'],
+    queryFn: async () => {
+      const res = await fetch(`/api/kubernetes/api/v1/namespaces/kube-system/secrets/kubeadmin`);
+      return res.ok;
+    },
+    staleTime: 60000,
   });
 
   // OAuth config
@@ -309,7 +321,10 @@ export default function UserManagementView() {
           clusterRoleBindings={clusterRoleBindings as any[]}
           oauthConfig={oauthConfig}
           accessTokens={accessTokens as any[]}
+          kubeadminExists={kubeadminSecret === true}
           go={go}
+          addToast={addToast}
+          queryClient={queryClient}
         />
 
         {/* Recent Sessions */}
@@ -373,6 +388,16 @@ export default function UserManagementView() {
           </div>
         </div>
       </div>
+      <ConfirmDialog
+        open={confirmAction === 'remove-kubeadmin'}
+        onClose={() => setConfirmAction(null)}
+        onConfirm={() => handleAction('remove-kubeadmin')}
+        title="Remove kubeadmin?"
+        description="This permanently deletes the kubeadmin secret from kube-system. You will no longer be able to log in as kubeadmin. Make sure you can log in with another admin user first. This action cannot be undone."
+        confirmLabel="Remove kubeadmin"
+        variant="danger"
+        loading={actionLoading}
+      />
     </div>
   );
 }
@@ -389,16 +414,36 @@ function formatAge(date: Date): string {
 
 // ===== Identity & Access Audit =====
 
-function IdentityAudit({ users, groups, clusterRoleBindings, oauthConfig, accessTokens, go }: {
+function IdentityAudit({ users, groups, clusterRoleBindings, oauthConfig, accessTokens, kubeadminExists, go, addToast, queryClient }: {
   users: any[]; groups: any[]; clusterRoleBindings: any[]; oauthConfig: any;
-  accessTokens: any[]; go: (path: string, title: string) => void;
+  accessTokens: any[]; kubeadminExists: boolean; go: (path: string, title: string) => void;
+  addToast: (t: any) => void; queryClient: any;
 }) {
   const [expandedCheck, setExpandedCheck] = React.useState<string | null>(null);
+  const [confirmAction, setConfirmAction] = React.useState<string | null>(null);
+  const [actionLoading, setActionLoading] = React.useState(false);
+
+  const handleAction = async (actionId: string) => {
+    setActionLoading(true);
+    try {
+      if (actionId === 'remove-kubeadmin') {
+        await k8sDelete('/api/v1/namespaces/kube-system/secrets/kubeadmin');
+        addToast({ type: 'success', title: 'kubeadmin removed', detail: 'The kubeadmin secret has been deleted' });
+        queryClient.invalidateQueries({ queryKey: ['users', 'list'] });
+      }
+    } catch (err: any) {
+      addToast({ type: 'error', title: 'Action failed', detail: err.message });
+    } finally {
+      setActionLoading(false);
+      setConfirmAction(null);
+    }
+  };
 
   const checks = React.useMemo(() => {
     const allChecks: Array<{
       id: string; title: string; description: string; why: string;
       passing: any[]; failing: any[]; yamlExample: string;
+      action?: { label: string; danger?: boolean; id: string };
     }> = [];
 
     // 1. Identity Providers configured
@@ -426,8 +471,8 @@ spec:
         name: htpass-secret`,
     });
 
-    // 2. kubeadmin removed
-    const hasKubeAdmin = users.some(u => u.metadata.name === 'kube:admin');
+    // 2. kubeadmin removed (check the secret, not the user object)
+    const hasKubeAdmin = kubeadminExists;
     allChecks.push({
       id: 'kubeadmin-removed',
       title: 'kubeadmin Removed',
@@ -435,11 +480,10 @@ spec:
       why: 'kubeadmin has full cluster-admin access with a static password. Remove it after setting up real identity providers: oc delete secret kubeadmin -n kube-system',
       passing: hasKubeAdmin ? [] : [{ metadata: { name: 'kubeadmin removed' } }],
       failing: hasKubeAdmin ? [{ metadata: { name: 'kube:admin still exists' } }] : [],
-      yamlExample: `# Remove kubeadmin (only after verifying IdP login works!):
-oc delete secret kubeadmin -n kube-system
-
-# WARNING: This is irreversible. Verify you can log in
-# with another admin user first.`,
+      yamlExample: `# This deletes the kubeadmin secret from kube-system.
+# Equivalent to: oc delete secret kubeadmin -n kube-system
+# WARNING: Irreversible. Verify IdP login works first.`,
+      action: hasKubeAdmin && idps.length > 0 ? { label: 'Remove kubeadmin', danger: true, id: 'remove-kubeadmin' } : undefined,
     });
 
     // 3. Cluster-admin bindings audit
@@ -546,7 +590,7 @@ users:
     });
 
     return allChecks;
-  }, [users, groups, clusterRoleBindings, oauthConfig, accessTokens]);
+  }, [users, groups, clusterRoleBindings, oauthConfig, accessTokens, kubeadminExists]);
 
   const totalPassing = checks.reduce((s, c) => s + (c.failing.length === 0 ? 1 : 0), 0);
   const score = Math.round((totalPassing / checks.length) * 100);
@@ -619,6 +663,15 @@ users:
                   <div>
                     <div className="text-xs text-slate-500 font-medium mb-1">How to fix:</div>
                     <pre className="text-[11px] text-emerald-400 font-mono bg-slate-950 p-3 rounded overflow-x-auto whitespace-pre-wrap">{check.yamlExample}</pre>
+                    {check.action && (
+                      <button
+                        onClick={() => setConfirmAction(check.action!.id)}
+                        className={cn('mt-2 px-3 py-1.5 text-xs rounded flex items-center gap-1.5 transition-colors',
+                          check.action.danger ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white')}
+                      >
+                        {check.action.label}
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
