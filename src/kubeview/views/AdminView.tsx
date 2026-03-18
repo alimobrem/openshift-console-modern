@@ -415,15 +415,19 @@ export default function AdminView() {
     return { label: `${days}d`, date: installDate };
   }, [clusterVersion]);
 
-  // Operator health helpers
-  const getOperatorStatus = (op: any) => {
-    const conditions = op?.status?.conditions || [];
-    const degraded = conditions.find((c: any) => c.type === 'Degraded' && c.status === 'True');
-    const progressing = conditions.find((c: any) => c.type === 'Progressing' && c.status === 'True');
-    const available = conditions.find((c: any) => c.type === 'Available' && c.status === 'True');
-    if (degraded) return 'degraded';
-    if (progressing) return 'progressing';
-    if (available) return 'healthy';
+  // Operator health helpers — handles both ClusterOperator (Available/Degraded) and
+  // operator.openshift.io resources (StaticPodsAvailable, *Degraded, *Progressing)
+  const getOperatorStatus = (op: any): string => {
+    const conditions: any[] = op?.status?.conditions || [];
+    // Check for any degraded condition
+    const hasDegraded = conditions.some((c: any) => c.type.endsWith('Degraded') && c.status === 'True');
+    if (hasDegraded) return 'degraded';
+    // Check for any progressing condition
+    const hasProgressing = conditions.some((c: any) => c.type.endsWith('Progressing') && c.status === 'True');
+    if (hasProgressing) return 'progressing';
+    // Check for available
+    const hasAvailable = conditions.some((c: any) => (c.type === 'Available' || c.type.endsWith('Available')) && c.status === 'True');
+    if (hasAvailable) return 'healthy';
     return 'unknown';
   };
 
@@ -707,11 +711,16 @@ export default function AdminView() {
               <Panel title="Control Plane" icon={<Shield className="w-4 h-4 text-green-500" />}>
                 <div className="space-y-2.5">
                   {[
-                    { name: 'API Server', op: apiServerOperator },
-                    { name: 'etcd', op: etcdOperator },
-                  ].map(({ name, op }) => {
+                    { name: 'API Server', op: apiServerOperator, detail: (() => {
+                      const rev = apiServerOperator?.status?.latestAvailableRevision;
+                      return rev ? `revision ${rev}` : '';
+                    })() },
+                    { name: 'etcd', op: etcdOperator, detail: (() => {
+                      const msg = (etcdOperator?.status?.conditions || []).find((c: any) => c.type === 'EtcdMembersAvailable')?.message || '';
+                      return msg || '';
+                    })() },
+                  ].map(({ name, op, detail }) => {
                     const status = op ? getOperatorStatus(op) : 'unknown';
-                    const version = op?.status?.version || op?.status?.versions?.find((v: any) => v.name === 'operator')?.version || '';
                     return (
                       <div key={name} className="flex items-center justify-between py-1.5">
                         <div className="flex items-center gap-2">
@@ -720,22 +729,20 @@ export default function AdminView() {
                            status === 'progressing' ? <RefreshCw className="w-3.5 h-3.5 text-blue-400 animate-spin" /> :
                            <AlertTriangle className="w-3.5 h-3.5 text-slate-500" />}
                           <span className="text-sm text-slate-200">{name}</span>
+                          {detail && <span className="text-xs text-slate-500">{detail}</span>}
                         </div>
-                        <div className="flex items-center gap-2">
-                          {version && <span className="text-xs font-mono text-slate-500">{version}</span>}
-                          <span className={cn('text-xs px-1.5 py-0.5 rounded',
-                            status === 'healthy' ? 'bg-green-900/50 text-green-300' :
-                            status === 'degraded' ? 'bg-red-900/50 text-red-300' :
-                            status === 'progressing' ? 'bg-blue-900/50 text-blue-300' :
-                            'bg-slate-800 text-slate-400'
-                          )}>{status === 'healthy' ? 'Available' : status === 'degraded' ? 'Degraded' : status === 'progressing' ? 'Updating' : 'Unknown'}</span>
-                        </div>
+                        <span className={cn('text-xs px-1.5 py-0.5 rounded',
+                          status === 'healthy' ? 'bg-green-900/50 text-green-300' :
+                          status === 'degraded' ? 'bg-red-900/50 text-red-300' :
+                          status === 'progressing' ? 'bg-blue-900/50 text-blue-300' :
+                          'bg-slate-800 text-slate-400'
+                        )}>{status === 'healthy' ? 'Available' : status === 'degraded' ? 'Degraded' : status === 'progressing' ? 'Updating' : 'Unknown'}</span>
                       </div>
                     );
                   })}
                   <div className="border-t border-slate-800 pt-2 mt-1">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-400">ClusterOperators</span>
+                      <span className="text-xs text-slate-400">ClusterOperators ({operators.length})</span>
                       <div className="flex items-center gap-3">
                         <span className="flex items-center gap-1 text-xs text-green-400"><CheckCircle className="w-3 h-3" /> {operators.length - opDegraded - opProgressing}</span>
                         {opDegraded > 0 && <span className="flex items-center gap-1 text-xs text-red-400"><XCircle className="w-3 h-3" /> {opDegraded}</span>}
