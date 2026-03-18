@@ -155,6 +155,22 @@ export default function YamlEditor({
       { label: 'Service Port', description: 'Add port mapping', kinds: ['Service'], yaml: '  - name: http\n    port: 80\n    targetPort: 8080\n    protocol: TCP' },
       { label: 'Ingress Rule', description: 'Add HTTP routing rule', kinds: ['Ingress'], yaml: '  - host: example.com\n    http:\n      paths:\n      - path: /\n        pathType: Prefix\n        backend:\n          service:\n            name: my-service\n            port:\n              number: 80' },
       { label: 'Data Entry', description: 'Add key-value data', kinds: ['ConfigMap', 'Secret'], yaml: '  my-key: my-value' },
+      // PVC context snippets
+      { label: 'Storage Class', description: 'Set the storage class', kinds: ['PersistentVolumeClaim'], yaml: '  storageClassName: gp3-csi' },
+      { label: 'Access Mode RWX', description: 'Change to ReadWriteMany (shared)', kinds: ['PersistentVolumeClaim'], yaml: '  accessModes:\n  - ReadWriteMany' },
+      { label: 'Block Volume Mode', description: 'Use raw block device instead of filesystem', kinds: ['PersistentVolumeClaim'], yaml: '  volumeMode: Block' },
+      { label: 'Data Source (Snapshot)', description: 'Restore from a VolumeSnapshot', kinds: ['PersistentVolumeClaim'], yaml: '  dataSource:\n    name: my-snapshot\n    kind: VolumeSnapshot\n    apiGroup: snapshot.storage.k8s.io' },
+      { label: 'Data Source (Clone)', description: 'Clone from another PVC', kinds: ['PersistentVolumeClaim'], yaml: '  dataSource:\n    name: source-pvc\n    kind: PersistentVolumeClaim' },
+      { label: 'Labels', description: 'Add labels for selection', kinds: ['PersistentVolumeClaim'], yaml: '  labels:\n    app: my-app\n    tier: storage' },
+      // StorageClass context snippets
+      { label: 'Reclaim Policy', description: 'Set to Retain for production data', kinds: ['StorageClass'], yaml: 'reclaimPolicy: Retain' },
+      { label: 'Volume Binding', description: 'WaitForFirstConsumer (recommended)', kinds: ['StorageClass'], yaml: 'volumeBindingMode: WaitForFirstConsumer' },
+      { label: 'Allow Expansion', description: 'Enable volume resizing', kinds: ['StorageClass'], yaml: 'allowVolumeExpansion: true' },
+      { label: 'Set as Default', description: 'Make this the default StorageClass', kinds: ['StorageClass'], yaml: '  annotations:\n    storageclass.kubernetes.io/is-default-class: "true"' },
+      // PVC volume mount for workloads
+      { label: 'PVC Volume Mount', description: 'Mount a PersistentVolumeClaim', kinds: ['Deployment', 'StatefulSet', 'Pod', 'Job'], yaml: '        volumeMounts:\n        - name: data\n          mountPath: /data\n      volumes:\n      - name: data\n        persistentVolumeClaim:\n          claimName: my-pvc' },
+      // VolumeClaimTemplate for StatefulSets
+      { label: 'Volume Claim Template', description: 'Auto-create PVCs per replica', kinds: ['StatefulSet'], yaml: '  volumeClaimTemplates:\n  - metadata:\n      name: data\n    spec:\n      accessModes: ["ReadWriteOnce"]\n      storageClassName: gp3-csi\n      resources:\n        requests:\n          storage: 10Gi' },
     ];
 
     if (!detectedKind) return [];
