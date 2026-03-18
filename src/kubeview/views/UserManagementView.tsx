@@ -494,7 +494,7 @@ spec:
     htpasswd:
       fileData:
         name: htpass-secret`,
-      action: idps.length === 0 ? { label: 'Configure OAuth', id: 'configure-oauth', path: '/admin?tab=config' } : undefined,
+      action: idps.length === 0 ? { label: 'Configure Identity Provider', id: 'configure-oauth', path: '/admin?tab=config' } : undefined,
     });
 
     // 2. kubeadmin removed (check the secret, not the user object)
@@ -709,7 +709,12 @@ users:
                           if (check.action!.danger) {
                             setConfirmAction(check.action!.id);
                           } else if (check.action!.path) {
-                            go(check.action!.path, check.action!.label);
+                            // Use page name as tab title, not action label
+                            const pageName = check.action!.path.startsWith('/admin') ? 'Admin'
+                              : check.action!.path.startsWith('/access-control') ? 'Access Control'
+                              : check.action!.path.startsWith('/users') ? 'Users'
+                              : check.action!.label;
+                            go(check.action!.path, pageName);
                           }
                         }}
                         className={cn('mt-2 px-3 py-1.5 text-xs rounded flex items-center gap-1.5 transition-colors',
