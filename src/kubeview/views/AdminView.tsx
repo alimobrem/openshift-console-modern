@@ -30,6 +30,21 @@ interface ClusterSnapshot {
   crds: string[];
   storageClasses: string[];
   namespaceCount: number;
+  // RBAC state
+  rbac?: {
+    clusterAdminSubjects: string[];
+    clusterRoleBindingCount: number;
+    roleBindingCount: number;
+  };
+  // Cluster config state
+  config?: {
+    identityProviders: string[];
+    tlsProfile: string;
+    proxyEnabled: boolean;
+    encryptionType: string;
+    schedulerProfile: string;
+    ingressDomain: string;
+  };
 }
 
 interface DiffRow {
@@ -74,7 +89,7 @@ async function captureSnapshot(label: string): Promise<ClusterSnapshot> {
     namespaceCount: 0,
   };
 
-  const [cv, infra, nodesData, coData, crdData, scData, nsData] = await Promise.all([
+  const [cv, infra, nodesData, coData, crdData, scData, nsData, crbData, rbData, oauthData, apiServerData, ingressData, schedulerData, proxyData] = await Promise.all([
     fetchJson<any>('/apis/config.openshift.io/v1/clusterversions/version'),
     fetchJson<any>('/apis/config.openshift.io/v1/infrastructures/cluster'),
     fetchJson<any>('/api/v1/nodes'),
@@ -82,6 +97,13 @@ async function captureSnapshot(label: string): Promise<ClusterSnapshot> {
     fetchJson<any>('/apis/apiextensions.k8s.io/v1/customresourcedefinitions'),
     fetchJson<any>('/apis/storage.k8s.io/v1/storageclasses'),
     fetchJson<any>('/api/v1/namespaces'),
+    fetchJson<any>('/apis/rbac.authorization.k8s.io/v1/clusterrolebindings'),
+    fetchJson<any>('/apis/rbac.authorization.k8s.io/v1/rolebindings'),
+    fetchJson<any>('/apis/config.openshift.io/v1/oauths/cluster'),
+    fetchJson<any>('/apis/config.openshift.io/v1/apiservers/cluster'),
+    fetchJson<any>('/apis/config.openshift.io/v1/ingresses/cluster'),
+    fetchJson<any>('/apis/config.openshift.io/v1/schedulers/cluster'),
+    fetchJson<any>('/apis/config.openshift.io/v1/proxies/cluster'),
   ]);
 
   if (cv) snapshot.clusterVersion = cv.status?.desired?.version || cv.status?.history?.[0]?.version || '';
@@ -103,6 +125,35 @@ async function captureSnapshot(label: string): Promise<ClusterSnapshot> {
   if (crdData?.items) snapshot.crds = crdData.items.map((c: any) => c.metadata.name).sort();
   if (scData?.items) snapshot.storageClasses = scData.items.map((s: any) => s.metadata.name).sort();
   if (nsData?.items) snapshot.namespaceCount = nsData.items.length;
+
+  // RBAC state
+  if (crbData?.items || rbData?.items) {
+    const clusterAdminSubjects: string[] = [];
+    for (const crb of crbData?.items || []) {
+      if (crb.roleRef?.name !== 'cluster-admin') continue;
+      const name = crb.metadata?.name || '';
+      if (name.startsWith('system:') || name.startsWith('openshift-')) continue;
+      for (const s of crb.subjects || []) {
+        if (s.name?.startsWith('system:')) continue;
+        clusterAdminSubjects.push(`${s.kind}/${s.name}`);
+      }
+    }
+    snapshot.rbac = {
+      clusterAdminSubjects: clusterAdminSubjects.sort(),
+      clusterRoleBindingCount: crbData?.items?.length || 0,
+      roleBindingCount: rbData?.items?.length || 0,
+    };
+  }
+
+  // Cluster config state
+  snapshot.config = {
+    identityProviders: (oauthData?.spec?.identityProviders || []).map((idp: any) => `${idp.name} (${idp.type})`),
+    tlsProfile: apiServerData?.spec?.tlsSecurityProfile?.type || 'Intermediate',
+    proxyEnabled: !!(proxyData?.spec?.httpProxy || proxyData?.spec?.httpsProxy),
+    encryptionType: apiServerData?.spec?.encryption?.type || 'identity',
+    schedulerProfile: schedulerData?.spec?.profile || 'HighNodeUtilization',
+    ingressDomain: ingressData?.spec?.domain || '',
+  };
 
   return snapshot;
 }
@@ -134,6 +185,31 @@ function compareSnapshots(left: ClusterSnapshot, right: ClusterSnapshot): DiffRo
       rows.push({ field: `Operator: ${name}`, category: 'Operators', left: `v${lOp.version}`, right: `v${rOp.version}`, changed: true });
     }
   }
+
+  // RBAC comparison
+  if (left.rbac && right.rbac) {
+    rows.push({ field: 'ClusterRoleBindings', category: 'RBAC', left: String(left.rbac.clusterRoleBindingCount), right: String(right.rbac.clusterRoleBindingCount), changed: left.rbac.clusterRoleBindingCount !== right.rbac.clusterRoleBindingCount });
+    rows.push({ field: 'RoleBindings', category: 'RBAC', left: String(left.rbac.roleBindingCount), right: String(right.rbac.roleBindingCount), changed: left.rbac.roleBindingCount !== right.rbac.roleBindingCount });
+
+    const leftAdmins = new Set(left.rbac.clusterAdminSubjects);
+    const rightAdmins = new Set(right.rbac.clusterAdminSubjects);
+    const addedAdmins = right.rbac.clusterAdminSubjects.filter(a => !leftAdmins.has(a));
+    const removedAdmins = left.rbac.clusterAdminSubjects.filter(a => !rightAdmins.has(a));
+    if (addedAdmins.length > 0) rows.push({ field: 'Cluster-Admin Added', category: 'RBAC', left: '', right: addedAdmins.join(', '), changed: true });
+    if (removedAdmins.length > 0) rows.push({ field: 'Cluster-Admin Removed', category: 'RBAC', left: removedAdmins.join(', '), right: '', changed: true });
+  }
+
+  // Config comparison
+  if (left.config && right.config) {
+    const lc = left.config, rc = right.config;
+    rows.push({ field: 'Identity Providers', category: 'Config', left: lc.identityProviders.join(', ') || 'None', right: rc.identityProviders.join(', ') || 'None', changed: lc.identityProviders.join(',') !== rc.identityProviders.join(',') });
+    rows.push({ field: 'TLS Profile', category: 'Config', left: lc.tlsProfile, right: rc.tlsProfile, changed: lc.tlsProfile !== rc.tlsProfile });
+    rows.push({ field: 'Proxy', category: 'Config', left: lc.proxyEnabled ? 'Enabled' : 'Disabled', right: rc.proxyEnabled ? 'Enabled' : 'Disabled', changed: lc.proxyEnabled !== rc.proxyEnabled });
+    rows.push({ field: 'Encryption', category: 'Config', left: lc.encryptionType, right: rc.encryptionType, changed: lc.encryptionType !== rc.encryptionType });
+    rows.push({ field: 'Scheduler Profile', category: 'Config', left: lc.schedulerProfile, right: rc.schedulerProfile, changed: lc.schedulerProfile !== rc.schedulerProfile });
+    rows.push({ field: 'Ingress Domain', category: 'Config', left: lc.ingressDomain, right: rc.ingressDomain, changed: lc.ingressDomain !== rc.ingressDomain });
+  }
+
   return rows;
 }
 
