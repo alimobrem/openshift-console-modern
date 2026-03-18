@@ -127,30 +127,30 @@ describe('ShiftOps CommandPalette', () => {
     renderPalette();
     const input = screen.getByPlaceholderText(/Search resources/);
     fireEvent.change(input, { target: { value: 'node' } });
-    expect(screen.getAllByText('nodes').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Nodes').length).toBeGreaterThanOrEqual(1);
   });
 
   it('shows built-in pages', () => {
     renderPalette();
     expect(screen.getByText('Cluster Pulse')).toBeDefined();
-    expect(screen.getByText('Timeline')).toBeDefined();
+    expect(screen.getByText('Custom Resources')).toBeDefined();
     expect(screen.getByText('Software')).toBeDefined();
   });
 
   it('shows resource types from registry', () => {
     renderPalette();
-    expect(screen.getAllByText('nodes').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('pods').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('deployments').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Nodes').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Pods').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Deployments').length).toBeGreaterThanOrEqual(1);
   });
 
   it('filters by search query including pages', () => {
     renderPalette();
     const input = screen.getByPlaceholderText(/Search resources/);
-    fireEvent.change(input, { target: { value: 'timeline' } });
-    expect(screen.getByText('Timeline')).toBeDefined();
-    expect(screen.queryByText('nodes')).toBeNull();
-    expect(screen.queryByText('deployments')).toBeNull();
+    fireEvent.change(input, { target: { value: 'custom' } });
+    expect(screen.getByText('Custom Resources')).toBeDefined();
+    expect(screen.queryByText('Nodes')).toBeNull();
+    expect(screen.queryByText('Deployments')).toBeNull();
   });
 
   it('generates correct GVR path for core resources (no group)', () => {
@@ -159,7 +159,7 @@ describe('ShiftOps CommandPalette', () => {
     // Use "nodes" (plural) to match the resource, not page subtitles
     fireEvent.change(input, { target: { value: 'nodes' } });
     // The resource "nodes" should appear in results with correct path
-    expect(screen.getAllByText('nodes').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Nodes').length).toBeGreaterThanOrEqual(1);
   });
 
   it('generates correct GVR path for grouped resources', () => {
@@ -176,7 +176,7 @@ describe('ShiftOps CommandPalette', () => {
     // Reset to first match
     fireEvent.change(input, { target: { value: 'Deployment' } });
     // The resource "deployments" should be in the results
-    expect(screen.getAllByText('deployments').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('Deployments').length).toBeGreaterThanOrEqual(1);
   });
 
   it('does not include undefined in paths', () => {
@@ -252,9 +252,9 @@ describe('ShiftOps CommandPalette', () => {
     renderPalette();
     // Built-in pages should still show
     expect(screen.getByText('Cluster Pulse')).toBeDefined();
-    expect(screen.getByText('Timeline')).toBeDefined();
+    expect(screen.getByText('Administration')).toBeDefined();
     // No resources
-    expect(screen.queryByText('nodes')).toBeNull();
+    expect(screen.queryByText('Nodes')).toBeNull();
   });
 
   it('saves selected resources to recents', () => {
@@ -286,7 +286,7 @@ describe('ShiftOps CommandPalette', () => {
     renderPalette();
     const input = screen.getByPlaceholderText(/Search resources/);
     fireEvent.change(input, { target: { value: 'Node' } });
-    const nodeItems = screen.getAllByText('nodes');
+    const nodeItems = screen.getAllByText('Nodes');
     expect(nodeItems.length).toBe(1);
   });
 
@@ -309,7 +309,7 @@ describe('ShiftOps CommandPalette', () => {
     const input = screen.getByPlaceholderText(/Search resources/);
     fireEvent.change(input, { target: { value: 'Node' } });
     // Should show both: core nodes and config.openshift.io nodes
-    const nodeItems = screen.getAllByText('nodes');
+    const nodeItems = screen.getAllByText('Nodes');
     expect(nodeItems.length).toBe(2);
   });
 });

@@ -138,7 +138,7 @@ describe('ShiftOps ResourceBrowser', () => {
     expect(addTabMock).toHaveBeenCalledWith(
       expect.objectContaining({
         path: '/r/v1~nodes',
-        title: 'nodes',
+        title: 'Nodes',
       }),
     );
     expect(navigateMock).toHaveBeenCalledWith('/r/v1~nodes');
@@ -152,7 +152,7 @@ describe('ShiftOps ResourceBrowser', () => {
     expect(addTabMock).toHaveBeenCalledWith(
       expect.objectContaining({
         path: '/r/apps~v1~deployments',
-        title: 'deployments',
+        title: 'Deployments',
       }),
     );
     expect(navigateMock).toHaveBeenCalledWith('/r/apps~v1~deployments');
@@ -191,7 +191,7 @@ describe('ShiftOps ResourceBrowser', () => {
   it('shows built-in pages in pinned section', () => {
     renderBrowser();
     expect(screen.getByText('Cluster Pulse')).toBeDefined();
-    expect(screen.getByText('Timeline')).toBeDefined();
+    expect(screen.getByText('Builds')).toBeDefined();
     expect(screen.getByText('Administration')).toBeDefined();
   });
 
@@ -202,10 +202,10 @@ describe('ShiftOps ResourceBrowser', () => {
     expect(closeBrowserMock).toHaveBeenCalled();
   });
 
-  it('navigates to timeline on page click', () => {
+  it('navigates to builds on page click', () => {
     renderBrowser();
-    fireEvent.click(screen.getByText('Timeline'));
-    expect(navigateMock).toHaveBeenCalledWith('/timeline');
+    fireEvent.click(screen.getByText('Builds'));
+    expect(navigateMock).toHaveBeenCalledWith('/builds');
     expect(closeBrowserMock).toHaveBeenCalled();
   });
 

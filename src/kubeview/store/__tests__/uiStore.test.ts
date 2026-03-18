@@ -51,7 +51,7 @@ describe('uiStore', () => {
       const { tabs, activeTabId } = useUIStore.getState();
       expect(tabs).toHaveLength(2);
       expect(activeTabId).toBe(id);
-      expect(tabs[1].title).toBe('nodes');
+      expect(tabs[1].title).toBe('Nodes');
       expect(tabs[1].path).toBe('/r/v1~nodes');
     });
 
@@ -154,7 +154,7 @@ describe('uiStore', () => {
       // Tabs: [pulse, a, b]
       useUIStore.getState().reorderTabs(1, 2);
       const titles = useUIStore.getState().tabs.map((t) => t.title);
-      expect(titles).toEqual(['Pulse', 'b', 'a']);
+      expect(titles).toEqual(['Pulse', 'B', 'A']);
     });
 
     it('pinTab and unpinTab toggle pin state', () => {

@@ -260,6 +260,7 @@ describe('k8sLogs', () => {
     expect(logs).toBe('line1\nline2\n');
     expect(mockFetch).toHaveBeenCalledWith(
       '/api/kubernetes/api/v1/namespaces/default/pods/nginx/log',
+      expect.any(Object),
     );
   });
 
@@ -269,6 +270,7 @@ describe('k8sLogs', () => {
     await k8sLogs('default', 'nginx', 'sidecar');
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('container=sidecar'),
+      expect.any(Object),
     );
   });
 
@@ -278,6 +280,7 @@ describe('k8sLogs', () => {
     await k8sLogs('default', 'nginx', undefined, { tailLines: 100 });
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('tailLines=100'),
+      expect.any(Object),
     );
   });
 
@@ -287,6 +290,7 @@ describe('k8sLogs', () => {
     await k8sLogs('default', 'nginx', undefined, { timestamps: true });
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining('timestamps=true'),
+      expect.any(Object),
     );
   });
 
