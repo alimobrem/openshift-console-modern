@@ -25,18 +25,6 @@ subjects:
   namespace: shiftops
 ---
 apiVersion: v1
-kind: Secret
-metadata:
-  name: shiftops-proxy-tls
-  namespace: shiftops
-  annotations:
-    service.beta.openshift.io/serving-cert-secret-name: shiftops-proxy-tls
-type: kubernetes.io/tls
-data:
-  tls.crt: ""
-  tls.key: ""
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: shiftops-nginx
