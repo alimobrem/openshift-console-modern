@@ -269,11 +269,10 @@ describe('P1: Consistent useK8sListWatch usage', () => {
     expect(source).not.toContain("from '@tanstack/react-query'");
   });
 
-  it('TroubleshootView uses useK8sListWatch for core resources', () => {
-    const source = readSrc('views/TroubleshootView.tsx');
-    expect(source).toContain("useK8sListWatch({ apiPath: '/api/v1/pods'");
-    expect(source).toContain("useK8sListWatch({ apiPath: '/apis/apps/v1/deployments'");
-    expect(source).toContain("useK8sListWatch({ apiPath: '/api/v1/nodes'");
+  it('BuildsView uses useK8sListWatch for core resources', () => {
+    const source = readSrc('views/BuildsView.tsx');
+    expect(source).toContain("useK8sListWatch({ apiPath: '/apis/build.openshift.io/v1/builds'");
+    expect(source).toContain("useK8sListWatch({ apiPath: '/apis/build.openshift.io/v1/buildconfigs'");
   });
 });
 

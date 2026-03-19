@@ -31,16 +31,15 @@ export function StatusBar() {
     const path = location.pathname;
     if (path === '/welcome') return 'Welcome';
     if (path === '/pulse') return 'Cluster Pulse';
-    if (path === '/dashboard') return 'Dashboard';
-    if (path === '/troubleshoot') return 'Troubleshoot';
     if (path === '/workloads') return 'Workloads';
     if (path === '/networking') return 'Networking';
     if (path === '/storage') return 'Storage';
+    if (path === '/builds') return 'Builds';
+    if (path === '/crds') return 'Custom Resources';
     if (path === '/access-control') return 'Access Control';
-    if (path === '/operators') return 'Operators';
+    if (path === '/users') return 'User Management';
     if (path === '/admin') return 'Administration';
-    if (path === '/timeline') return 'Timeline';
-    if (path === '/config-compare') return 'Config Compare';
+    if (path === '/alerts') return 'Alerts';
     if (path.startsWith('/r/')) {
       const parts = path.split('/').filter(Boolean);
       if (parts.length === 2) {
