@@ -44,6 +44,7 @@ import { IncidentContext } from './detail/IncidentContext';
 import { WorkloadAudit } from './detail/WorkloadAudit';
 import { RollbackPanel } from './detail/RollbackPanel';
 import { DeploymentSummary } from './detail/DeploymentSummary';
+import { PodSummary } from './detail/PodSummary';
 
 interface DetailViewProps {
   gvrKey: string;
@@ -717,8 +718,71 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
           </div>
         )}
 
-        {/* Generic layout for non-Deployment resources */}
-        {(resource.kind !== 'Deployment' || !namespace) && (
+        {/* Pod-specific layout */}
+        {resource.kind === 'Pod' && namespace && (
+          <div className="space-y-6">
+            <PodSummary resource={resource} go={go} />
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <IncidentContext resource={resource} managedPods={[]} events={sortedEvents} namespace={namespace} go={go} />
+              </div>
+              <div className="space-y-6">
+                {/* Labels */}
+                {resource.metadata.labels && Object.keys(resource.metadata.labels).length > 0 && (
+                  <DetailSection title="Labels">
+                    <div className="space-y-1.5">
+                      {Object.entries(resource.metadata.labels).map(([key, value]) => (
+                        <div key={key} className="flex items-center gap-2 group">
+                          <span className="text-xs text-slate-400 font-mono flex-shrink-0 w-48 truncate" title={key}>{key}</span>
+                          <span className="text-xs text-slate-200 font-mono flex-1">{value}</span>
+                          <button onClick={() => { navigator.clipboard.writeText(`${key}=${value}`); addToast({ type: 'success', title: 'Label copied' }); }}
+                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity" title="Copy label">
+                            <Copy className="w-3 h-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </DetailSection>
+                )}
+                {/* Annotations */}
+                {resource.metadata.annotations && Object.keys(resource.metadata.annotations).length > 0 && (
+                  <DetailSection title="Annotations" collapsible>
+                    <div className="space-y-2">
+                      {Object.entries(resource.metadata.annotations)
+                        .filter(([key]) => !key.includes('last-applied-configuration') && !key.includes('managedFields'))
+                        .map(([key, value]) => (
+                          <div key={key} className="flex items-start gap-2 group">
+                            <span className="text-xs text-slate-400 font-mono flex-shrink-0 w-48 truncate" title={key}>{key}</span>
+                            <span className="text-xs text-slate-200 font-mono break-all flex-1">
+                              {String(value).length > 200 ? String(value).slice(0, 200) + '...' : value}
+                            </span>
+                          </div>
+                        ))}
+                    </div>
+                  </DetailSection>
+                )}
+                {/* Owner */}
+                {relatedResources.length > 0 && (
+                  <DetailSection title="Owner">
+                    <div className="space-y-1">
+                      {relatedResources.map((related, idx) => (
+                        <button key={idx} onClick={() => go(related.path, related.name)}
+                          className="flex items-center gap-2 text-sm text-blue-400 hover:text-blue-300">
+                          <span className="text-xs text-slate-500">{related.type}</span>
+                          {related.name}
+                        </button>
+                      ))}
+                    </div>
+                  </DetailSection>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Generic layout for other resources */}
+        {(resource.kind !== 'Deployment' || !namespace) && (resource.kind !== 'Pod' || !namespace) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column - Details */}
           <div className="lg:col-span-2 space-y-6">

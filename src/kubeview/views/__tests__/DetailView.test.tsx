@@ -44,12 +44,28 @@ vi.mock('../../engine/query', () => ({
   k8sList: (...args: any[]) => mockK8sList(...args),
   k8sDelete: (...args: any[]) => mockK8sDelete(...args),
   k8sPatch: (...args: any[]) => mockK8sPatch(...args),
+  sanitizePromQL: (v: string) => v.replace(/[^a-zA-Z0-9_\-./]/g, ''),
 }));
 
 // Mock engine/favorites
 vi.mock('../../engine/favorites', () => ({
   toggleFavorite: vi.fn(() => true),
   isFavorite: vi.fn(() => false),
+}));
+
+vi.mock('../../components/metrics/prometheus', () => ({
+  queryInstant: vi.fn().mockResolvedValue([]),
+  queryRange: vi.fn().mockResolvedValue([]),
+  getTimeRange: vi.fn().mockReturnValue([0, 1]),
+}));
+
+vi.mock('../../components/metrics/Sparkline', () => ({
+  MetricCard: ({ title }: { title: string }) => <div data-testid="metric-card">{title}</div>,
+  Sparkline: () => <div data-testid="sparkline" />,
+}));
+
+vi.mock('@/lib/utils', () => ({
+  cn: (...args: any[]) => args.filter(Boolean).join(' '),
 }));
 
 // Mock child components that are complex
