@@ -35,14 +35,16 @@ Built with React, TypeScript, and real-time Kubernetes APIs. Every view is auto-
 | **Workloads** — Deployments, pods, health audit | **Compute** — Node metrics, CPU/memory |
 | ![Table View](docs/screenshots/table-view.png) | ![YAML Editor](docs/screenshots/yaml-editor.png) |
 | **Resource Tables** — Auto-generated, sortable | **YAML Editor** — Autocomplete, snippets, diff |
-| ![Detail + Logs](docs/screenshots/flow-2-detail.png) | ![Logs](docs/screenshots/flow-3-logs.png) |
-| **Detail View** — Incident context, diagnosis | **Logs** — Multi-container, search, follow |
 | ![Alerts](docs/screenshots/alerts.png) | ![Storage](docs/screenshots/storage.png) |
 | **Alerts** — Severity filters, silence management | **Storage** — PVC health, capacity audit |
-| ![Networking](docs/screenshots/networking.png) | ![Admin Updates](docs/screenshots/admin-updates.png) |
-| **Networking** — Routes, policies, health audit | **Admin** — Cluster updates, operator progress |
-| ![Operators](docs/screenshots/operatorhub.png) | ![Timeline](docs/screenshots/timeline.png) |
-| **Operator Catalog** — One-click install | **Timeline** — Cluster events visualization |
+| ![Networking](docs/screenshots/networking.png) | ![Security](docs/screenshots/security.png) |
+| **Networking** — Routes, policies, health audit | **Security** — Policy status, vulnerability context |
+| ![Access Control](docs/screenshots/access-control.png) | ![Admin](docs/screenshots/admin.png) |
+| **Access Control** — RBAC audit, cluster-admin review | **Admin** — Readiness, config, updates, snapshots |
+| ![Builds](docs/screenshots/builds.png) | ![CRDs](docs/screenshots/crds.png) |
+| **Builds** — BuildConfigs, ImageStreams | **CRDs** — Browse by API group, instances |
+| ![Operator Catalog](docs/screenshots/operatorhub.png) | ![Admin Updates](docs/screenshots/admin-updates.png) |
+| **Operator Catalog** — One-click install | **Cluster Updates** — Pre-checks, operator progress |
 
 ## Highlights
 
