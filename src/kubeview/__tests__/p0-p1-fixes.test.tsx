@@ -343,10 +343,10 @@ describe('P1: autoDetectColumns memoization', () => {
 
 // ===== P1: Helm catalog labeling =====
 
-describe('P1: Helm catalog labeled as Featured', () => {
-  it('shows Featured Charts label', () => {
+describe('P1: Helm catalog uses real repos', () => {
+  it('fetches charts from HelmChartRepository CRDs', () => {
     const source = readSrc('views/CreateView.tsx');
-    expect(source).toContain('Featured Charts');
-    expect(source).toContain('Curated selection');
+    expect(source).toContain('helmchartrepositories');
+    expect(source).toContain('HelmChartRepository');
   });
 });

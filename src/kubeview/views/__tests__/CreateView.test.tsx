@@ -254,16 +254,13 @@ describe('CreateView', () => {
     expect(imageInput.value).toBe('nginxinc/nginx-unprivileged:latest');
   });
 
-  it('shows Helm chart catalog with chart names', () => {
+  it('shows Helm chart tab with repo-based catalog', () => {
     renderCreateView();
 
     fireEvent.click(screen.getByText('Helm Charts'));
 
-    expect(screen.getByText('postgresql')).toBeDefined();
-    expect(screen.getByText('redis')).toBeDefined();
-    expect(screen.getByText('mongodb')).toBeDefined();
-    expect(screen.getByText('kafka')).toBeDefined();
-    expect(screen.getByText('grafana')).toBeDefined();
+    // With no repos configured, shows empty state
+    expect(document.body.textContent).toContain('Charts');
   });
 
   it('shows search input in Helm Charts tab', () => {

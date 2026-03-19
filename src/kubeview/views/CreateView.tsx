@@ -915,6 +915,8 @@ interface HelmChart {
   appVersion: string;
   description: string;
   icon?: string;
+  repoName?: string;
+  repoUrl?: string;
 }
 
 function HelmTab() {
@@ -945,24 +947,112 @@ function HelmTab() {
     refetchInterval: 30000,
   });
 
-  // Featured charts (curated selection — full catalog requires a Helm repository backend)
-  const chartCatalog: HelmChart[] = useMemo(() => [
-    { name: 'postgresql', version: '16.4.3', appVersion: '17.4', description: 'PostgreSQL with replication and high availability' },
-    { name: 'redis', version: '20.8.0', appVersion: '7.4', description: 'Redis in-memory data store with sentinel support' },
-    { name: 'mysql', version: '12.3.0', appVersion: '8.4', description: 'MySQL database with primary-secondary replication' },
-    { name: 'mongodb', version: '16.6.0', appVersion: '8.0', description: 'MongoDB NoSQL document database' },
-    { name: 'nginx', version: '19.0.0', appVersion: '1.27', description: 'NGINX web server and reverse proxy' },
-    { name: 'kafka', version: '31.3.0', appVersion: '3.9', description: 'Apache Kafka distributed event streaming' },
-    { name: 'rabbitmq', version: '15.4.0', appVersion: '4.1', description: 'RabbitMQ open-source message broker' },
-    { name: 'elasticsearch', version: '22.0.0', appVersion: '8.17', description: 'Elasticsearch distributed search and analytics' },
-    { name: 'grafana', version: '8.12.0', appVersion: '11.5', description: 'Grafana observability dashboards' },
-    { name: 'prometheus', version: '26.2.0', appVersion: '3.2', description: 'Prometheus monitoring and alerting' },
-    { name: 'keycloak', version: '24.4.0', appVersion: '26.1', description: 'Keycloak identity and access management' },
-    { name: 'minio', version: '14.10.0', appVersion: '2025', description: 'MinIO S3-compatible object storage' },
-  ], []);
+  // Fetch chart repos from OpenShift HelmChartRepository CRDs
+  const { data: chartRepos = [] } = useQuery({
+    queryKey: ['helm', 'repos'],
+    queryFn: async () => {
+      const res = await fetch(`${BASE}/apis/helm.openshift.io/v1beta1/helmchartrepositories`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return (data.items || []) as any[];
+    },
+    staleTime: 300000,
+  });
+
+  // Fetch chart index from OpenShift's Helm chart proxy
+  const { data: chartCatalog = [], isLoading: chartsLoading } = useQuery<HelmChart[]>({
+    queryKey: ['helm', 'charts', 'index'],
+    queryFn: async () => {
+      // OpenShift proxies Helm repo indexes via the console API
+      // Try the aggregated chart index first
+      const res = await fetch(`${BASE}/apis/helm.openshift.io/v1beta1/helmchartrepositories`);
+      if (!res.ok) return [];
+      const repoData = await res.json();
+      const repos = repoData.items || [];
+
+      const charts: HelmChart[] = [];
+
+      // For each repo, try to fetch its index
+      for (const repo of repos) {
+        const repoName = repo.metadata?.name;
+        const repoUrl = repo.spec?.connectionConfig?.url;
+        if (!repoUrl) continue;
+
+        try {
+          // Fetch index.yaml via the cluster proxy (avoids CORS)
+          const indexRes = await fetch(`${BASE}/api/kubernetes/api/v1/namespaces/openshift-config/configmaps/helm-chart-index-${repoName}`).catch(() => null);
+
+          if (!indexRes || !indexRes.ok) {
+            // Try direct repo URL via the proxy
+            const directRes = await fetch(`/api/kubernetes/api/v1/proxy/namespaces/openshift-config/services/helm-chart-repo-proxy:${repoName}/index.yaml`).catch(() => null);
+            if (!directRes || !directRes.ok) continue;
+          }
+        } catch {
+          // Fallback: parse chart info from HelmChartRepository status if available
+        }
+
+        // Extract chart info from repo status (OpenShift populates this)
+        const conditions = repo.status?.conditions || [];
+        const isReady = conditions.some((c: any) => c.type === 'Ready' && c.status === 'True');
+        if (isReady && repo.status?.charts) {
+          for (const chart of repo.status.charts) {
+            charts.push({
+              name: chart.name,
+              version: chart.version || '',
+              appVersion: chart.appVersion || '',
+              description: chart.description || '',
+              icon: chart.icon,
+              repoName,
+              repoUrl,
+            });
+          }
+        }
+      }
+
+      // If we got charts from repos, return them
+      if (charts.length > 0) return charts;
+
+      // Fallback: try OpenShift's chart API endpoint
+      try {
+        const chartApiRes = await fetch(`${BASE}/api/helm/charts/index.yaml`);
+        if (chartApiRes.ok) {
+          const text = await chartApiRes.text();
+          // Parse YAML index — extract chart entries
+          const entries: HelmChart[] = [];
+          const entryBlocks = text.split(/\n  [a-z]/);
+          for (const block of entryBlocks) {
+            const nameMatch = block.match(/name:\s*(.+)/);
+            const versionMatch = block.match(/version:\s*(.+)/);
+            const appVersionMatch = block.match(/appVersion:\s*(.+)/);
+            const descMatch = block.match(/description:\s*(.+)/);
+            const iconMatch = block.match(/icon:\s*(.+)/);
+            if (nameMatch) {
+              entries.push({
+                name: nameMatch[1].trim(),
+                version: versionMatch?.[1]?.trim() || '',
+                appVersion: appVersionMatch?.[1]?.trim().replace(/['"]/g, '') || '',
+                description: descMatch?.[1]?.trim().replace(/['"]/g, '') || '',
+                icon: iconMatch?.[1]?.trim(),
+              });
+            }
+          }
+          // Deduplicate by name (keep latest version)
+          const seen = new Map<string, HelmChart>();
+          for (const chart of entries) {
+            if (!seen.has(chart.name)) seen.set(chart.name, chart);
+          }
+          return [...seen.values()];
+        }
+      } catch {}
+
+      // Final fallback: return empty (no hardcoded charts)
+      return [];
+    },
+    staleTime: 300000,
+  });
 
   const filteredCharts = search
-    ? chartCatalog.filter(c => c.name.includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase()))
+    ? chartCatalog.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.description.toLowerCase().includes(search.toLowerCase()))
     : chartCatalog;
 
   const handleInstall = async () => {
@@ -988,7 +1078,7 @@ function HelmTab() {
               containers: [{
                 name: 'helm',
                 image: 'alpine/helm:latest',
-                command: ['helm', 'install', releaseName.trim(), `oci://registry-1.docker.io/bitnamicharts/${selectedChart.name}`, '--namespace', ns, '--wait', '--timeout', '5m'],
+                command: ['sh', '-c', `helm repo add chart-repo ${selectedChart.repoUrl || 'https://charts.openshift.io'} 2>/dev/null; helm install ${releaseName.trim()} chart-repo/${selectedChart.name} --namespace ${ns} --wait --timeout 5m`],
               }],
             },
           },
@@ -1072,22 +1162,56 @@ function HelmTab() {
       )}
 
       {/* Chart catalog */}
-      <div className="flex items-center gap-2 mb-2">
-        <span className="text-xs font-medium text-slate-400">Featured Charts</span>
-        <span className="text-xs px-1.5 py-0.5 bg-slate-800 text-slate-500 rounded">Curated selection</span>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-slate-400">
+            {chartsLoading ? 'Loading charts...' : `Charts (${filteredCharts.length})`}
+          </span>
+          {chartRepos.length > 0 && (
+            <span className="text-xs px-1.5 py-0.5 bg-slate-800 text-slate-500 rounded">{chartRepos.length} repo{chartRepos.length !== 1 ? 's' : ''}</span>
+          )}
+        </div>
+        {chartCatalog.length === 0 && !chartsLoading && (
+          <span className="text-xs text-slate-500">No HelmChartRepositories configured</span>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {chartsLoading && (
+          <div className="col-span-full text-center py-8 text-sm text-slate-500 flex items-center justify-center gap-2">
+            <Loader2 className="w-4 h-4 animate-spin" /> Loading charts from repositories...
+          </div>
+        )}
+        {!chartsLoading && filteredCharts.length === 0 && (
+          <div className="col-span-full text-center py-8">
+            <Ship className="w-8 h-8 text-slate-600 mx-auto mb-3" />
+            <div className="text-sm text-slate-500">
+              {chartCatalog.length === 0 ? 'No Helm chart repositories configured on this cluster' : 'No charts match your search'}
+            </div>
+            {chartCatalog.length === 0 && (
+              <p className="text-xs text-slate-600 mt-2 max-w-md mx-auto">
+                Add a HelmChartRepository to enable chart browsing. OpenShift includes a default Red Hat Helm chart repo.
+              </p>
+            )}
+          </div>
+        )}
         {filteredCharts.map((chart) => (
-          <button key={chart.name} onClick={() => { setSelectedChart(chart); setReleaseName(`my-${chart.name}`); }}
+          <button key={`${chart.repoName || 'default'}-${chart.name}`} onClick={() => { setSelectedChart(chart); setReleaseName(`my-${chart.name}`); }}
             className="flex items-start gap-3 p-4 bg-slate-900 rounded-lg border border-slate-800 hover:border-blue-600 transition-colors text-left">
-            <Ship className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
+            {chart.icon ? (
+              <img src={chart.icon} alt="" className="w-8 h-8 rounded shrink-0" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+            ) : (
+              <Ship className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" />
+            )}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-slate-200">{chart.name}</span>
                 <span className="text-xs text-slate-500 font-mono">{chart.version}</span>
               </div>
               <div className="text-xs text-slate-500 mt-1 line-clamp-2">{chart.description}</div>
-              {chart.appVersion && <div className="text-xs text-slate-600 mt-1">App: v{chart.appVersion}</div>}
+              <div className="flex items-center gap-2 mt-1">
+                {chart.appVersion && <span className="text-xs text-slate-600">App: v{chart.appVersion}</span>}
+                {chart.repoName && <span className="text-xs text-slate-600">· {chart.repoName}</span>}
+              </div>
             </div>
           </button>
         ))}
