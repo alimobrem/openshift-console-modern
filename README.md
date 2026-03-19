@@ -1,24 +1,44 @@
-# ShiftOps
+<p align="center">
+  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%232563eb'/%3E%3Cstop offset='100%25' stop-color='%231d4ed8'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='32' height='32' rx='8' fill='url(%23g)'/%3E%3Ctext x='8' y='24' font-family='system-ui' font-weight='800' font-size='22' fill='white'%3ES%3C/text%3E%3Cpath d='M23 5l0.8-2.4L26.2 2l-2.4-0.8L23-1.2 22.2 1.2 19.8 2l2.4 0.8Z' fill='%2393c5fd'/%3E%3Cpath d='M27 9l0.5-1.5L29 7l-1.5-0.5L27 5l-0.5 1.5L25 7l1.5 0.5Z' fill='%2393c5fd' opacity='0.7'/%3E%3C/svg%3E" width="80" alt="ShiftOps">
+</p>
 
-A next-generation OpenShift Console — scored **93/100** by a Senior SysAdmin reviewer and recommended as **"primary tool for single-cluster day-2 operations."** Built with React, TypeScript, and real-time Kubernetes APIs. Every view is auto-generated from the API — browse any resource type, see what needs attention, and take action in seconds.
+<h1 align="center">ShiftOps</h1>
 
-**Live on cluster**: Deployed with OAuth proxy for multi-user authentication.
+<p align="center">
+  <strong>Next-generation OpenShift Console for Day-2 Operations</strong>
+</p>
+
+<p align="center">
+  <a href="https://github.com/alimobrem/ShiftOps/releases/tag/v3.0.0"><img src="https://img.shields.io/badge/version-v3.0.0-blue" alt="Version"></a>
+  <img src="https://img.shields.io/badge/tests-911%20passed-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/health%20checks-67-orange" alt="Health Checks">
+  <img src="https://img.shields.io/badge/sysadmin%20score-93%2F100-blueviolet" alt="SysAdmin Score">
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
+</p>
+
+<p align="center">
+  <em>Scored <strong>93/100</strong> by a Senior SysAdmin reviewer — "primary tool for single-cluster day-2 operations."</em>
+</p>
+
+---
+
+Built with React, TypeScript, and real-time Kubernetes APIs. Every view is auto-generated from the API — browse any resource type, see what needs attention, and take action in seconds. Deployed with OAuth proxy for multi-user authentication.
 
 ## Highlights
 
-- **67 automated health checks** across cluster readiness and domain-specific audits
-- **36 workload/storage/networking/compute/RBAC/identity checks** with per-resource pass/fail, YAML fix examples, and "Edit YAML" links
-- **Workload health audit on detail pages** — 7 checks per Deployment/StatefulSet/DaemonSet
-- **RBAC-aware UI** — actions hidden/disabled based on user permissions
-- **User impersonation** — test as any user or service account
-- **Metrics sparklines** on every overview page with threshold-based colors
-- **Alert silence lifecycle** — create, pre-fill from alerts, expire
-- **Operator lifecycle** — install, progress tracking, post-install guidance, uninstall
-- **1103 tests** across 66 test files
+| | Feature | Details |
+|---|---------|---------|
+| | **67 Health Checks** | Automated cluster readiness + domain-specific audits with YAML fix examples |
+| | **Incident Context** | Events, logs (container picker), and metrics inline on detail pages |
+| | **Pod/Node Debug** | Ephemeral containers for pods, privileged debug pods for nodes |
+| | **RBAC-Aware UI** | Actions hidden/disabled based on SelfSubjectAccessReview |
+| | **User Impersonation** | Test as any user or service account — headers on all API calls |
+| | **Real-time Watches** | WebSocket + 60s polling fallback via TanStack Query |
+| | **911 Tests** | 53 test files, 100% passing, ~3 seconds |
 
-## Pages
+## Views
 
-| Page | Description |
+| View | Description |
 |------|-------------|
 | **Pulse** | Cluster health overview with 4 tabs: Overview, Issues, Runbooks, Namespace Health |
 | **Workloads** | Metrics, health audit (6 checks), pod status, deployments, jobs |
@@ -209,17 +229,25 @@ src/kubeview/
 
 ## Stats
 
-- **~80** production files (cleaned from 230+)
-- **911** tests across 53 files — **100% passing**
-- **24** routes, **13** pages
-- **30** YAML templates + 71 context-aware sub-snippets
-- **67** automated health checks (31 cluster + 36 domain)
-- **7** per-container workload health checks on detail pages
-- **500+** operators in catalog
-- **10** error pattern detections
-- **93/100** SysAdmin review score
+| Metric | Value |
+|--------|-------|
+| Production files | ~80 |
+| Tests | 911 (100% passing) |
+| Test files | 53 |
+| Routes | 24 |
+| Views | 13 |
+| Health checks | 67 (31 cluster + 36 domain) |
+| YAML templates | 30 + 71 context-aware snippets |
+| Operators in catalog | 500+ |
+| Error pattern detections | 10 |
+| Build time | ~1s (Rspack) |
+| Test time | ~3s |
 
-## SysAdmin Review Score: 93/100
+---
+
+## Reviews
+
+### SysAdmin Review: 93/100
 
 | Dimension | Score |
 |-----------|-------|
@@ -234,7 +262,26 @@ src/kubeview/
 | Completeness vs OCP Console | 9/10 |
 | Would Recommend | 10/10 |
 
-> "Primary tool for single-cluster day-2 operations. ShiftOps would be my default tab."
+> *"Primary tool for single-cluster day-2 operations. ShiftOps would be my default tab."*
+
+### Product Manager Assessment
+
+> *"The only tool that combines automated health auditing (67 checks with remediation guidance) with real-time operational management. The production readiness score is unique — no competitor gives you a single number that captures your cluster's operational maturity."*
+
+### UX Designer: 7.2/10
+
+> *"The health audit / diagnosis pattern is a standout feature I have not seen executed this well in competitors."*
+
+---
+
+## Contributing
+
+```bash
+npm install          # Install dependencies
+npm run dev          # Dev server on port 9000
+npm test             # Run 911 tests
+npm run build        # Production build (~1s)
+```
 
 ## License
 
