@@ -573,6 +573,41 @@ export async function enrichDiagnosesWithLogs(
 
   if (resource.kind !== 'Pod' || !resource.metadata.namespace) return diagnoses;
 
+  // Enrich Pending pod diagnoses with scheduling events
+  const hasPending = diagnoses.some(d => d.title.includes('Pending') || d.title.includes('scheduling') || d.title.includes('Unschedulable'));
+  if (hasPending) {
+    try {
+      const fieldSelector = encodeURIComponent(`involvedObject.name=${resource.metadata.name},involvedObject.kind=Pod`);
+      const eventsText = await fetchFn(
+        `/api/kubernetes/api/v1/namespaces/${resource.metadata.namespace}/events?fieldSelector=${fieldSelector}`
+      );
+      const events = JSON.parse(eventsText);
+      const warnings = (events.items || []).filter((e: any) => e.type === 'Warning').sort((a: any, b: any) =>
+        new Date(b.lastTimestamp || b.firstTimestamp || 0).getTime() - new Date(a.lastTimestamp || a.firstTimestamp || 0).getTime()
+      );
+      if (warnings.length > 0) {
+        const msg = warnings[0].message || '';
+        const reason = warnings[0].reason || '';
+        diagnoses = diagnoses.map(d => {
+          if (!d.title.includes('Pending') && !d.title.includes('scheduling') && !d.title.includes('Unschedulable')) return d;
+          return {
+            ...d,
+            detail: d.detail + `. Event: ${reason}`,
+            logSnippet: msg,
+            suggestion: reason === 'FailedScheduling'
+              ? msg.includes('Insufficient cpu') ? 'Not enough CPU on any node. Scale up nodes or reduce resource requests.'
+                : msg.includes('Insufficient memory') ? 'Not enough memory on any node. Scale up nodes or reduce resource requests.'
+                : msg.includes('node(s) had untolerated taint') ? 'Pods cannot tolerate node taints. Add tolerations or remove taints.'
+                : `Scheduling failed: ${msg}`
+              : d.suggestion,
+          };
+        });
+      }
+    } catch {
+      // Events fetch failed
+    }
+  }
+
   // Only fetch logs for pods with crashes or errors
   const hasCrash = diagnoses.some(d =>
     d.title.includes('CrashLoopBackOff') ||

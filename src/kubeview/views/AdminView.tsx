@@ -351,6 +351,27 @@ export default function AdminView() {
     staleTime: 300000,
   });
 
+  // PDBs for pre-upgrade check
+  const { data: pdbs = [] } = useQuery<K8sResource[]>({
+    queryKey: ['k8s', 'list', '/apis/policy/v1/poddisruptionbudgets'],
+    queryFn: () => k8sList('/apis/policy/v1/poddisruptionbudgets').catch(() => []),
+    staleTime: 60000,
+  });
+
+  // Deployments for PDB coverage check
+  const { data: deployments = [] } = useQuery<K8sResource[]>({
+    queryKey: ['k8s', 'list', '/apis/apps/v1/deployments'],
+    queryFn: () => k8sList('/apis/apps/v1/deployments').catch(() => []),
+    staleTime: 60000,
+  });
+
+  // etcd backup CRDs
+  const { data: etcdBackupExists } = useQuery({
+    queryKey: ['admin', 'etcd-backup'],
+    queryFn: () => k8sList('/apis/config.openshift.io/v1/backups').then((items: any[]) => items.length > 0).catch(() => false),
+    staleTime: 60000,
+  });
+
   // Computed
   const cvVersion = clusterVersion?.status?.desired?.version || clusterVersion?.status?.history?.[0]?.version || '';
   const cvChannel = clusterVersion?.spec?.channel || '';
@@ -981,15 +1002,26 @@ export default function AdminView() {
                     const allNodesReady = readyNodes.length === nodes.length;
                     const degradedOps = operators.filter((o: any) => (o.status?.conditions || []).some((c: any) => c.type === 'Degraded' && c.status === 'True'));
                     const allOpsHealthy = degradedOps.length === 0;
-                    const hasPDBs = limitRanges.length > 0 || quotas.length > 0; // proxy check
                     const channelStable = cvChannel?.includes('stable') || cvChannel?.includes('eus');
+
+                    // Real PDB check: user deployments with >1 replica that have PDBs
+                    const userDeploys = deployments.filter((d: any) => {
+                      const ns = d.metadata?.namespace || '';
+                      return !ns.startsWith('openshift-') && !ns.startsWith('kube-') && (d.spec?.replicas ?? 0) > 1;
+                    });
+                    const pdbSelectors = (pdbs as any[]).map((p: any) => p.spec?.selector?.matchLabels || {});
+                    const deploysWithPDB = userDeploys.filter((d: any) => {
+                      const podLabels = d.spec?.template?.metadata?.labels || {};
+                      return pdbSelectors.some((sel: any) => Object.entries(sel).every(([k, v]) => podLabels[k] === v));
+                    });
+                    const pdbCoverage = userDeploys.length === 0 || deploysWithPDB.length >= userDeploys.length * 0.5;
 
                     const checks = [
                       { label: 'All nodes ready', pass: allNodesReady, detail: allNodesReady ? `${nodes.length}/${nodes.length} ready` : `${readyNodes.length}/${nodes.length} ready — fix unready nodes first` },
                       { label: 'No degraded operators', pass: allOpsHealthy, detail: allOpsHealthy ? `${operators.length} operators healthy` : `${degradedOps.length} degraded: ${degradedOps.slice(0, 3).map((o: any) => o.metadata.name).join(', ')}` },
                       { label: 'Stable update channel', pass: channelStable, detail: channelStable ? `Channel: ${cvChannel}` : `Channel "${cvChannel}" — consider switching to stable for production` },
-                      { label: 'Etcd backup recommended', pass: false, detail: 'Take an etcd backup before upgrading: ssh to control plane → /usr/local/bin/cluster-backup.sh /home/core/backup' },
-                      { label: 'PodDisruptionBudgets in place', pass: true, detail: 'Verify critical workloads have PDBs to prevent downtime during node restarts' },
+                      { label: 'Etcd backup', pass: !!etcdBackupExists, detail: etcdBackupExists ? 'Backup schedule configured' : 'No automated backup configured — take a manual backup: ssh to control plane → /usr/local/bin/cluster-backup.sh /home/core/backup' },
+                      { label: 'PodDisruptionBudgets', pass: pdbCoverage, detail: userDeploys.length === 0 ? 'No multi-replica user deployments' : `${deploysWithPDB.length}/${userDeploys.length} multi-replica deployments have PDBs` },
                     ];
 
                     return checks.map((check, i) => (
