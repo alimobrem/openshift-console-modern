@@ -2,7 +2,10 @@ import { defineConfig } from '@rspack/cli';
 import { rspack } from '@rspack/core';
 import ReactRefreshPlugin from '@rspack/plugin-react-refresh';
 import { execSync } from 'child_process';
+import { readFileSync } from 'fs';
 import path from 'path';
+
+const pkg = JSON.parse(readFileSync(path.resolve(__dirname, 'package.json'), 'utf-8'));
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -83,7 +86,7 @@ export default defineConfig({
   },
   plugins: [
     new rspack.DefinePlugin({
-      __APP_VERSION__: JSON.stringify(require('./package.json').version),
+      __APP_VERSION__: JSON.stringify(pkg.version),
     }),
     new rspack.HtmlRspackPlugin({
       template: './public/index.html',
