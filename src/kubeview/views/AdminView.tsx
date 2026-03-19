@@ -19,8 +19,9 @@ import { Panel } from '../components/primitives/Panel';
 import { parseCpu, parseMem, formatMem } from '../engine/formatting';
 import { type ClusterSnapshot, type DiffRow, loadSnapshots, saveSnapshots, captureSnapshot, compareSnapshots } from '../engine/snapshot';
 import { QuotasTab } from './admin/QuotasTab';
+import { CertificatesTab } from './admin/CertificatesTab';
 
-type Tab = 'overview' | 'readiness' | 'operators' | 'config' | 'updates' | 'snapshots' | 'quotas' | 'timeline';
+type Tab = 'overview' | 'readiness' | 'operators' | 'config' | 'updates' | 'snapshots' | 'quotas' | 'certificates' | 'timeline';
 
 // --- Main component ---
 
@@ -414,6 +415,7 @@ export default function AdminView() {
     { id: 'updates', label: `Updates${availableUpdates.length > 0 ? ` (${availableUpdates.length})` : ''}`, icon: <ArrowUpCircle className="w-3.5 h-3.5" /> },
     { id: 'snapshots', label: `Snapshots (${savedSnapshots.length})`, icon: <GitCompare className="w-3.5 h-3.5" /> },
     { id: 'quotas', label: `Quotas (${quotas.length})`, icon: <Shield className="w-3.5 h-3.5" /> },
+    { id: 'certificates', label: 'Certificates', icon: <Shield className="w-3.5 h-3.5" /> },
     { id: 'timeline', label: 'Timeline', icon: <Clock className="w-3.5 h-3.5" /> },
   ];
 
@@ -1009,6 +1011,8 @@ export default function AdminView() {
 
         {/* ===== QUOTAS ===== */}
         {activeTab === 'quotas' && <QuotasTab quotas={quotas as any[]} limitRanges={limitRanges as any[]} go={go} />}
+
+        {activeTab === 'certificates' && <CertificatesTab go={go} />}
 
         {activeTab === 'timeline' && (
           <React.Suspense fallback={<div className="flex items-center justify-center py-12"><Loader2 className="w-6 h-6 text-blue-400 animate-spin" /></div>}>

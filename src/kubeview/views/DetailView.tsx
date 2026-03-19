@@ -42,6 +42,7 @@ import { StatusBadge } from '../components/primitives/StatusBadge';
 import { ActionMenu, type ActionMenuItem } from '../components/primitives/ActionMenu';
 import { IncidentContext } from './detail/IncidentContext';
 import { WorkloadAudit } from './detail/WorkloadAudit';
+import { RollbackPanel } from './detail/RollbackPanel';
 
 interface DetailViewProps {
   gvrKey: string;
@@ -904,6 +905,11 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
             {/* Incident Context — events, logs, metrics for pods/workloads */}
             {(resource.kind === 'Pod' || isWorkload) && namespace && (
               <IncidentContext resource={resource} managedPods={managedPods} events={sortedEvents} namespace={namespace} go={go} />
+            )}
+
+            {/* Deployment Rollback History */}
+            {resource.kind === 'Deployment' && namespace && (
+              <RollbackPanel resource={resource} namespace={namespace} />
             )}
 
             {/* Workload Health Audit (Deployment/StatefulSet/DaemonSet) */}
