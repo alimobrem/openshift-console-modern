@@ -2,13 +2,14 @@ import { useState, useCallback, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   ArrowLeft, Plus, Package, FileText,
-  AlertCircle, Box, Loader2, Upload, Puzzle, Ship,
+  AlertCircle, Box, Loader2, Upload, Puzzle, Ship, ShieldCheck,
 } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useClusterStore } from '../store/clusterStore';
 import { buildApiPath } from '../hooks/useResourceUrl';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import YamlEditor from '../components/yaml/YamlEditor';
+import { DryRunPanel } from '../components/yaml/DryRunPanel';
 import { resolveSnippet, getSnippetSuggestions, type Snippet } from '../components/yaml/SnippetEngine';
 import { K8S_BASE as BASE } from '../engine/gvr';
 import { InstalledTab } from './create/InstalledTab';
@@ -86,6 +87,7 @@ export default function CreateView({ gvrKey }: CreateViewProps) {
   const [yaml, setYaml] = useState('');
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showDryRun, setShowDryRun] = useState(false);
 
   const gvrParts = activeGvr.split('/');
   const resourcePlural = gvrParts[gvrParts.length - 1];
@@ -204,9 +206,18 @@ export default function CreateView({ gvrKey }: CreateViewProps) {
             <span className="text-sm font-medium text-slate-200">Create {kind}</span>
             <span className="text-xs text-slate-500">{gvrParts.length === 3 ? `${gvrParts[0]}/${gvrParts[1]}` : gvrParts[0]}</span>
           </div>
-          <button onClick={handleCreate} disabled={creating || !yaml.trim()} className={cn('flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-md font-medium transition-colors', creating || !yaml.trim() ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white')}>
-            <Plus size={12} /> {creating ? 'Creating...' : 'Create'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDryRun(!showDryRun)}
+              disabled={!yaml.trim()}
+              className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-colors', !yaml.trim() ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : showDryRun ? 'bg-emerald-700 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300')}
+            >
+              <ShieldCheck size={12} /> Validate
+            </button>
+            <button onClick={handleCreate} disabled={creating || !yaml.trim()} className={cn('flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-md font-medium transition-colors', creating || !yaml.trim() ? 'bg-slate-700 text-slate-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-500 text-white')}>
+              <Plus size={12} /> {creating ? 'Creating...' : 'Create'}
+            </button>
+          </div>
         </div>
         {error && (
           <div className="flex items-start gap-2 px-4 py-2 bg-red-950/50 border-b border-red-900 text-sm">
@@ -218,6 +229,12 @@ export default function CreateView({ gvrKey }: CreateViewProps) {
         <div className="flex-1 overflow-hidden">
           <YamlEditor value={yaml} onChange={setYaml} onSave={handleCreate} height="100%" />
         </div>
+        {showDryRun && yaml.trim() && (() => {
+          const nsMatch = yaml.match(/namespace:\s*(\S+)/);
+          const ns = nsMatch?.[1] || (resourceType?.namespaced ? (selectedNamespace !== '*' ? selectedNamespace : 'default') : undefined);
+          const dryRunPath = buildApiPath(activeGvr, ns);
+          return <DryRunPanel yaml={yaml} apiPath={dryRunPath} method="POST" onClose={() => setShowDryRun(false)} />;
+        })()}
       </div>
     );
   }

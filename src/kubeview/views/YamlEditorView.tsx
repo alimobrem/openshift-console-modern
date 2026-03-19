@@ -5,8 +5,9 @@ import { useUIStore } from '../store/uiStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { buildApiPath } from '../hooks/useResourceUrl';
 import YamlEditor from '../components/yaml/YamlEditor';
+import { DryRunPanel } from '../components/yaml/DryRunPanel';
 import { resourceToYaml } from '../engine/yamlUtils';
-import { ArrowLeft, Save, RotateCcw, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, AlertCircle, ShieldCheck } from 'lucide-react';
 
 interface YamlEditorViewProps {
   gvrKey: string;
@@ -35,6 +36,7 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
   const [currentYaml, setCurrentYaml] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [showDryRun, setShowDryRun] = useState(false);
   const hasChanges = currentYaml !== originalYaml;
 
   useEffect(() => {
@@ -126,6 +128,14 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
               <RotateCcw size={12} /> Discard
             </button>
           )}
+          {hasChanges && (
+            <button
+              onClick={() => setShowDryRun(!showDryRun)}
+              className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md font-medium transition-colors', showDryRun ? 'bg-emerald-700 text-white' : 'bg-slate-700 hover:bg-slate-600 text-slate-300')}
+            >
+              <ShieldCheck size={12} /> Validate
+            </button>
+          )}
           <button
             onClick={handleSave}
             disabled={!hasChanges || saving}
@@ -157,6 +167,9 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
           resourceGvk={resourceGvk}
         />
       </div>
+      {showDryRun && hasChanges && (
+        <DryRunPanel yaml={currentYaml} apiPath={apiPath} method="PUT" onClose={() => setShowDryRun(false)} />
+      )}
     </div>
   );
 }
