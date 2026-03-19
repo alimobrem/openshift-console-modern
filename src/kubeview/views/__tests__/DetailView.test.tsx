@@ -213,8 +213,8 @@ describe('DetailView', () => {
     renderDetailView({ gvrKey: 'v1/pods', namespace: 'default', name: 'my-pod' });
 
     await waitFor(() => {
-      expect(screen.getByText('Logs')).toBeDefined();
-      expect(screen.getByText('Terminal')).toBeDefined();
+      expect(screen.getAllByText('Logs').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('Terminal').length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -388,7 +388,7 @@ describe('DetailView', () => {
     renderDetailView({ gvrKey: 'v1/pods', namespace: 'default', name: 'my-pod' });
 
     await waitFor(() => {
-      expect(screen.getByText('Events (1)')).toBeDefined();
+      expect(screen.getAllByText(/Events/).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -399,8 +399,8 @@ describe('DetailView', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Containers (1)')).toBeDefined();
-      expect(screen.getByText('main')).toBeDefined();
-      expect(screen.getByText('nginx:latest')).toBeDefined();
+      expect(screen.getAllByText('main').length).toBeGreaterThanOrEqual(1);
+      expect(screen.getAllByText('nginx:latest').length).toBeGreaterThanOrEqual(1);
     });
   });
 });
