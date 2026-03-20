@@ -9,28 +9,32 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v4.0.0"><img src="https://img.shields.io/badge/version-v4.0.0-blue" alt="Version"></a>
-  <img src="https://img.shields.io/badge/tests-1128%20passed-brightgreen" alt="Tests">
-  <img src="https://img.shields.io/badge/health%20checks-67-orange" alt="Health Checks">
+  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v4.1.0"><img src="https://img.shields.io/badge/version-v4.1.0-blue" alt="Version"></a>
+  <img src="https://img.shields.io/badge/tests-1162%20passed-brightgreen" alt="Tests">
+  <img src="https://img.shields.io/badge/health%20checks-76-orange" alt="Health Checks">
   <img src="https://img.shields.io/badge/security%20audit-passed-green" alt="Security Audit">
-  <img src="https://img.shields.io/badge/sysadmin%20score-93%2F100-blueviolet" alt="SysAdmin Score">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="License">
-</p>
-
-<p align="center">
-  <em>Scored <strong>93/100</strong> by a Senior SysAdmin reviewer — "primary tool for single-cluster day-2 operations."</em>
 </p>
 
 ---
 
 Built with React, TypeScript, and real-time Kubernetes APIs. Every view is auto-generated from the API — browse any resource type, see what needs attention, and take action in seconds. Deployed with OAuth proxy for multi-user authentication.
 
+## Prerequisites
+
+| Requirement | Version |
+|-------------|---------|
+| **OpenShift** | 4.12+ (including ROSA, ARO, HyperShift) |
+| **Node.js** | 18+ |
+| **oc CLI** | 4.12+ |
+| **Browser** | Modern browser with WebSocket support |
+
 ## Screenshots
 
 | | |
 |---|---|
 | ![Welcome](docs/screenshots/welcome.png) | ![Pulse](docs/screenshots/pulse.png) |
-| **Welcome** — Quick navigation, cluster status | **Pulse** — Health overview, metrics, alerts |
+| **Welcome** — Quick navigation, cluster status | **Pulse** — Daily briefing, risk score, alerts |
 | ![Workloads](docs/screenshots/workloads.png) | ![Compute](docs/screenshots/compute.png) |
 | **Workloads** — Deployments, pods, health audit | **Compute** — Node metrics, CPU/memory |
 | ![Table View](docs/screenshots/table-view.png) | ![YAML Editor](docs/screenshots/yaml-editor.png) |
@@ -50,36 +54,42 @@ Built with React, TypeScript, and real-time Kubernetes APIs. Every view is auto-
 
 | | Feature | Details |
 |---|---------|---------|
-| | **67 Health Checks** | Automated cluster readiness + domain-specific audits with YAML fix examples |
+| | **76 Health Checks** | Automated cluster readiness + domain-specific audits with YAML fix examples |
+| | **Daily Briefing** | Risk score ring, control plane status, certificate expiry, attention items with remediation steps |
+| | **HyperShift Support** | Auto-detects hosted control plane clusters, adapts health checks, hides irrelevant Machine API panels |
 | | **Incident Context** | Events, logs (container picker), and metrics inline on detail views |
-| | **Pod/Node Debug** | Ephemeral containers for pods, privileged debug pods for nodes |
+| | **Pod/Node Terminal** | Interactive WebSocket terminal with command history, suggestions, copy output |
+| | **Deployment Rollback** | Revision history with container image diffs, one-click rollback with confirmation |
+| | **Cluster Snapshots** | Capture cluster state, compare snapshots field-by-field to find what changed |
+| | **Production Readiness** | 31-check automated score across infrastructure, security, observability, reliability |
+| | **Dry-Run Validation** | Server-side dry-run before applying YAML changes |
 | | **RBAC-Aware UI** | Actions hidden/disabled based on SelfSubjectAccessReview |
 | | **User Impersonation** | Test as any user or service account — headers on all API calls |
 | | **Real-time Watches** | WebSocket watches with 60s safety-net polling via TanStack Query |
 | | **Security Hardened** | Passed 15-finding security audit — injection, SSRF, TLS, CSP, RBAC |
-| | **1128 Tests** | 61 test files, 100% passing, ~3 seconds |
+| | **1162 Tests** | 63 test files, 100% passing, ~3 seconds |
 
 ## Views
 
 | View | Description |
 |------|-------------|
 | **Welcome** | Hero, cluster status, quick nav, start-here cards, all views grid, key capabilities, keyboard shortcuts |
-| **Pulse** | Cluster health overview with 4 tabs: Overview, Issues, Runbooks, Namespace Health |
+| **Pulse** | 4-tab cluster health: Daily Briefing (risk score, CP status, certs, attention items), Issues, Runbooks, Namespace Health |
 | **Workloads** | Metrics, health audit (6 checks), pod status, deployments, jobs |
 | **Builds** | BuildConfigs with trigger buttons, build status/duration, ImageStreams with tags |
 | **Networking** | Metrics, health audit (6 checks), endpoints, ingress, network policies |
-| **Compute** | Metrics, health audit (6 checks), nodes with CPU/memory bars, MachineConfig |
+| **Compute** | Metrics, health audit (6 checks), nodes with CPU/memory bars, MachineSets, MachineConfig. HyperShift-aware — hides Machine API when CP is external |
 | **Storage** | Metrics, health audit (6 checks), capacity, CSI drivers, snapshots |
 | **Alerts** | Severity filters, grouping, duration, silence lifecycle, runbooks |
 | **Access Control** | RBAC audit (6 checks), recent RBAC changes (7 days) |
 | **User Management** | Users/groups/SAs, impersonation, identity audit (6 checks), sessions |
 | **CRDs** | Browse by API group, search, filter, instance navigation |
-| **Security** | Security overview, policy status, vulnerability context |
-| **Admin** | 9 tabs: Readiness (31 checks), Cluster Config (10 editable sections), Updates, Certificates, Snapshots, Quotas, Timeline |
+| **Security** | Security overview (9 checks), policy status, vulnerability context |
+| **Admin** | 9 tabs: Overview, Readiness (31 checks), Operators, Cluster Config (10 editable sections), Updates, Snapshots, Quotas, Certificates, Timeline |
 
 ## Features
 
-### Health Audits (36 Domain Checks + 31 Cluster Checks = 67 Total)
+### Health Audits (45 Domain Checks + 31 Cluster Checks = 76 Total)
 Each overview view has an expandable audit with score %, per-resource pass/fail, "Why it matters" explanations, YAML fix examples, and direct "Edit YAML" links.
 
 - **Workloads (6)**: Resource limits, liveness probes, readiness probes, PDBs, replicas, rolling update strategy
@@ -88,6 +98,47 @@ Each overview view has an expandable audit with score %, per-resource pass/fail,
 - **Compute (6)**: HA control plane, dedicated workers, MachineHealthChecks, node pressure, kubelet version consistency, cluster autoscaling
 - **Access Control (6)**: Default SA privileges, overprivileged bindings, wildcard rules, stale bindings, namespace isolation, automount tokens
 - **Identity (6)**: Identity providers, kubeadmin removal, cluster-admin audit, SA privileges, inactive users, group membership
+- **Security (9)**: TLS profiles, encryption at rest, network policies, secrets management, SCC audit, image registry, container registry, kubeadmin, audit logging
+
+### HyperShift / Hosted Control Plane Support
+Automatically detects HyperShift clusters via the Infrastructure resource (`controlPlaneTopology: External`) and adapts the entire UI:
+
+- **Persistent "Hosted" badge** in the CommandBar — visible on every view
+- **"Hosted Control Plane" badge** on Pulse daily briefing with tooltip
+- **Health checks adapted** — HA CP, MachineHealthChecks, and Autoscaling checks skipped (irrelevant on hosted clusters)
+- **Production Readiness adapted** — etcd backup and HA CP auto-pass with "Managed by hosting provider"
+- **Machine Management hidden** — MachineSets, Machines, MHCs, Autoscaling panels replaced with info block explaining NodePool model
+- **API queries gated** — Machine API requests skipped entirely on HyperShift (no unnecessary 404s)
+- **Snapshot tracking** — `controlPlaneTopology` captured in snapshots for drift detection
+
+### Daily Briefing (Pulse Overview)
+4-zone risk assessment visible on the Pulse view:
+
+- **Zone 1 — Heartbeat**: Risk score ring (0-100), control plane operator status, API latency (p99), etcd leader changes, certificate expiry warnings
+- **Zone 2 — Capacity**: Node/pod/deployment counts, resource quotas, PV usage, pending pods
+- **Zone 3 — Attention**: Degraded operators, unhealthy nodes, critical alerts, failed pods, expiring certificates — each with remediation steps
+- **Zone 4 — Activity**: Recent events, deployment rollouts, scaling activity
+
+### Cluster Snapshots & Comparison
+Capture a point-in-time snapshot of your cluster state (ClusterVersion, nodes, operators, CRDs, storage classes, RBAC, config, topology). Compare any two snapshots field-by-field to find what changed — operators upgraded, CRDs added/removed, RBAC changes, config drift. Stored in localStorage (max 10 snapshots).
+
+### Deployment Rollback
+Every Deployment detail view shows revision history with container image diffs and ReplicaSet comparison. One-click rollback with ConfirmDialog — no kubectl required.
+
+### Pod/Node Terminal
+Interactive WebSocket exec terminal with GitHub-dark theme. Command history, copy output, clear, command suggestions. For nodes: privileged debug pod with host filesystem access.
+
+### Dry-Run Validation
+Server-side dry-run panel validates YAML changes before applying. Shows what would change, catches validation errors, and prevents accidental misconfigurations.
+
+### Resource Creation (5 Modes)
+The Create view offers 5 tabs: Quick Deploy (image + name), Templates (30 resource templates), Helm (real repo integration with validated release names), Import YAML (paste or upload), and Installed operators.
+
+### Dock Panel
+Resizable bottom panel for terminal and log sessions. Minimize, close, or drag-resize. IDE-like experience for debugging workflows.
+
+### Cluster Timeline
+Event timeline with configurable time ranges (1h/6h/24h), warning/normal severity filters, namespace filtering, and clickable resource links. Available as a tab in Admin view.
 
 ### Workload Health on Detail Views
 Every Deployment, StatefulSet, and DaemonSet detail view shows per-container health checks: resource limits, resource requests, liveness probes, readiness probes, HA replicas, update strategy, and security context (runAsNonRoot, privilege escalation, capabilities). Expandable rows show probe descriptions.
@@ -99,7 +150,7 @@ BuildConfigs with one-click trigger, average build duration, last build status. 
 OAuth, Proxy, Image, Ingress, Scheduler, API Server (full editors). DNS (warning: breaks routing), Network (warning: cluster disruption), FeatureGate (warning: irreversible), Console (product name, logo, route, statuspage).
 
 ### Cluster Upgrades
-Pre-update checklist (nodes ready, operators healthy, channel, etcd backup, PDBs), ClusterVersion conditions (Progressing/Failing banners), version skip indicators, risk badges, duration estimates, per-operator update progress during rolling upgrade, history with duration.
+Pre-update checklist (nodes ready, operators healthy, channel, etcd backup, PDBs), ClusterVersion conditions (Progressing/Failing banners), version skip indicators, risk badges, duration estimates, per-operator update progress during rolling upgrade, history with duration. HyperShift-aware — etcd backup check auto-passes on hosted clusters.
 
 ### Operator Catalog & Lifecycle
 Browse 500+ operators. One-click install with 4-step progress tracking. Post-install guidance for 9+ operators. Full uninstall flow. Channel selector, namespace auto-suggestion. Helm install with validated release names and `--repo` flag (no shell injection).
@@ -128,7 +179,7 @@ CodeMirror with K8s autocomplete, YAML linting, Schema panel (from CRD OpenAPI),
 | **State** | Zustand (client) + TanStack Query (server) |
 | **Real-time** | WebSocket watches + 60s polling fallback |
 | **Styling** | Tailwind CSS 3.4 |
-| **Testing** | Vitest + jsdom (1128 tests) |
+| **Testing** | Vitest + jsdom (1162 tests, 63 files) |
 | **Icons** | Lucide React (icon registry, ~50 icons) |
 | **Charts** | Pure SVG sparklines (no chart library) |
 
@@ -286,31 +337,20 @@ npm run type-check    # TypeScript checking
 ### Test Results
 
 ```
- Test Files  61 passed (61)
-      Tests  1128 passed (1128)
-   Duration  3.00s
+ Test Files  63 passed (63)
+      Tests  1162 passed (1162)
+   Duration  3.05s
 ```
-
-| Test Area | Files | Tests |
-|-----------|-------|-------|
-| Views (render + behavior) | 20 | 350+ |
-| Engine (query, discovery, diagnosis, watch) | 12 | 200+ |
-| Components (CommandPalette, feedback, logs) | 8 | 150+ |
-| Hooks (useCanI, useDiscovery, etc.) | 6 | 80+ |
-| Store (uiStore, clusterStore) | 3 | 55+ |
-| Routes (structure, security, cleanup) | 1 | 28 |
-| Security audit (injection, headers, TLS, SSRF) | 1 | 29 |
-| Integration (CRUD, delete flow, operators) | 4 | 80+ |
 
 ## Architecture
 
 ```
 src/kubeview/
-├── engine/              # Query (with impersonation), discovery, diagnosis, watch manager
-├── views/               # 14 view components + health audits + incident context
-├── components/          # Shared UI (Panel, ClusterConfig, Sparkline, YamlEditor)
+├── engine/              # Query (with impersonation), discovery, diagnosis, watch, snapshot
+├── views/               # 13 view components + health audits + incident context
+├── components/          # Shared UI (Panel, ClusterConfig, Sparkline, YamlEditor, Terminal, Dock)
 ├── hooks/               # useK8sListWatch, useCanI (RBAC), useNavigateTab
-├── store/               # Zustand (uiStore with impersonation, clusterStore)
+├── store/               # Zustand (uiStore with impersonation, clusterStore with HyperShift detection)
 ├── routes/              # Route modules (resource, domain, redirects)
 │   ├── resourceRoutes.tsx   # GVR wrapper components + resource routes
 │   ├── domainRoutes.tsx     # Domain view routes (workloads, networking, etc.)
@@ -332,8 +372,11 @@ Browser → OAuth Proxy (8443) → nginx (8080) → K8s API / Prometheus / Alert
 
 | Shortcut | Action |
 |----------|--------|
-| ⌘K / ⌘. | Command Palette |
+| ⌘K | Command Palette |
+| ⌘. | Quick Actions |
 | ⌘B | Resource Browser |
+| ⌘J | Toggle Dock |
+| Escape | Close overlays (priority-ordered) |
 | j / k | Navigate table rows |
 
 ## Stats
@@ -341,11 +384,11 @@ Browser → OAuth Proxy (8443) → nginx (8080) → K8s API / Prometheus / Alert
 | Metric | Value |
 |--------|-------|
 | Production files | ~100 |
-| Tests | 1128 (100% passing) |
-| Test files | 61 |
+| Tests | 1162 (100% passing) |
+| Test files | 63 |
 | Routes | 35 |
-| Views | 14 |
-| Health checks | 67 (31 cluster + 36 domain) |
+| Views | 13 |
+| Health checks | 76 (31 cluster + 45 domain) |
 | YAML templates | 30 + 71 context-aware snippets |
 | Operators in catalog | 500+ |
 | Error pattern detections | 10 |
@@ -355,42 +398,13 @@ Browser → OAuth Proxy (8443) → nginx (8080) → K8s API / Prometheus / Alert
 
 ---
 
-## Reviews
-
-### SysAdmin Review: 93/100
-
-| Dimension | Score |
-|-----------|-------|
-| Day-1 Usefulness | 9/10 |
-| Incident Response | 9/10 |
-| Operational Efficiency | 10/10 |
-| Learning & Discovery | 10/10 |
-| Production Readiness | 10/10 |
-| Operator Management | 9/10 |
-| Multi-cluster / Enterprise | 7/10 |
-| Trust & Safety | 10/10 |
-| Completeness vs OCP Console | 9/10 |
-| Would Recommend | 10/10 |
-
-> *"Primary tool for single-cluster day-2 operations. OpenShift Pulse would be my default tab."*
-
-### Product Manager Assessment
-
-> *"The only tool that combines automated health auditing (67 checks with remediation guidance) with real-time operational management. The production readiness score is unique — no competitor gives you a single number that captures your cluster's operational maturity."*
-
-### UX Designer: 7.2/10
-
-> *"The health audit / diagnosis pattern is a standout feature I have not seen executed this well in competitors."*
-
----
-
 ## Contributing
 
 ```bash
 npm install          # Install dependencies
 cp .env.example .env # Configure cluster URLs
 npm run dev          # Dev server on port 9000
-npm test             # Run 1128 tests
+npm test             # Run 1162 tests
 npm run build        # Production build (~1s)
 ```
 
