@@ -532,8 +532,8 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {/* Create button — hidden if user lacks create permission */}
-            {canCreate && <button
+            {/* Create button — hidden if user lacks create permission or resource is not manually creatable */}
+            {canCreate && resourcePlural !== 'nodes' && <button
               onClick={() => {
                 const gvrUrl = gvrKey.replace(/\//g, '~');
                 const path = `/create/${gvrUrl}`;

@@ -279,6 +279,14 @@ describe('TableView', () => {
     expect(screen.getByText('Create')).toBeDefined();
   });
 
+  it('hides Create button for nodes', () => {
+    setMockWatch({ data: [], isLoading: false, error: null });
+
+    renderTable('v1/nodes');
+
+    expect(screen.queryByText('Create')).toBeNull();
+  });
+
   it('keeps table headers visible when search yields no results', () => {
     setMockWatch({
       data: [makePodResource('nginx'), makePodResource('redis')],
