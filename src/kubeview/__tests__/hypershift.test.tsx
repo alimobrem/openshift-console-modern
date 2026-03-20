@@ -158,6 +158,20 @@ describe('HyperShift UI - ProductionReadiness', () => {
     qcWrap(<ProductionReadiness />);
     expect(screen.getByText('Managed by hosting provider')).toBeDefined();
   });
+
+  it('hides Machine Health Checks and Autoscaling checks on HyperShift', () => {
+    useClusterStore.setState({ isHyperShift: true, controlPlaneTopology: 'External' });
+    qcWrap(<ProductionReadiness />);
+    expect(screen.queryByText('Machine Health Checks')).toBeNull();
+    expect(screen.queryByText('Cluster Autoscaling')).toBeNull();
+  });
+
+  it('shows Machine Health Checks and Autoscaling on traditional cluster', () => {
+    useClusterStore.setState({ isHyperShift: false, controlPlaneTopology: 'HighlyAvailable' });
+    qcWrap(<ProductionReadiness />);
+    expect(screen.getByText('Machine Health Checks')).toBeDefined();
+    expect(screen.getByText('Cluster Autoscaling')).toBeDefined();
+  });
 });
 
 describe('HyperShift UI - ComputeView health audit', () => {
@@ -194,5 +208,33 @@ describe('HyperShift UI - ComputeView health audit', () => {
     useClusterStore.setState({ isHyperShift: true, controlPlaneTopology: 'External' });
     qcWrap(<ComputeView />);
     expect(screen.getByText('Worker Nodes')).toBeDefined();
+  });
+
+  it('hides Machine Management panels on HyperShift and shows info', () => {
+    useClusterStore.setState({ isHyperShift: true, controlPlaneTopology: 'External' });
+    qcWrap(<ComputeView />);
+    // The MachineSets table heading should not exist
+    expect(screen.queryByText(/MachineSets \(/)).toBeNull();
+    // But the info block should be visible
+    expect(screen.getByText('Machine Management')).toBeDefined();
+    expect(screen.getByText(/managed by the hosting provider/)).toBeDefined();
+  });
+
+  it('shows Machine Management panels on traditional cluster', () => {
+    useClusterStore.setState({ isHyperShift: false, controlPlaneTopology: 'HighlyAvailable' });
+    qcWrap(<ComputeView />);
+    expect(screen.getByText(/MachineSets \(/)).toBeDefined();
+  });
+
+  it('skips MachineHealthChecks audit check on HyperShift', () => {
+    useClusterStore.setState({ isHyperShift: true, controlPlaneTopology: 'External' });
+    qcWrap(<ComputeView />);
+    expect(screen.queryByText('MachineHealthChecks')).toBeNull();
+  });
+
+  it('skips Cluster Autoscaling audit check on HyperShift', () => {
+    useClusterStore.setState({ isHyperShift: true, controlPlaneTopology: 'External' });
+    qcWrap(<ComputeView />);
+    expect(screen.queryByText('Cluster Autoscaling')).toBeNull();
   });
 });

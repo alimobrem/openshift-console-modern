@@ -44,6 +44,7 @@ function formatCpu(cores: number): string {
 
 export default function ComputeView() {
   const go = useNavigateTab();
+  const isHyperShift = useClusterStore((s) => s.isHyperShift);
 
   const { data: nodes = [] } = useK8sListWatch({ apiPath: '/api/v1/nodes' });
   const { data: pods = [] } = useK8sListWatch({ apiPath: '/api/v1/pods' });
@@ -394,7 +395,17 @@ export default function ComputeView() {
           </div>
         </div>
 
-        {/* Machine Management */}
+        {/* Machine Management — hidden on HyperShift where Machine API is managed externally */}
+        {isHyperShift ? (
+          <div className="bg-slate-900 rounded-lg border border-slate-800 p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <Info className="w-4 h-4 text-blue-400" />
+              <span className="text-sm font-medium text-slate-200">Machine Management</span>
+              <span className="text-xs px-2 py-0.5 bg-blue-900/60 text-blue-300 rounded-full border border-blue-700/50">Hosted Control Plane</span>
+            </div>
+            <p className="text-xs text-slate-400">Machine API resources (MachineSets, Machines, MachineHealthChecks, Autoscaling) are managed by the hosting provider on HyperShift clusters. Worker node scaling is handled through the hosted cluster's NodePool resource in the management cluster.</p>
+          </div>
+        ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* MachineSets */}
           <div className="bg-slate-900 rounded-lg border border-slate-800">
@@ -555,6 +566,7 @@ export default function ComputeView() {
             </div>
           </div>
         </div>
+        )}
 
         {/* MachineConfig Management */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -748,16 +760,17 @@ function ComputeHealthAudit({
 # For HA, spread workers across multiple availability zones.`,
     });
 
-    // 3. MachineHealthChecks
-    const hasMHC = healthChecks.length > 0;
-    allChecks.push({
-      id: 'machine-health-checks',
-      title: 'MachineHealthChecks',
-      description: 'Automatically replace unhealthy nodes when they fail health checks',
-      why: 'Without MachineHealthChecks, failed nodes remain in the cluster in NotReady state. Pods are rescheduled but the node is never recovered. MHCs detect and replace failed nodes automatically, restoring capacity.',
-      passing: hasMHC ? healthChecks : [],
-      failing: hasMHC ? [] : [{ metadata: { name: 'No MachineHealthChecks configured' } }],
-      yamlExample: `apiVersion: machine.openshift.io/v1beta1
+    // 3. MachineHealthChecks (skip on HyperShift — managed externally via NodePool)
+    if (!isHyperShift) {
+      const hasMHC = healthChecks.length > 0;
+      allChecks.push({
+        id: 'machine-health-checks',
+        title: 'MachineHealthChecks',
+        description: 'Automatically replace unhealthy nodes when they fail health checks',
+        why: 'Without MachineHealthChecks, failed nodes remain in the cluster in NotReady state. Pods are rescheduled but the node is never recovered. MHCs detect and replace failed nodes automatically, restoring capacity.',
+        passing: hasMHC ? healthChecks : [],
+        failing: hasMHC ? [] : [{ metadata: { name: 'No MachineHealthChecks configured' } }],
+        yamlExample: `apiVersion: machine.openshift.io/v1beta1
 kind: MachineHealthCheck
 metadata:
   name: worker-health-check
@@ -774,7 +787,8 @@ spec:
     status: "Unknown"
     timeout: "300s"
   maxUnhealthy: "40%"`,
-    });
+      });
+    }
 
     // 4. Node Pressure
     const pressureNodes = nodeDetails.filter(nd => {
@@ -849,7 +863,8 @@ spec:
 # Avoid manual kubelet updates — always use cluster upgrade process.`,
     });
 
-    // 6. Cluster Autoscaling
+    // 6. Cluster Autoscaling (skip on HyperShift — scaling is via NodePool)
+    if (!isHyperShift) {
     const hasAutoscaling = clusterAutoscaler.length > 0 && machineAutoscalers.length > 0;
     const autoscalingResources = [...clusterAutoscaler, ...machineAutoscalers];
     allChecks.push({
@@ -885,6 +900,7 @@ spec:
     kind: MachineSet
     name: my-cluster-worker-us-east-1a`,
     });
+    }
 
     return allChecks;
   }, [nodes, healthChecks, clusterAutoscaler, machineAutoscalers, nodeDetails, isHyperShift]);

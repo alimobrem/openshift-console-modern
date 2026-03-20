@@ -200,23 +200,25 @@ export default function ProductionReadiness() {
       action: { label: 'View Nodes', path: '/compute' },
     });
 
-    results.push({
-      id: 'autoscaling', category: 'Infrastructure',
-      title: 'Cluster Autoscaling',
-      description: 'ClusterAutoscaler configured for automatic node scaling',
-      status: clusterAutoscaler.length > 0 ? 'pass' : 'warn',
-      detail: clusterAutoscaler.length > 0 ? 'Configured' : 'Not configured',
-      action: { label: 'Configure', path: '/compute' },
-    });
+    if (!isHyperShift) {
+      results.push({
+        id: 'autoscaling', category: 'Infrastructure',
+        title: 'Cluster Autoscaling',
+        description: 'ClusterAutoscaler configured for automatic node scaling',
+        status: clusterAutoscaler.length > 0 ? 'pass' : 'warn',
+        detail: clusterAutoscaler.length > 0 ? 'Configured' : 'Not configured',
+        action: { label: 'Configure', path: '/compute' },
+      });
 
-    results.push({
-      id: 'machine-health', category: 'Infrastructure',
-      title: 'Machine Health Checks',
-      description: 'Automatic remediation of unhealthy machines',
-      status: healthChecks.length > 0 ? 'pass' : 'warn',
-      detail: `${healthChecks.length} health check${healthChecks.length !== 1 ? 's' : ''}`,
-      action: { label: 'View', path: '/compute' },
-    });
+      results.push({
+        id: 'machine-health', category: 'Infrastructure',
+        title: 'Machine Health Checks',
+        description: 'Automatic remediation of unhealthy machines',
+        status: healthChecks.length > 0 ? 'pass' : 'warn',
+        detail: `${healthChecks.length} health check${healthChecks.length !== 1 ? 's' : ''}`,
+        action: { label: 'View', path: '/compute' },
+      });
+    }
 
     // STORAGE
     const defaultSC = storageClasses.find((sc: any) =>
