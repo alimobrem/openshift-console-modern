@@ -373,9 +373,9 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
           <div>
             <div className="flex items-center gap-3 mb-2">
               <button
-                onClick={() => go(`/r/${gvrUrl}`, resourcePlural)}
+                onClick={() => navigate(-1)}
                 className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-slate-200"
-                title="Back to list"
+                title="Go back"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
