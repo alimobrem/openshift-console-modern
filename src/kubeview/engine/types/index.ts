@@ -51,6 +51,9 @@ export type { TimelineEntry, TimelineCategory, TimelineSeverity, CorrelationGrou
 // ArgoCD (only present on clusters with ArgoCD/OpenShift GitOps)
 export type { ArgoApplication, ArgoSource, ArgoManagedResource, ArgoSyncHistoryEntry, ArgoAppProject, ArgoSyncStatus, ArgoHealthStatus, ArgoSyncInfo } from './argocd';
 
+// Argo Rollouts (only present on clusters with Argo Rollouts installed)
+export type { Rollout, RolloutPhase, CanaryStep, CanaryStrategy, BlueGreenStrategy, AnalysisRun, AnalysisMetric, AnalysisMetricResult, AnalysisTemplate } from './argoRollouts';
+
 // Union of all typed resources
 export type TypedK8sResource =
   | import('./core').Pod

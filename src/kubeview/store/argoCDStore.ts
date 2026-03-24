@@ -14,10 +14,15 @@ interface ArgoCDState {
   detecting: boolean;
   detectionError: string | null;
   namespace: string | null; // namespace where ArgoCD apps live (e.g., 'openshift-gitops')
+  rolloutsAvailable: boolean;
 
   // Applications
   applications: ArgoApplication[];
   applicationsLoading: boolean;
+
+  // Rollouts
+  rollouts: K8sResource[];
+  rolloutsLoading: boolean;
 
   // Resource lookup cache: "Kind/namespace/name" -> ArgoSyncInfo
   resourceCache: Map<string, ArgoSyncInfo>;
@@ -25,6 +30,7 @@ interface ArgoCDState {
   // Actions
   detect: () => Promise<void>;
   loadApplications: () => Promise<void>;
+  loadRollouts: () => Promise<void>;
   lookupResource: (kind: string, namespace: string | undefined, name: string) => ArgoSyncInfo | undefined;
 }
 
@@ -61,8 +67,11 @@ export const useArgoCDStore = create<ArgoCDState>((set, get) => ({
   detecting: false,
   detectionError: null,
   namespace: null,
+  rolloutsAvailable: false,
   applications: [],
   applicationsLoading: false,
+  rollouts: [],
+  rolloutsLoading: false,
   resourceCache: new Map(),
 
   detect: async () => {
@@ -74,6 +83,17 @@ export const useArgoCDStore = create<ArgoCDState>((set, get) => ({
         set({ available: false, detecting: false });
         return;
       }
+
+      // Check if rollouts resource exists in the API group
+      let hasRollouts = false;
+      try {
+        const apiRes = await res.clone().json();
+        const resources: Array<{ name: string }> = apiRes.resources || [];
+        hasRollouts = resources.some((r: { name: string }) => r.name === 'rollouts');
+      } catch {
+        // Could not parse API resources, rollouts detection failed gracefully
+      }
+      set({ rolloutsAvailable: hasRollouts });
 
       // API group exists — try to find Applications
       // Check openshift-gitops first (OpenShift GitOps operator default), then argocd
@@ -147,6 +167,18 @@ export const useArgoCDStore = create<ArgoCDState>((set, get) => ({
       });
     } catch {
       set({ applicationsLoading: false });
+    }
+  },
+
+  loadRollouts: async () => {
+    set({ rolloutsLoading: true });
+    try {
+      const items = await k8sList<K8sResource>(
+        '/apis/argoproj.io/v1alpha1/rollouts'
+      );
+      set({ rollouts: items, rolloutsLoading: false });
+    } catch {
+      set({ rolloutsLoading: false });
     }
   },
 

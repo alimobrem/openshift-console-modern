@@ -7,6 +7,7 @@ import {
 import { cn } from '@/lib/utils';
 import type { ArgoApplication, ArgoSyncStatus, ArgoHealthStatus } from '../../engine/types';
 import { Card } from '../../components/primitives/Card';
+import { timeAgo } from '../../engine/dateUtils';
 
 interface ApplicationsTabProps {
   applications: ArgoApplication[];
@@ -236,6 +237,31 @@ export function ApplicationsTab({ applications, syncing, onSync, go }: Applicati
                       ))}
                     </div>
                   )}
+
+                  {/* Condition Timeline */}
+                  {(() => {
+                    const conditionsWithTime = (app.status?.conditions || [])
+                      .filter((c) => c.lastTransitionTime)
+                      .sort((a, b) => new Date(b.lastTransitionTime!).getTime() - new Date(a.lastTransitionTime!).getTime());
+                    if (conditionsWithTime.length === 0) return null;
+                    return (
+                      <div className="mt-2">
+                        <div className="text-xs text-slate-500 mb-1">Condition Timeline</div>
+                        <div className="relative ml-2 border-l border-slate-700 pl-3 space-y-2">
+                          {conditionsWithTime.map((cond, i) => (
+                            <div key={i} className="relative">
+                              <div className="absolute -left-[15px] top-1 w-2 h-2 rounded-full bg-amber-500/70 border border-slate-800" />
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-xs font-medium text-amber-400/80">{cond.type}</span>
+                                <span className="text-xs text-slate-600">{timeAgo(cond.lastTransitionTime!)}</span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-0.5 truncate" title={cond.message}>{cond.message}</p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>

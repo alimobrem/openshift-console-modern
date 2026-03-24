@@ -12,8 +12,9 @@ import { useGitOpsConfig } from '../hooks/useGitOpsConfig';
 import { ApplicationsTab } from './argocd/ApplicationsTab';
 import { SyncHistoryTab } from './argocd/SyncHistoryTab';
 import { DriftTab } from './argocd/DriftTab';
+import { ProjectsTab } from './argocd/ProjectsTab';
 
-type Tab = 'applications' | 'history' | 'drift';
+type Tab = 'applications' | 'history' | 'drift' | 'projects';
 
 export default function ArgoCDView() {
   const go = useNavigateTab();
@@ -86,6 +87,7 @@ export default function ArgoCDView() {
     { id: 'applications', label: `Applications (${applications.length})` },
     { id: 'history', label: 'Sync History' },
     { id: 'drift', label: `Drift${outOfSyncCount > 0 ? ` (${outOfSyncCount})` : ''}` },
+    { id: 'projects', label: 'Projects' },
   ];
 
   return (
@@ -203,6 +205,9 @@ export default function ArgoCDView() {
             )}
             {activeTab === 'drift' && (
               <DriftTab applications={applications} onSync={handleSync} syncing={syncing} go={go} />
+            )}
+            {activeTab === 'projects' && (
+              <ProjectsTab />
             )}
           </>
         )}

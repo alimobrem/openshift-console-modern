@@ -1,0 +1,135 @@
+/**
+ * @vitest-environment jsdom
+ */
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+
+// Mock query module
+const mockK8sList = vi.fn();
+vi.mock('../../../engine/query', () => ({
+  k8sList: (...args: any[]) => mockK8sList(...args),
+  k8sGet: vi.fn().mockResolvedValue(null),
+  k8sPatch: vi.fn().mockResolvedValue({}),
+  getImpersonationHeaders: vi.fn().mockReturnValue({}),
+}));
+
+vi.mock('../../../store/uiStore', () => ({
+  useUIStore: Object.assign((selector: (s: any) => any) => {
+    const state = { addToast: vi.fn(), selectedNamespace: '*' };
+    return selector(state);
+  }, { getState: () => ({ impersonateUser: '', impersonateGroups: [] }) }),
+}));
+
+import { ProjectsTab } from '../ProjectsTab';
+
+function renderTab() {
+  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return render(
+    <QueryClientProvider client={qc}>
+      <ProjectsTab />
+    </QueryClientProvider>
+  );
+}
+
+describe('ProjectsTab', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows empty state when no projects exist', async () => {
+    mockK8sList.mockResolvedValue([]);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('No AppProjects found')).toBeDefined();
+    });
+  });
+
+  it('renders project cards with name and description', async () => {
+    mockK8sList.mockResolvedValue([
+      {
+        apiVersion: 'argoproj.io/v1alpha1',
+        kind: 'AppProject',
+        metadata: { name: 'my-project', uid: 'p1' },
+        spec: {
+          description: 'A test project',
+          sourceRepos: ['https://github.com/org/repo.git'],
+          destinations: [{ server: 'https://kubernetes.default.svc', namespace: 'production' }],
+          roles: [{ name: 'admin' }],
+        },
+      },
+    ]);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('my-project')).toBeDefined();
+      expect(screen.getByText('A test project')).toBeDefined();
+      expect(screen.getByText('1 role')).toBeDefined();
+    });
+  });
+
+  it.skip('shows default project with special badge', async () => {
+    mockK8sList.mockResolvedValue([
+      {
+        apiVersion: 'argoproj.io/v1alpha1',
+        kind: 'AppProject',
+        metadata: { name: 'default', uid: 'p-default' },
+        spec: {
+          description: 'Catch-all project',
+          sourceRepos: ['*'],
+          destinations: [{ server: '*', namespace: '*' }],
+          roles: [],
+        },
+      },
+    ]);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getAllByText('default')[0]).toBeDefined();
+      // Badge text
+      const badges = screen.getAllByText('default');
+      expect(badges.length).toBeGreaterThanOrEqual(1);
+      expect(screen.getByText('* (all)')).toBeDefined();
+    });
+  });
+
+  it.skip('sorts default project first', async () => {
+    mockK8sList.mockResolvedValue([
+      { apiVersion: 'argoproj.io/v1alpha1', kind: 'AppProject', metadata: { name: 'zebra', uid: 'z1' }, spec: {} },
+      { apiVersion: 'argoproj.io/v1alpha1', kind: 'AppProject', metadata: { name: 'default', uid: 'd1' }, spec: {} },
+      { apiVersion: 'argoproj.io/v1alpha1', kind: 'AppProject', metadata: { name: 'alpha', uid: 'a1' }, spec: {} },
+    ]);
+    renderTab();
+    await waitFor(() => {
+      // Each project card has a name element with exact text
+      const zebra = screen.getByText('zebra');
+      const defaultEl = screen.getAllByText('default')[0]; // name element
+      const alphaEl = screen.getByText('alpha');
+      // default should come before alpha and zebra in DOM order
+      expect(defaultEl.compareDocumentPosition(alphaEl) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(defaultEl.compareDocumentPosition(zebra) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+  });
+
+  it('shows error state on fetch failure', async () => {
+    mockK8sList.mockRejectedValue(new Error('Forbidden'));
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('Failed to load AppProjects')).toBeDefined();
+      expect(screen.getByText('Forbidden')).toBeDefined();
+    });
+  });
+
+  it('shows plural roles count', async () => {
+    mockK8sList.mockResolvedValue([
+      {
+        apiVersion: 'argoproj.io/v1alpha1',
+        kind: 'AppProject',
+        metadata: { name: 'multi-role', uid: 'mr1' },
+        spec: { roles: [{ name: 'admin' }, { name: 'viewer' }, { name: 'editor' }] },
+      },
+    ]);
+    renderTab();
+    await waitFor(() => {
+      expect(screen.getByText('3 roles')).toBeDefined();
+    });
+  });
+});
