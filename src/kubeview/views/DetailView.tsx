@@ -45,6 +45,8 @@ import { RollbackPanel } from './detail/RollbackPanel';
 import { DeploymentSummary } from './detail/DeploymentSummary';
 import { PodSummary } from './detail/PodSummary';
 import { Card } from '../components/primitives/Card';
+import { ArgoSyncBadge } from '../components/ArgoSyncBadge';
+import { GitOpsInfoCard } from '../components/GitOpsInfoCard';
 
 interface DetailViewProps {
   gvrKey: string;
@@ -405,6 +407,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                 </span>
               )}
               <StatusBadge resource={resource} />
+              <ArgoSyncBadge kind={resource.kind} namespace={resource.metadata.namespace} name={resource.metadata.name} showLabel />
             </div>
             <p className="text-sm text-slate-400">
               {resource.kind} · {resource.apiVersion}
@@ -567,6 +570,9 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         {/* Overview tab */}
         {detailTab === 'overview' && (
         <>
+        {/* GitOps info (shown for ArgoCD-managed resources) */}
+        <GitOpsInfoCard kind={resource.kind} namespace={resource.metadata.namespace} name={resource.metadata.name} />
+
         {/* Deployment-specific layout */}
         {resource.kind === 'Deployment' && namespace && (
           <div className="space-y-6">
