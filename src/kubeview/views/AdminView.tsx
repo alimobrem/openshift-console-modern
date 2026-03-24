@@ -19,7 +19,7 @@ const TimelineViewLazy = React.lazy(() => import('./TimelineView'));
 import ProductionReadiness from '../components/ProductionReadiness';
 import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import { Panel } from '../components/primitives/Panel';
-import { parseCpu, parseMem, formatMem } from '../engine/formatting';
+import { parseCpu, parseMem, formatMem, parseResourceValue } from '../engine/formatting';
 import { type ClusterSnapshot, type DiffRow, loadSnapshots, saveSnapshots, captureSnapshot, compareSnapshots } from '../engine/snapshot';
 import { QuotasTab } from './admin/QuotasTab';
 import { CertificatesTab } from './admin/CertificatesTab';
@@ -195,12 +195,12 @@ export default function AdminView() {
     const spots: Array<{ namespace: string; resource: string; pct: number }> = [];
     for (const q of quotas as K8sResource[]) {
       const spec = (q as any).spec?.hard || {};
-      const status = (q as any).status?.used || {};
+      const used = (q as any).status?.used || {};
       for (const [key, hardVal] of Object.entries(spec)) {
-        const hard = parseFloat(String(hardVal).replace(/[^0-9.]/g, '')) || 0;
-        const used = parseFloat(String(status[key] || '0').replace(/[^0-9.]/g, '')) || 0;
-        if (hard > 0) {
-          const pct = (used / hard) * 100;
+        const hardNum = parseResourceValue(String(hardVal));
+        const usedNum = parseResourceValue(String(used[key] || '0'));
+        if (hardNum > 0) {
+          const pct = (usedNum / hardNum) * 100;
           if (pct >= 80) {
             spots.push({ namespace: q.metadata.namespace || '', resource: key, pct: Math.round(pct) });
           }
