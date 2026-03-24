@@ -53,11 +53,15 @@ export default function TimelineView() {
     });
   };
 
-  const { entries, correlationGroups, counts, isLoading } = useIncidentTimeline({
+  const timeline = useIncidentTimeline({
     timeRange,
     namespace: nsFilter,
     categories,
   });
+  const entries = timeline.entries || [];
+  const correlationGroups = timeline.correlationGroups || [];
+  const counts = timeline.counts || { alert: 0, event: 0, rollout: 0, config: 0 };
+  const isLoading = timeline.isLoading;
 
   // Group entries by date
   const groupedEntries = React.useMemo(() => {
@@ -288,11 +292,11 @@ function CorrelationRow({ group, expanded, onToggle, onEntryClick }: {
   onEntryClick: (entry: TimelineEntry) => void;
 }) {
   const categoryCounts = new Map<TimelineCategory, number>();
-  for (const e of group.entries) {
+  for (const e of group.entries || []) {
     categoryCounts.set(e.category, (categoryCounts.get(e.category) || 0) + 1);
   }
-  const label = group.key.split('/').slice(0, 2).join(' / ');
-  const ns = group.key.split('/')[2];
+  const label = (group.key || '').split('/').slice(0, 2).join(' / ');
+  const ns = (group.key || '').split('/')[2];
 
   const severityColor = {
     critical: 'text-red-400',
