@@ -12,6 +12,7 @@ import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { Panel } from '../components/primitives/Panel';
 import type { K8sResource } from '../engine/renderers';
 import type { ClusterRoleBinding, Namespace, Subject } from '../engine/types';
+import { useClusterStore } from '../store/clusterStore';
 import { Card } from '../components/primitives/Card';
 
 interface AuditCheck {
@@ -24,8 +25,11 @@ interface AuditCheck {
   linkTitle?: string;
 }
 
+const CLUSTER_ADMIN_THRESHOLD = 3;
+
 export default function SecurityView() {
   const go = useNavigateTab();
+  const isHyperShift = useClusterStore((s) => s.isHyperShift);
 
   // Data
   const { data: oauthConfig } = useQuery({
@@ -68,6 +72,16 @@ export default function SecurityView() {
     queryKey: ['security', 'sealedsecrets'],
     queryFn: () => k8sList<K8sResource>('/apis/bitnami.com/v1alpha1/sealedsecrets').catch(() => []),
     staleTime: 120000,
+  });
+
+  // StackRox / ACS detection
+  const { data: acsInstalled = false } = useQuery({
+    queryKey: ['security', 'acs'],
+    queryFn: async () => {
+      const csvs = await k8sList<K8sResource>('/apis/operators.coreos.com/v1alpha1/clusterserviceversions').catch(() => []);
+      return csvs.some((csv) => csv.metadata?.name?.includes('rhacs') || csv.metadata?.name?.includes('stackrox'));
+    },
+    staleTime: 300000,
   });
 
   // Derived
@@ -140,35 +154,39 @@ export default function SecurityView() {
       link: '/users', linkTitle: 'Users',
     });
 
-    // TLS
-    c.push({
-      id: 'tls',
-      label: 'TLS security profile',
-      pass: tlsProfile !== 'Old',
-      detail: `TLS profile: ${tlsProfile}${tlsProfile === 'Old' ? ' — allows weak ciphers, upgrade to Intermediate or Modern' : ''}`,
-      severity: tlsProfile === 'Old' ? 'critical' : 'info',
-    });
+    // TLS (on HyperShift, API server TLS is managed by the hosting provider)
+    if (!isHyperShift) {
+      c.push({
+        id: 'tls',
+        label: 'TLS security profile',
+        pass: tlsProfile !== 'Old',
+        detail: `TLS profile: ${tlsProfile}${tlsProfile === 'Old' ? ' — allows weak ciphers, upgrade to Intermediate or Modern' : ''}`,
+        severity: tlsProfile === 'Old' ? 'critical' : 'info',
+      });
+    }
 
-    // Encryption
-    c.push({
-      id: 'encryption',
-      label: 'Encryption at rest',
-      pass: encryptionType !== 'identity',
-      detail: encryptionType === 'identity'
-        ? 'Secrets are stored unencrypted in etcd — enable aescbc or aesgcm encryption'
-        : `Encryption type: ${encryptionType}`,
-      severity: encryptionType === 'identity' ? 'warning' : 'info',
-    });
+    // Encryption (on HyperShift, etcd encryption is managed externally)
+    if (!isHyperShift) {
+      c.push({
+        id: 'encryption',
+        label: 'Encryption at rest',
+        pass: encryptionType !== 'identity',
+        detail: encryptionType === 'identity'
+          ? 'Secrets are stored unencrypted in etcd — enable aescbc or aesgcm encryption'
+          : `Encryption type: ${encryptionType}`,
+        severity: encryptionType === 'identity' ? 'warning' : 'info',
+      });
+    }
 
-    // Cluster-admin
+    // Cluster-admin (threshold is a module constant, configurable at top of file)
     c.push({
       id: 'clusteradmin',
-      label: 'Cluster-admin access limited',
-      pass: clusterAdmins.length <= 3,
+      label: `Cluster-admin access limited (≤${CLUSTER_ADMIN_THRESHOLD})`,
+      pass: clusterAdmins.length <= CLUSTER_ADMIN_THRESHOLD,
       detail: clusterAdmins.length === 0
         ? 'No non-system cluster-admin bindings'
         : `${clusterAdmins.length} subject${clusterAdmins.length > 1 ? 's' : ''} with cluster-admin: ${clusterAdmins.map(a => `${a.kind}/${a.name}`).join(', ')}`,
-      severity: clusterAdmins.length > 5 ? 'warning' : 'info',
+      severity: clusterAdmins.length > CLUSTER_ADMIN_THRESHOLD + 2 ? 'warning' : 'info',
       link: '/access-control', linkTitle: 'Access Control',
     });
 
@@ -200,7 +218,7 @@ export default function SecurityView() {
       pass: tlsSecretCount > 0,
       detail: `${tlsSecretCount} TLS certificates, ${opaqueSecretCount} opaque secrets`,
       severity: 'info',
-      link: '/admin?tab=certificates', linkTitle: 'Certificates',
+      link: '/admin?tab=config', linkTitle: 'Certificates',
     });
 
     // Secrets management
@@ -219,8 +237,19 @@ export default function SecurityView() {
       severity: hasSecretsMgmt ? 'info' : 'warning',
     });
 
+    // ACS / StackRox
+    c.push({
+      id: 'acs',
+      label: 'Advanced Cluster Security (ACS)',
+      pass: acsInstalled,
+      detail: acsInstalled
+        ? 'Red Hat ACS / StackRox is installed — vulnerability scanning and runtime protection active'
+        : 'ACS / StackRox not detected — consider installing for vulnerability scanning and compliance',
+      severity: acsInstalled ? 'info' : 'warning',
+    });
+
     return c;
-  }, [identityProviders, kubeadminExists, tlsProfile, encryptionType, clusterAdmins, unprotectedNamespaces, userNamespaces, sccs, privilegedSCCs, tlsSecretCount, opaqueSecretCount, externalSecrets, sealedSecrets]);
+  }, [identityProviders, kubeadminExists, tlsProfile, encryptionType, clusterAdmins, unprotectedNamespaces, userNamespaces, sccs, privilegedSCCs, tlsSecretCount, opaqueSecretCount, externalSecrets, sealedSecrets, acsInstalled, isHyperShift]);
 
   const passCount = checks.filter(c => c.pass).length;
   const auditScore = Math.round((passCount / checks.length) * 100);
