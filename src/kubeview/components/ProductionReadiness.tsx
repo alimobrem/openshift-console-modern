@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { k8sGet, k8sList } from '../engine/query';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useClusterStore } from '../store/clusterStore';
+import { useArgoCDStore } from '../store/argoCDStore';
 import { Card } from './primitives/Card';
 
 interface Check {
@@ -459,6 +460,10 @@ export default function ProductionReadiness() {
     const hasGitOps = subNames.some(n => n.includes('gitops') || n.includes('argocd') || n.includes('openshift-gitops'));
 
     // GITOPS
+    const argoCDAvailable = useArgoCDStore.getState().available;
+    const gitOpsConfigured = (() => {
+      try { return !!useArgoCDStore.getState().namespace; } catch { return false; }
+    })();
     results.push({
       id: 'gitops', category: 'Reliability',
       title: 'GitOps (ArgoCD)',
@@ -466,6 +471,20 @@ export default function ProductionReadiness() {
       status: hasGitOps ? 'pass' : 'warn',
       detail: hasGitOps ? 'OpenShift GitOps installed' : 'Not installed — cluster configuration is manual. GitOps enables version-controlled, auditable, and repeatable cluster management.',
       action: hasGitOps ? undefined : { label: 'Install GitOps', path: '/create/v1~pods?tab=operators&q=openshift-gitops' },
+    });
+
+    // GITOPS REPO CONFIG (Pulse integration)
+    results.push({
+      id: 'gitops-repo', category: 'Reliability',
+      title: 'GitOps Repository Connected',
+      description: 'Connect Pulse to your Git repository to enable auto-PR on resource edits, catch-up PRs for urgent changes, and drift tracking. Supports GitHub, GitLab, and Bitbucket.',
+      status: hasGitOps && gitOpsConfigured ? 'pass' : hasGitOps ? 'warn' : 'unknown',
+      detail: hasGitOps && gitOpsConfigured
+        ? 'ArgoCD installed and Pulse GitOps repo configured — auto-PR workflow available'
+        : hasGitOps
+        ? 'ArgoCD installed but Git repository not connected in Pulse. Configure in Admin → GitOps tab to enable auto-PR on resource edits.'
+        : 'Install ArgoCD first, then configure the Git repository in Admin → GitOps.',
+      action: hasGitOps && !gitOpsConfigured ? { label: 'Configure GitOps', path: '/admin?tab=gitops' } : undefined,
     });
 
     results.push({
