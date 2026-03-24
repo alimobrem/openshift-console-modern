@@ -154,7 +154,7 @@ export function InstalledTab() {
                 >
                   <div className="flex-1 min-w-0">
                     <button
-                      onClick={() => go(`/operatorhub?q=${sub.spec?.name || name}`)}
+                      onClick={() => go(`/create/v1~pods?tab=operators&q=${encodeURIComponent(sub.spec?.name || name)}`, sub.spec?.name || name)}
                       className="text-sm font-medium text-slate-100 hover:text-blue-400 transition-colors"
                     >
                       {sub.spec?.name || name}
@@ -277,7 +277,7 @@ export function InstalledTab() {
                 >
                   <div className="flex-1 min-w-0">
                     <button
-                      onClick={() => go(`/r/apps.v1.deployments/${ns}/${name}`)}
+                      onClick={() => go(`/r/apps~v1~deployments/${ns}/${name}`)}
                       className="text-sm font-medium text-slate-100 hover:text-blue-400 transition-colors"
                     >
                       {name}
@@ -356,7 +356,7 @@ export function InstalledTab() {
                 >
                   <div className="flex-1 min-w-0">
                     <button
-                      onClick={() => go(`/r/apps.v1.statefulsets/${ns}/${name}`)}
+                      onClick={() => go(`/r/apps~v1~statefulsets/${ns}/${name}`)}
                       className="text-sm font-medium text-slate-100 hover:text-blue-400 transition-colors"
                     >
                       {name}
