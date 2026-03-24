@@ -8,7 +8,10 @@ import { getImpersonationHeaders } from '../engine/query';
 import YamlEditor from '../components/yaml/YamlEditor';
 import { DryRunPanel } from '../components/yaml/DryRunPanel';
 import { resourceToYaml } from '../engine/yamlUtils';
-import { ArrowLeft, Save, RotateCcw, AlertCircle, ShieldCheck } from 'lucide-react';
+import { ArrowLeft, Save, RotateCcw, AlertCircle, ShieldCheck, GitBranch } from 'lucide-react';
+import { useArgoSyncInfo } from '../hooks/useArgoCD';
+import { useArgoCDStore } from '../store/argoCDStore';
+import { GitOpsActionDialog } from '../components/GitOpsActionDialog';
 
 interface YamlEditorViewProps {
   gvrKey: string;
@@ -38,7 +41,14 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showDryRun, setShowDryRun] = useState(false);
+  const [showGitOpsDialog, setShowGitOpsDialog] = useState(false);
   const hasChanges = currentYaml !== originalYaml;
+
+  // ArgoCD awareness
+  const argoCDAvailable = useArgoCDStore((s) => s.available);
+  const actualKindForArgo = resource?.kind || '';
+  const syncInfo = useArgoSyncInfo(actualKindForArgo, namespace, name);
+  const isArgoManaged = argoCDAvailable && !!syncInfo;
 
   useEffect(() => {
     if (resource) {
@@ -138,11 +148,16 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
             </button>
           )}
           <button
-            onClick={handleSave}
+            onClick={isArgoManaged ? () => setShowGitOpsDialog(true) : handleSave}
             disabled={!hasChanges || saving}
-            className={cn('flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-md font-medium transition-colors', hasChanges ? 'bg-blue-600 hover:bg-blue-500 text-white' : 'bg-slate-700 text-slate-500 cursor-not-allowed')}
+            className={cn('flex items-center gap-1.5 px-4 py-1.5 text-xs rounded-md font-medium transition-colors',
+              hasChanges
+                ? isArgoManaged ? 'bg-violet-600 hover:bg-violet-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
+                : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+            )}
           >
-            <Save size={12} /> {saving ? 'Saving...' : 'Save'}
+            {isArgoManaged ? <GitBranch size={12} /> : <Save size={12} />}
+            {saving ? 'Saving...' : isArgoManaged ? 'Save (GitOps)' : 'Save'}
           </button>
         </div>
       </div>
@@ -170,6 +185,18 @@ export default function YamlEditorView({ gvrKey, namespace, name }: YamlEditorVi
       </div>
       {showDryRun && hasChanges && (
         <DryRunPanel yaml={currentYaml} apiPath={apiPath} method="PUT" onClose={() => setShowDryRun(false)} />
+      )}
+      {showGitOpsDialog && syncInfo && (
+        <GitOpsActionDialog
+          open={showGitOpsDialog}
+          resourceKind={actualKindForArgo}
+          resourceName={name}
+          resourceNamespace={namespace}
+          yamlContent={currentYaml}
+          syncInfo={syncInfo}
+          onApply={handleSave}
+          onClose={() => setShowGitOpsDialog(false)}
+        />
       )}
     </div>
   );
