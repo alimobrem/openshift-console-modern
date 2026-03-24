@@ -71,17 +71,16 @@ describe('AdminView', () => {
     cleanup();
   });
 
-  it('renders all 7 tabs', () => {
+  it('renders all 9 tabs', () => {
     renderAdmin();
     expect(screen.getByText('Overview')).toBeDefined();
     expect(screen.getByText('Readiness')).toBeDefined();
     expect(screen.getByText('Cluster Config')).toBeDefined();
-    // Updates tab may have count suffix
     expect(screen.getByText(/^Updates/)).toBeDefined();
-    // Quotas tab has count suffix
+    expect(screen.getByText(/^Snapshots/)).toBeDefined();
     expect(screen.getAllByText(/Quotas/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('Certificates')).toBeDefined();
     expect(screen.getByText('Timeline')).toBeDefined();
-    // Operators tab has count suffix
     expect(screen.getByText(/^Operators/)).toBeDefined();
   });
 
@@ -126,25 +125,24 @@ describe('AdminView', () => {
     expect(screen.getByText('Cluster Capacity')).toBeDefined();
   });
 
-  it('shows Capture Snapshot button on updates tab (snapshots merged)', () => {
+  it('shows Capture Snapshot button on snapshots tab', () => {
     renderAdmin();
-    // Snapshots are now merged into the Updates tab
-    const updatesTab = screen.getByRole('button', { name: /^Updates/ });
-    fireEvent.click(updatesTab);
+    const snapshotsTab = screen.getByRole('button', { name: /^Snapshots/ });
+    fireEvent.click(snapshotsTab);
     expect(screen.getByText('Capture Snapshot')).toBeDefined();
   });
 
-  it('shows No Snapshots Yet message on updates tab when none exist', () => {
+  it('shows No Snapshots Yet message on snapshots tab when none exist', () => {
     renderAdmin();
-    const updatesTab = screen.getByRole('button', { name: /^Updates/ });
-    fireEvent.click(updatesTab);
+    const snapshotsTab = screen.getByRole('button', { name: /^Snapshots/ });
+    fireEvent.click(snapshotsTab);
     expect(screen.getByText('No Snapshots Yet')).toBeDefined();
   });
 
-  it('shows Import button on updates tab (snapshots merged)', () => {
+  it('shows Import button on snapshots tab', () => {
     renderAdmin();
-    const updatesTab = screen.getByRole('button', { name: /^Updates/ });
-    fireEvent.click(updatesTab);
+    const snapshotsTab = screen.getByRole('button', { name: /^Snapshots/ });
+    fireEvent.click(snapshotsTab);
     expect(screen.getByText('Import')).toBeDefined();
   });
 

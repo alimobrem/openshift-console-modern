@@ -218,7 +218,7 @@ export default function SecurityView() {
       pass: tlsSecretCount > 0,
       detail: `${tlsSecretCount} TLS certificates, ${opaqueSecretCount} opaque secrets`,
       severity: 'info',
-      link: '/admin?tab=config', linkTitle: 'Certificates',
+      link: '/admin?tab=certificates', linkTitle: 'Certificates',
     });
 
     // Secrets management

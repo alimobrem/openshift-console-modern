@@ -333,12 +333,6 @@ export function UpdatesTab({
         </div>
       </Panel>
 
-      {/* Snapshots section (merged from separate tab) */}
-      <div className="border-t border-slate-800 pt-6">
-        <h2 className="text-lg font-semibold text-slate-200 mb-4">Cluster Snapshots</h2>
-        <SnapshotsTab />
-      </div>
-
       {confirmDialog && (
         <ConfirmDialog
           open={true}

@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Settings, Puzzle, Shield, Database,
-  ArrowUpCircle, Clock, Loader2,
+  ArrowUpCircle, Clock, Loader2, GitCompare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sList, k8sGet } from '../engine/query';
@@ -21,6 +21,8 @@ import { CertificatesTab } from './admin/CertificatesTab';
 import { OverviewTab } from './admin/OverviewTab';
 import { OperatorsTab } from './admin/OperatorsTab';
 import { UpdatesTab } from './admin/UpdatesTab';
+import { SnapshotsTab } from './admin/SnapshotsTab';
+import { loadSnapshots } from '../engine/snapshot';
 
 /** OpenShift Infrastructure resource (config.openshift.io/v1) */
 interface Infrastructure extends K8sResource {
@@ -70,7 +72,7 @@ interface AvailableUpdate {
   risks?: Array<{ name?: string; message?: string }>;
 }
 
-type Tab = 'overview' | 'readiness' | 'operators' | 'config' | 'updates' | 'quotas' | 'timeline';
+type Tab = 'overview' | 'readiness' | 'operators' | 'config' | 'updates' | 'snapshots' | 'quotas' | 'certificates' | 'timeline';
 
 // --- Main component ---
 
@@ -364,6 +366,7 @@ export default function AdminView() {
   const opDegradedCount = operators.filter((o) => (o as unknown as ClusterOperator).status?.conditions?.find((c: Condition) => c.type === 'Degraded' && c.status === 'True')).length;
 
   const go = useNavigateTab();
+  const savedSnapshots = loadSnapshots();
 
   // --- Tab definitions (7 tabs after merging Certificates into Config, Snapshots into Updates) ---
 
@@ -373,7 +376,9 @@ export default function AdminView() {
     { id: 'operators', label: `Operators (${operators.length})${opDegradedCount > 0 ? ` \u00b7 ${opDegradedCount} degraded` : ''}`, icon: <Puzzle className="w-3.5 h-3.5" /> },
     { id: 'config', label: 'Cluster Config', icon: <Database className="w-3.5 h-3.5" /> },
     { id: 'updates', label: `Updates${availableUpdates.length > 0 ? ` (${availableUpdates.length})` : ''}`, icon: <ArrowUpCircle className="w-3.5 h-3.5" /> },
+    { id: 'snapshots', label: `Snapshots (${savedSnapshots.length})`, icon: <GitCompare className="w-3.5 h-3.5" /> },
     { id: 'quotas', label: `Quotas (${quotas.length})`, icon: <Shield className="w-3.5 h-3.5" /> },
+    { id: 'certificates', label: 'Certificates', icon: <Shield className="w-3.5 h-3.5" /> },
     { id: 'timeline', label: 'Timeline', icon: <Clock className="w-3.5 h-3.5" /> },
   ];
 
@@ -444,18 +449,10 @@ export default function AdminView() {
         {/* ===== OPERATORS ===== */}
         {activeTab === 'operators' && <OperatorsTab operators={operators} go={go} />}
 
-        {/* ===== CLUSTER CONFIG + CERTIFICATES (merged) ===== */}
-        {activeTab === 'config' && (
-          <>
-            <ClusterConfig />
-            <div className="border-t border-slate-800 pt-6 mt-6">
-              <h2 className="text-lg font-semibold text-slate-200 mb-4">Certificates</h2>
-              <CertificatesTab go={go} />
-            </div>
-          </>
-        )}
+        {/* ===== CLUSTER CONFIG ===== */}
+        {activeTab === 'config' && <ClusterConfig />}
 
-        {/* ===== UPDATES + SNAPSHOTS (merged) ===== */}
+        {/* ===== UPDATES ===== */}
         {activeTab === 'updates' && (
           <UpdatesTab
             clusterVersion={clusterVersion}
@@ -473,8 +470,14 @@ export default function AdminView() {
           />
         )}
 
+        {/* ===== SNAPSHOTS ===== */}
+        {activeTab === 'snapshots' && <SnapshotsTab />}
+
         {/* ===== QUOTAS ===== */}
         {activeTab === 'quotas' && <QuotasTab quotas={quotas} limitRanges={limitRanges} go={go} />}
+
+        {/* ===== CERTIFICATES ===== */}
+        {activeTab === 'certificates' && <CertificatesTab go={go} />}
 
         {/* ===== TIMELINE ===== */}
         {activeTab === 'timeline' && (
