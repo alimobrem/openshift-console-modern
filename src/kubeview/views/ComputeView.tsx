@@ -17,6 +17,7 @@ import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { useClusterStore } from '../store/clusterStore';
 import { Card } from '../components/primitives/Card';
+import { CapacityTab } from './compute/CapacityTab';
 
 /** Prometheus instant-query result entry */
 type PrometheusResult = { metric: Record<string, string>; value: number };
@@ -98,6 +99,8 @@ function formatCpu(cores: number): string {
 
 export default function ComputeView() {
   const go = useNavigateTab();
+  const urlTab = new URLSearchParams(window.location.search).get('tab');
+  const [computeTab, setComputeTab] = React.useState<'overview' | 'capacity'>(urlTab === 'capacity' ? 'capacity' : 'overview');
   const isHyperShift = useClusterStore((s) => s.isHyperShift);
 
   const { data: nodes = [] } = useK8sListWatch({ apiPath: '/api/v1/nodes' });
@@ -278,6 +281,19 @@ export default function ComputeView() {
           <p className="text-sm text-slate-400 mt-1">Cluster capacity, node health, and resource utilization</p>
         </div>
 
+        {/* Tabs */}
+        <Card className="flex gap-1 p-1">
+          {([['overview', 'Overview'], ['capacity', 'Capacity Planning']] as const).map(([id, label]) => (
+            <button key={id} onClick={() => { const url = new URL(window.location.href); if (id === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', id); window.history.replaceState(null, '', url.toString()); setComputeTab(id); }}
+              className={cn('px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap', computeTab === id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
+              {label}
+            </button>
+          ))}
+        </Card>
+
+        {computeTab === 'capacity' && <CapacityTab />}
+
+        {computeTab === 'overview' && <>
         {/* Metrics sparklines */}
         <MetricGrid>
           <MetricCard
@@ -784,6 +800,7 @@ export default function ComputeView() {
             </div>
           </Card>
         </div>
+        </>}
       </div>
     </div>
   );
