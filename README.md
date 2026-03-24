@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v4.3.0"><img src="https://img.shields.io/badge/release-v4.3.0-2563eb?style=for-the-badge" alt="Version"></a>
-  <img src="https://img.shields.io/badge/tests-1308%20passed-10b981?style=for-the-badge" alt="Tests">
+  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v4.4.0"><img src="https://img.shields.io/badge/release-v4.4.0-2563eb?style=for-the-badge" alt="Version"></a>
+  <img src="https://img.shields.io/badge/tests-1347%20passed-10b981?style=for-the-badge" alt="Tests">
   <img src="https://img.shields.io/badge/health%20checks-77-f59e0b?style=for-the-badge" alt="Health Checks">
   <img src="https://img.shields.io/badge/CVEs-0-10b981?style=for-the-badge" alt="CVEs">
   <img src="https://img.shields.io/badge/license-MIT-6366f1?style=for-the-badge" alt="License">
@@ -144,7 +144,7 @@ npm run dev    # http://localhost:9000
 | **State** | Zustand + TanStack Query | Client + server state separation |
 | **Real-time** | WebSocket watches | Instant updates, 60s polling fallback |
 | **Styling** | Tailwind CSS 3.4 | Utility-first, dark-mode only |
-| **Testing** | Vitest + jsdom | 1308 tests in ~4s |
+| **Testing** | Vitest + jsdom | 1347 tests in ~4s |
 | **Charts** | Pure SVG sparklines | Zero chart library dependency |
 | **Security** | Red Hat UBI images | 0 CVEs, all images from Red Hat registries |
 
@@ -239,7 +239,7 @@ npm install          # Install dependencies
 cp .env.example .env # Configure cluster URLs (optional)
 oc proxy --port=8001 & # Start API proxy
 npm run dev          # Dev server on port 9000
-npm test             # 1308 tests in ~3s
+npm test             # 1347 tests in ~3s
 npm run build        # Production build (~1s)
 npm run type-check   # TypeScript checking
 ```
@@ -286,7 +286,7 @@ Browser --> OAuth Proxy (8443/TLS) --> nginx (8080) --> K8s API / Prometheus / A
 ---
 
 <p align="center">
-  <strong>1308 tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>15 views</strong> &bull; <strong>500+ operators</strong>
+  <strong>1347 tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>15 views</strong> &bull; <strong>500+ operators</strong>
 </p>
 
 <p align="center">

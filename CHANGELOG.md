@@ -1,5 +1,37 @@
 # Changelog
 
+## [4.4.0] - 2026-03-24
+
+### Added
+- **Capacity Planning** — predict_linear() projections for CPU, memory, disk, and pods with days-until-exhaustion cards, trend sparklines, and configurable lookback (7d/30d/90d). New "Capacity Planning" tab in Compute view.
+- **NodePool visibility for HyperShift** — Real NodePool panel with instance type, autoscaling, auto-repair, conditions. NodePool Health audit check. Instance type fallback via node label.
+- **GitOps Repository readiness check** — Production Readiness now checks if ArgoCD is installed AND Git repo is connected in Pulse. Links to Admin → GitOps for setup.
+- **ControlPlaneMetrics** in Admin Overview — API server latency (p99), error rate, etcd leader, WAL fsync sparklines.
+- **ArgoCD in Pulse daily briefing** — Out-of-sync applications surface as attention items.
+- **GitOps config tab** in Admin view (10th tab) for Git provider setup.
+- **MetricGrid primitive** adopted across 16 files (18 replacements).
+- **Full test coverage** — all views and components now have tests (DependencyView, LogsView, MetricsView, NodeLogsView, PodTerminal added).
+- **6 custom agents** — deploy-validator, changelog-writer, api-compatibility, performance-auditor, screenshot-updater, migration-guide.
+- **Automated hooks** — pre-commit/push tests, post-write lint, async deploy validation, screenshot capture on release.
+
+### Changed
+- **Welcome page** — Added GitOps and Timeline tiles, GitOps/ArgoCD and Incident Timeline capability rows, fixed security check count (9→10).
+- **Command Palette** — Added GitOps entry, updated Admin subtitle with all 10 tabs.
+- **Logo** — Replaced "P" letter with pulse/heartbeat line design (blue-violet gradient).
+- **Compute view** — Refactored to tabbed layout (Overview + Capacity Planning).
+
+### Fixed
+- **Timeline TypeError** — guarded against undefined entries/correlationGroups on initial render.
+- CHANGELOG.md updated with v4.3.0 entry (was missing).
+
+### Stats
+- **1347 tests** across 83 test files
+- **77 health checks** (31 cluster + 46 domain)
+- **15 views**, 35 routes
+- **6 custom agents**, **4 automated hooks**
+
+---
+
 ## [4.3.0] - 2026-03-24
 
 ### Added

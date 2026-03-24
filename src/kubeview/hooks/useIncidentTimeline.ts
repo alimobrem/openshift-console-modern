@@ -82,8 +82,11 @@ export function useIncidentTimeline({ timeRange, namespace, categories }: UseInc
 
   const isLoading = eventsLoading || alertsLoading || rsLoading || deploysLoading || cvLoading || opsLoading;
 
+  // Stable string key for categories Set (React can't compare Sets in deps)
+  const categoriesKey = [...categories].sort().join(',');
+
   // Transform all sources into TimelineEntry[]
-  const { entries, correlationGroups, counts } = useMemo(() => {
+  const result = useMemo(() => {
     let all: TimelineEntry[] = [];
 
     if (categories.has('event')) {
@@ -118,7 +121,11 @@ export function useIncidentTimeline({ timeRange, namespace, categories }: UseInc
     const groups = correlateEntries(all);
 
     return { entries: all, correlationGroups: groups, counts };
-  }, [rawEvents, alertGroups, replicaSets, deployments, clusterVersion, operators, namespace, timeRange, categories]);
+  }, [rawEvents, alertGroups, replicaSets, deployments, clusterVersion, operators, namespace, timeRange, categoriesKey]);
+
+  const entries = result?.entries || [];
+  const correlationGroups = result?.correlationGroups || [];
+  const counts = result?.counts || { alert: 0, event: 0, rollout: 0, config: 0 };
 
   return { entries, correlationGroups, counts, isLoading };
 }
