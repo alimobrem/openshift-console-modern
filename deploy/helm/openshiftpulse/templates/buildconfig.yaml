@@ -27,4 +27,4 @@ spec:
       from:
         kind: ImageStreamTag
         namespace: openshift
-        name: nginx:latest
+        name: nginx:1.26-ubi9

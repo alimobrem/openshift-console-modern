@@ -287,7 +287,7 @@ spec:
       # user:full scope is required because the app performs write operations
       # (create, update, delete, scale, patch) on behalf of the authenticated user.
       - name: oauth-proxy
-        image: registry.redhat.io/openshift4/ose-oauth-proxy:latest
+        image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.17
         args:
         - --https-address=:8443
         - --provider=openshift

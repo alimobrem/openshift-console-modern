@@ -1,15 +1,11 @@
-FROM nginxinc/nginx-unprivileged:alpine
+FROM registry.access.redhat.com/ubi9/nginx-122:1-18
 
-# Copy built static files
-COPY dist/ /usr/share/nginx/html/
+# Copy built static files (UBI nginx serves from /opt/app-root/src)
+COPY dist/ /opt/app-root/src/
 
 # Entrypoint just starts nginx — config is mounted via ConfigMap in production
-COPY entrypoint.sh /entrypoint.sh
-
-USER 0
-RUN chmod +x /entrypoint.sh
-USER 1001
+COPY entrypoint.sh /opt/app-root/entrypoint.sh
 
 EXPOSE 8080
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/opt/app-root/entrypoint.sh"]

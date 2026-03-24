@@ -10,7 +10,7 @@ image:
 
 # OAuth proxy sidecar
 oauthProxy:
-  image: registry.redhat.io/openshift4/ose-oauth-proxy:latest
+  image: registry.redhat.io/openshift4/ose-oauth-proxy:v4.17
   # Secrets are auto-generated on first install if not provided
   clientSecret: ""
   cookieSecret: ""
