@@ -146,8 +146,8 @@ export default defineConfig({
             res.end('URL must use http or https protocol');
             return;
           }
-          const host = parsed.hostname;
-          if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.|169\.254\.|localhost$)/i.test(host)) {
+          const host = parsed.hostname.replace(/^\[|\]$/g, ''); // strip IPv6 brackets
+          if (/^(10\.|172\.(1[6-9]|2\d|3[01])\.|192\.168\.|127\.|0\.|169\.254\.|localhost$|::1$|::ffff:|fd[0-9a-f]{2}:|fe80:)/i.test(host)) {
             res.writeHead(403, { 'Content-Type': 'text/plain' });
             res.end('Internal/private addresses are not allowed');
             return;
