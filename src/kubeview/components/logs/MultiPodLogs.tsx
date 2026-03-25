@@ -63,7 +63,22 @@ export default function MultiPodLogs({
           }
 
           const url = `/api/kubernetes/api/v1/namespaces/${namespace}/pods/${podName}/log?${params}`;
-          const response = await fetch(url);
+          let response = await fetch(url);
+
+          // 400 = multi-container pod without container param — auto-detect first container
+          if (response.status === 400 && !containerName) {
+            try {
+              const podRes = await fetch(`/api/kubernetes/api/v1/namespaces/${namespace}/pods/${podName}`);
+              if (podRes.ok) {
+                const podData = await podRes.json();
+                const firstContainer = podData?.spec?.containers?.[0]?.name;
+                if (firstContainer) {
+                  params.set('container', firstContainer);
+                  response = await fetch(`/api/kubernetes/api/v1/namespaces/${namespace}/pods/${podName}/log?${params}`);
+                }
+              }
+            } catch { /* fall through */ }
+          }
 
           if (!response.ok) {
             return [];

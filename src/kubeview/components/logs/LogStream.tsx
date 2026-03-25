@@ -86,6 +86,21 @@ export default function LogStream({
           signal: abortControllerRef.current.signal,
         });
 
+        // 400 usually means multi-container pod without container param — auto-detect first container
+        if (response.status === 400 && !containerName) {
+          const podRes = await fetch(`/api/kubernetes/api/v1/namespaces/${namespace}/pods/${podName}`, {
+            signal: abortControllerRef.current.signal,
+          });
+          if (podRes.ok) {
+            const podData = await podRes.json();
+            const firstContainer = podData?.spec?.containers?.[0]?.name;
+            if (firstContainer) {
+              const retryUrl = url + (url.includes('?') ? '&' : '?') + `container=${encodeURIComponent(firstContainer)}`;
+              response = await fetch(retryUrl, { signal: abortControllerRef.current.signal });
+            }
+          }
+        }
+
         if (!response.ok) {
           throw new Error(`Failed to fetch logs: ${response.status} ${response.statusText}`);
         }
