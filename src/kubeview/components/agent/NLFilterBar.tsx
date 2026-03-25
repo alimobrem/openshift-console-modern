@@ -29,10 +29,9 @@ export function NLFilterBar({ resourceKind, columns, onFiltersApplied }: NLFilte
   const [query, setQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [agentAvailable, setAgentAvailable] = useState(true);
   const clientRef = useRef<AgentClient | null>(null);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(() => {
     const trimmed = query.trim();
     if (!trimmed || loading) return;
 
@@ -41,15 +40,6 @@ export function NLFilterBar({ resourceKind, columns, onFiltersApplied }: NLFilte
 
     const client = new AgentClient('sre');
     clientRef.current = client;
-
-    // Check availability first
-    const { compatible, error: versionError } = await client.checkVersion();
-    if (!compatible) {
-      setAgentAvailable(false);
-      setLoading(false);
-      setError(versionError ?? 'Agent not available');
-      return;
-    }
 
     let responseText = '';
     let done = false;
@@ -81,8 +71,7 @@ export function NLFilterBar({ resourceKind, columns, onFiltersApplied }: NLFilte
             if (responseText) {
               tryParseAndApply(responseText);
             } else {
-              setAgentAvailable(false);
-              setError('Agent not available');
+              setError('Agent not available — is pulse-agent running?');
             }
             setLoading(false);
           }
@@ -132,15 +121,6 @@ export function NLFilterBar({ resourceKind, columns, onFiltersApplied }: NLFilte
     setError(null);
     onFiltersApplied({});
   };
-
-  if (!agentAvailable) {
-    return (
-      <div className="flex items-center gap-2 px-3 py-2 text-xs text-slate-500">
-        <Sparkles className="w-3.5 h-3.5" />
-        <span>Agent not available</span>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-1">

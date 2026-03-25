@@ -39,13 +39,14 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      // Cmd+J - Toggle dock
+      // Cmd+J - Toggle dock (opens agent panel if closed)
       if (meta && e.key === 'j') {
         e.preventDefault();
         if (state.dockPanel) {
           state.closeDock();
+        } else {
+          state.openDock('agent');
         }
-        // Note: Opening the dock requires specifying which panel, so Cmd+J only closes
         return;
       }
 
