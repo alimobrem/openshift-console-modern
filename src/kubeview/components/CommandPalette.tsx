@@ -63,9 +63,7 @@ export function CommandPalette() {
   const openDock = useUIStore((s) => s.openDock);
   const addTab = useUIStore((s) => s.addTab);
   const resourceRegistry = useClusterStore((s) => s.resourceRegistry);
-  const sendMessage = useAgentStore((s) => s.sendMessage);
-  const agentConnect = useAgentStore((s) => s.connect);
-  const agentConnected = useAgentStore((s) => s.connected);
+  const connectAndSend = useAgentStore((s) => s.connectAndSend);
 
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -123,9 +121,7 @@ export function CommandPalette() {
   const handleSelect = useCallback((item: CommandItem) => {
     // AI query items: send to dock agent panel
     if (item.type === 'ai') {
-      if (!agentConnected) agentConnect();
-      // Small delay to ensure connection before sending
-      setTimeout(() => sendMessage(item.title), 100);
+      connectAndSend(item.title);
       openDock('agent');
       closeCommandPalette();
       return;
@@ -149,7 +145,7 @@ export function CommandPalette() {
     }
 
     closeCommandPalette();
-  }, [mode, addTab, navigate, closeCommandPalette, agentConnected, agentConnect, sendMessage, openDock]);
+  }, [mode, addTab, navigate, closeCommandPalette, connectAndSend, openDock]);
 
   // Keyboard navigation
   useEffect(() => {

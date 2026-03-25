@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Shield, AlertTriangle, AlertOctagon, Server,
@@ -143,16 +143,13 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
   const [showScoreDetails, setShowScoreDetails] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const openDock = useUIStore((s) => s.openDock);
-  const sendMessage = useAgentStore((s) => s.sendMessage);
-  const agentConnect = useAgentStore((s) => s.connect);
-  const agentConnected = useAgentStore((s) => s.connected);
+  const connectAndSend = useAgentStore((s) => s.connectAndSend);
 
   /** Open dock agent panel with a prompt */
-  const askAgent = (prompt: string) => {
-    if (!agentConnected) agentConnect();
-    setTimeout(() => sendMessage(prompt), 100);
+  const askAgent = useCallback((prompt: string) => {
+    connectAndSend(prompt);
     openDock('agent');
-  };
+  }, [connectAndSend, openDock]);
 
   const toggleExpanded = (key: string) => {
     setExpandedItems(prev => {
@@ -678,9 +675,9 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
                 const key = `attention-${i}`;
                 const isExpanded = expandedItems.has(key);
                 return (
-                  <div key={i} className="relative">
+                  <div key={i} className="relative group">
                     <button onClick={() => item.steps ? toggleExpanded(key) : go(item.path, item.pathTitle)}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-left group">
+                      className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-slate-800/50 transition-colors text-left">
                       {item.severity === 'critical'
                         ? <AlertOctagon className="w-4 h-4 text-red-400 shrink-0" />
                         : <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />}
@@ -699,7 +696,7 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
                         askAgent(`Diagnose: ${item.title}. ${item.detail}`);
                       }}
                       className={cn(
-                        'absolute right-12 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium opacity-0 group-hover:opacity-100 transition-opacity',
+                        'absolute right-12 top-1/2 -translate-y-1/2 flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium opacity-0 group-hover:opacity-100 transition-opacity',
                         AI_ACCENT.bg, AI_ACCENT.text, AI_ACCENT.border, 'border',
                       )}
                       title="Ask Pulse Agent to diagnose"

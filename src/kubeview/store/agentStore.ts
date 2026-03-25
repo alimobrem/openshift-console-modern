@@ -36,6 +36,8 @@ interface AgentState {
   connect: () => void;
   disconnect: () => void;
   sendMessage: (content: string, context?: ResourceContext, fleetMode?: boolean) => void;
+  /** Connect (if needed) and send a message — safe replacement for setTimeout race condition */
+  connectAndSend: (content: string, context?: ResourceContext) => void;
   switchMode: (mode: AgentMode) => void;
   clearChat: () => void;
   confirmAction: (approved: boolean) => void;
@@ -100,6 +102,24 @@ export const useAgentStore = create<AgentState>()(
       hasUnreadInsight: false,
 
       setUnreadInsight: (value) => set({ hasUnreadInsight: value }),
+
+      connectAndSend: (content, context) => {
+        const state = get();
+        if (state.connected && client) {
+          state.sendMessage(content, context);
+        } else {
+          // Connect first, then send once connected
+          state.connect();
+          const checkInterval = setInterval(() => {
+            if (get().connected && client) {
+              clearInterval(checkInterval);
+              get().sendMessage(content, context);
+            }
+          }, 50);
+          // Safety timeout — don't poll forever
+          setTimeout(() => clearInterval(checkInterval), 5000);
+        }
+      },
 
       connect: () => {
         if (unsubscribe) unsubscribe();

@@ -26,15 +26,12 @@ interface AIOnboardingProps {
 export function AIOnboarding({ compact = false, className }: AIOnboardingProps) {
   const { aiOnboardingSeen, dismissOnboarding } = useOnboardingStore();
   const openDock = useUIStore((s) => s.openDock);
-  const sendMessage = useAgentStore((s) => s.sendMessage);
-  const connect = useAgentStore((s) => s.connect);
-  const connected = useAgentStore((s) => s.connected);
+  const connectAndSend = useAgentStore((s) => s.connectAndSend);
 
   if (aiOnboardingSeen) return null;
 
   const tryIt = () => {
-    if (!connected) connect();
-    setTimeout(() => sendMessage('Check overall cluster health'), 100);
+    connectAndSend('Check overall cluster health');
     openDock('agent');
     dismissOnboarding();
   };

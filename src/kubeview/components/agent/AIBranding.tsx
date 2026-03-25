@@ -63,7 +63,7 @@ export function AIBadge({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider',
+        'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-semibold uppercase tracking-wider',
         AI_ACCENT.bg,
         AI_ACCENT.text,
         className,
