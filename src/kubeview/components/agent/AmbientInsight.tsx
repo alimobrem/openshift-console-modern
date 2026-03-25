@@ -37,10 +37,20 @@ interface CacheEntry {
   timestamp: number;
 }
 
+const MAX_CACHE_ENTRIES = 50;
 const insightCache = new Map<string, CacheEntry>();
 
 function cacheKey(ctx: ResourceContext, prompt: string): string {
   return `${ctx.kind}/${ctx.namespace ?? ''}/${ctx.name}/${prompt}`;
+}
+
+function cacheSet(key: string, entry: CacheEntry) {
+  // Evict oldest entries if cache is full
+  if (insightCache.size >= MAX_CACHE_ENTRIES) {
+    const firstKey = insightCache.keys().next().value;
+    if (firstKey) insightCache.delete(firstKey);
+  }
+  insightCache.set(key, entry);
 }
 
 /** Exported for testing — clears all cached insights. */
@@ -127,7 +137,7 @@ export function AmbientInsight({
           collectedComponents.push(event.spec);
           break;
         case 'done':
-          insightCache.set(key, {
+          cacheSet(key, {
             result: event.full_response,
             components: [...collectedComponents],
             timestamp: Date.now(),

@@ -14,42 +14,61 @@ const PROMPT = 'Briefly check for critical issues or anomalies. For each issue, 
 let client: AgentClient | null = null;
 let intervalId: ReturnType<typeof setInterval> | null = null;
 let running = false;
+let polling = false; // guard against overlapping polls
+
+const QUERY_TIMEOUT = 30_000; // 30s max per query
 
 function query(): Promise<string> {
   return new Promise((resolve, reject) => {
+    let settled = false;
     const c = new AgentClient('sre');
     client = c;
 
+    function cleanup() {
+      if (!settled) {
+        settled = true;
+        unsub();
+        c.disconnect();
+        client = null;
+      }
+    }
+
     const unsub = c.on((event: AgentEvent) => {
+      if (settled) return;
       switch (event.type) {
         case 'connected':
           c.send(PROMPT);
           break;
         case 'done':
-          unsub();
-          c.disconnect();
-          client = null;
+          cleanup();
           resolve(event.full_response);
           break;
         case 'error':
-          unsub();
-          c.disconnect();
-          client = null;
+          cleanup();
           reject(new Error(event.message));
           break;
         case 'disconnected':
-          // If we haven't resolved yet, reject
-          client = null;
+          cleanup();
           reject(new Error('Disconnected'));
           break;
       }
     });
+
+    // Timeout to prevent leaked connections
+    setTimeout(() => {
+      if (!settled) {
+        cleanup();
+        reject(new Error('Query timed out'));
+      }
+    }, QUERY_TIMEOUT);
 
     c.connect();
   });
 }
 
 async function poll() {
+  if (polling) return; // previous poll still running
+  polling = true;
   try {
     const response = await query();
     const trimmed = response.trim();
@@ -77,6 +96,8 @@ async function poll() {
     }
   } catch {
     // Silently skip — agent may be unavailable
+  } finally {
+    polling = false;
   }
 }
 
@@ -90,6 +111,7 @@ export function startAgentNotifications(intervalMs = DEFAULT_INTERVAL) {
 
 export function stopAgentNotifications() {
   running = false;
+  polling = false;
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;

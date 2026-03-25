@@ -5,7 +5,11 @@ import { startAgentNotifications, stopAgentNotifications, isAgentNotificationsRu
 const mockAddToast = vi.fn();
 
 vi.mock('../../store/uiStore', () => ({
-  useUIStore: { getState: () => ({ addToast: mockAddToast }) },
+  useUIStore: { getState: () => ({ addToast: mockAddToast, openDock: vi.fn() }) },
+}));
+
+vi.mock('../../store/agentStore', () => ({
+  useAgentStore: { getState: () => ({ connected: false, sendMessage: vi.fn() }) },
 }));
 
 let mockHandler: ((event: any) => void) | null = null;
