@@ -38,6 +38,10 @@ resources:
       cpu: 100m
       memory: 64Mi
 
+# Pulse Agent (AI SRE assistant)
+agent:
+  serviceName: pulse-agent-sre-agent
+
 # Quota for the namespace
 quota:
   enabled: true
