@@ -39,6 +39,10 @@ function describeToolAction(tool: string, input: Record<string, unknown>): strin
       return `${input.dry_run ? 'Dry-run validate' : 'Apply'} YAML to ${input.namespace || 'default'}`;
     case 'create_network_policy':
       return `Create ${input.policy_type} NetworkPolicy "${input.name}" in ${input.namespace}`;
+    case 'rollback_deployment':
+      return `Rollback deployment ${input.namespace}/${input.name} to revision ${input.revision || 'previous'}`;
+    case 'drain_node':
+      return `Drain node ${input.node_name} (cordon + evict all pods, respecting PDBs)`;
     default:
       return `Execute ${tool}`;
   }
@@ -49,6 +53,8 @@ function riskLevel(tool: string, input: Record<string, unknown>): { level: strin
   if (tool === 'apply_yaml' && !input.dry_run) return { level: 'HIGH', color: 'text-red-400' };
   if (tool === 'cordon_node') return { level: 'MEDIUM', color: 'text-amber-400' };
   if (tool === 'create_network_policy') return { level: 'MEDIUM', color: 'text-amber-400' };
+  if (tool === 'rollback_deployment') return { level: 'HIGH', color: 'text-red-400' };
+  if (tool === 'drain_node') return { level: 'HIGH', color: 'text-red-400' };
   return { level: 'LOW', color: 'text-green-400' };
 }
 
