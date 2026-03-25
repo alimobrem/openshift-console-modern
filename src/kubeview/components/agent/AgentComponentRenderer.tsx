@@ -93,7 +93,7 @@ function AgentDataTable({ spec }: { spec: DataTableSpec }) {
         </table>
       </div>
       {spec.rows.length > 20 && (
-        <div className="px-3 py-1 bg-slate-800/30 border-t border-slate-700 text-[10px] text-slate-500">
+        <div className="px-3 py-1 bg-slate-800/30 border-t border-slate-700 text-xs text-slate-500">
           Showing {spec.rows.length} rows
         </div>
       )}
@@ -262,7 +262,7 @@ function AgentChart({ spec }: { spec: ChartSpec }) {
       {spec.series.length > 1 && (
         <div className="px-3 py-1 border-t border-slate-700 flex gap-3">
           {spec.series.map((s, i) => (
-            <span key={i} className="text-[10px] text-slate-400 flex items-center gap-1">
+            <span key={i} className="text-xs text-slate-400 flex items-center gap-1">
               <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color || colors[i % colors.length] }} />
               {s.label}
             </span>

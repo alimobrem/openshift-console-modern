@@ -66,6 +66,7 @@ export default function AgentView() {
   };
 
   const trustLevel = useTrustStore((s) => s.trustLevel);
+  const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
 
   // Connect on mount
   useEffect(() => {
@@ -145,14 +146,19 @@ export default function AgentView() {
               {connected ? 'Connected' : 'Disconnected'}
             </div>
 
-            <span className={cn(
-              'text-[10px] px-1.5 py-0.5 rounded border',
-              trustLevel >= 3 ? 'border-green-700 text-green-400' :
-              trustLevel >= 2 ? 'border-amber-700 text-amber-400' :
-              'border-slate-700 text-slate-400'
-            )} title={`Trust Level ${trustLevel}: ${TRUST_LABELS[trustLevel]}`}>
+            <button
+              onClick={() => setTrustLevel(((trustLevel + 1) % 4) as 0 | 1 | 2 | 3)}
+              className={cn(
+                'text-xs px-1.5 py-0.5 rounded border cursor-pointer hover:opacity-80 transition-opacity',
+                trustLevel >= 3 ? 'border-green-700 text-green-400' :
+                trustLevel >= 2 ? 'border-amber-700 text-amber-400' :
+                trustLevel === 0 ? 'border-red-700 text-red-400' :
+                'border-slate-700 text-slate-400'
+              )}
+              title={`Trust Level ${trustLevel}: ${TRUST_LABELS[trustLevel]}. Click to cycle.`}
+            >
               L{trustLevel}
-            </span>
+            </button>
 
             {fleetMode === 'multi' && (
               <button

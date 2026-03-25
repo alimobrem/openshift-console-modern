@@ -7,26 +7,32 @@ vi.mock('../../../engine/fleetDrift', () => ({
   fleetCompareResource: vi.fn(),
 }));
 
-vi.mock('../../../engine/clusterConnection', () => ({
-  getAllConnections: vi.fn(() => [
-    { id: 'c1', name: 'cluster-1', status: 'connected' },
-    { id: 'c2', name: 'cluster-2', status: 'connected' },
-  ]),
+vi.mock('../../../store/fleetStore', () => ({
+  useFleetStore: vi.fn((selector: any) =>
+    selector({
+      clusters: [
+        { id: 'c1', name: 'cluster-1', status: 'connected' },
+        { id: 'c2', name: 'cluster-2', status: 'connected' },
+      ],
+    }),
+  ),
 }));
 
 vi.mock('../../../store/clusterStore', () => ({
   useClusterStore: vi.fn((selector: any) =>
     selector({
       resourceRegistry: new Map([
-        ['Deployment/apps/v1', {
+        ['apps/v1/deployments', {
           kind: 'Deployment',
-          apiVersion: 'apps/v1',
+          group: 'apps',
+          version: 'v1',
           plural: 'deployments',
           namespaced: true,
         }],
-        ['Service/v1', {
+        ['core/v1/services', {
           kind: 'Service',
-          apiVersion: 'v1',
+          group: '',
+          version: 'v1',
           plural: 'services',
           namespaced: true,
         }],
@@ -78,7 +84,7 @@ describe('DriftDetectorView', () => {
     const selects = screen.getAllByLabelText('Resource type');
     const names = screen.getAllByLabelText('Resource name');
     const namespaces = screen.getAllByLabelText('Namespace');
-    fireEvent.change(selects[0], { target: { value: 'Deployment/apps/v1' } });
+    fireEvent.change(selects[0], { target: { value: 'apps/v1/deployments' } });
     fireEvent.change(names[0], { target: { value: 'my-app' } });
     fireEvent.change(namespaces[0], { target: { value: 'default' } });
 
@@ -107,7 +113,7 @@ describe('DriftDetectorView', () => {
 
     const selects = screen.getAllByLabelText('Resource type');
     const names = screen.getAllByLabelText('Resource name');
-    fireEvent.change(selects[0], { target: { value: 'Deployment/apps/v1' } });
+    fireEvent.change(selects[0], { target: { value: 'apps/v1/deployments' } });
     fireEvent.change(names[0], { target: { value: 'my-app' } });
 
     const buttons = screen.getAllByRole('button', { name: /compare/i });

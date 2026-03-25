@@ -8,7 +8,7 @@ import { GitCompareArrows, Loader2, CheckCircle, AlertTriangle } from 'lucide-re
 import { cn } from '@/lib/utils';
 import { fleetCompareResource, type DriftResult } from '../../engine/fleetDrift';
 import { useClusterStore } from '../../store/clusterStore';
-import { getAllConnections } from '../../engine/clusterConnection';
+import { useFleetStore } from '../../store/fleetStore';
 
 export function DriftDetectorView() {
   const resourceRegistry = useClusterStore(s => s.resourceRegistry);
@@ -28,14 +28,15 @@ export function DriftDetectorView() {
       .sort(([, a], [, b]) => a.kind.localeCompare(b.kind));
   }, [resourceRegistry]);
 
-  // Get cluster names for display
+  // Get cluster names for display (reactive to cluster changes)
+  const fleetClusters = useFleetStore((s) => s.clusters);
   const clusterNames = useMemo(() => {
     const map: Record<string, string> = {};
-    for (const c of getAllConnections()) {
+    for (const c of fleetClusters) {
       map[c.id] = c.name;
     }
     return map;
-  }, []);
+  }, [fleetClusters]);
 
   const canCompare = resourceType && name;
 

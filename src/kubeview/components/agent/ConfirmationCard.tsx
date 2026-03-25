@@ -110,10 +110,20 @@ export function ConfirmationCard({ confirm, onConfirm }: ConfirmationCardProps) 
     onConfirm(false);
   };
 
+  const [simulationError, setSimulationError] = useState(false);
+
   const handleSimulate = () => {
     setShowSimulation(true);
     setSimulationResult(null);
+    setSimulationError(false);
     simulation.send(`What would happen if I ${description}? Don't execute — just predict the impact on the cluster. Be specific about affected resources and risks.`);
+
+    // Timeout after 30s
+    setTimeout(() => {
+      if (!simulationResult) {
+        setSimulationError(true);
+      }
+    }, 30000);
   };
 
   // Don't render if auto-approved
@@ -144,7 +154,7 @@ export function ConfirmationCard({ confirm, onConfirm }: ConfirmationCardProps) 
               <RiskIcon className="h-3 w-3" aria-hidden="true" />
               {risk.level} RISK
             </span>
-            <span className="text-[10px] text-slate-500">
+            <span className="text-xs text-slate-500">
               Trust: {TRUST_LABELS[trustLevel]} (L{trustLevel})
             </span>
           </div>
@@ -176,10 +186,16 @@ export function ConfirmationCard({ confirm, onConfirm }: ConfirmationCardProps) 
                 Predicted Impact
                 {simulationResult ? <ChevronUp className="h-3 w-3 ml-auto" /> : <ChevronDown className="h-3 w-3 ml-auto" />}
               </button>
-              {simulation.streaming && !simulationResult && (
+              {simulation.streaming && !simulationResult && !simulationError && (
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Loader2 className="h-3 w-3 animate-spin" />
                   Simulating...
+                </div>
+              )}
+              {(simulationError || simulation.error) && !simulationResult && (
+                <div className="flex items-center gap-2 text-xs text-red-400 mt-1">
+                  <span>{simulation.error || 'Simulation timed out'}</span>
+                  <button onClick={handleSimulate} className="text-blue-400 hover:text-blue-300 underline">Retry</button>
                 </div>
               )}
               {simulationResult && (
