@@ -958,7 +958,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
               <Suspense fallback={null}>
                 <AmbientInsight
                   context={{ kind: resource.kind, name: resource.metadata.name, namespace }}
-                  prompt={`Analyze this ${resource.kind}. Check for issues, misconfigurations, and optimization opportunities. Be concise.`}
+                  prompt={`Analyze this ${resource.kind} "${resource.metadata.name}" in namespace "${namespace}". If unhealthy, explain the root cause and give a specific fix command. If healthy, say so in one sentence. Do not list the resource name or namespace back to me.`}
                   trigger="manual"
                 />
                 <InlineAgent

@@ -8,7 +8,7 @@ import type { AgentEvent } from './agentClient';
 import { useUIStore } from '../store/uiStore';
 
 const DEFAULT_INTERVAL = 300_000; // 5 minutes
-const PROMPT = 'Briefly check for any critical issues, impending problems, or anomalies in the cluster. Respond in 2-3 sentences maximum. If nothing notable, respond with just "OK".';
+const PROMPT = 'Briefly check for critical issues or anomalies. For each issue, name the affected resource and give a one-line fix. 3 sentences max. If nothing notable, respond with just "OK".';
 
 let client: AgentClient | null = null;
 let intervalId: ReturnType<typeof setInterval> | null = null;
@@ -55,11 +55,16 @@ async function poll() {
 
     // Only notify if the agent found something notable
     if (trimmed && trimmed !== 'OK' && trimmed.toLowerCase() !== 'ok') {
-      useUIStore.getState().addToast({
+      const store = useUIStore.getState();
+      store.addToast({
         type: 'warning',
         title: 'AI Insight',
         detail: trimmed,
         duration: 15000,
+        action: {
+          label: 'Investigate',
+          onClick: () => store.openDock('agent'),
+        },
       });
     }
   } catch {
