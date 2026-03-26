@@ -1,5 +1,40 @@
 import React from 'react';
-import { AlertCircle, RefreshCw, Home, Bot } from 'lucide-react';
+import { AlertCircle, RefreshCw, Home, Bot, WifiOff } from 'lucide-react';
+
+type BoundaryErrorKind = 'network' | 'chunk' | 'render';
+
+function categorizeError(error: Error | null): BoundaryErrorKind {
+  if (!error) return 'render';
+  const msg = error.message || '';
+  const name = error.name || '';
+  if (name === 'ChunkLoadError' || msg.includes('Loading chunk')) return 'chunk';
+  if (
+    (error instanceof TypeError && (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('Network request failed'))) ||
+    msg.includes('ERR_CONNECTION_REFUSED') ||
+    msg.includes('ECONNREFUSED') ||
+    msg.includes('net::ERR_')
+  ) return 'network';
+  return 'render';
+}
+
+function errorSubtitle(category: BoundaryErrorKind): string {
+  switch (category) {
+    case 'network': return 'Network error';
+    case 'chunk': return 'Update available';
+    case 'render': return 'Render error';
+  }
+}
+
+function errorSuggestion(category: BoundaryErrorKind): string {
+  switch (category) {
+    case 'network':
+      return 'Check that oc proxy is running (oc proxy --port=8001) and the cluster is reachable.';
+    case 'chunk':
+      return 'The application was updated. Please reload to get the latest version.';
+    case 'render':
+      return 'An unexpected error occurred while rendering this view.';
+  }
+}
 
 // Detect if CSS failed to load by checking if Tailwind classes work
 function checkCssLoaded(): boolean {
@@ -55,17 +90,17 @@ export class ErrorBoundary extends React.Component<Props, State> {
 
   render() {
     if (this.state.hasError) {
-      const isChunkError = this.state.error?.name === 'ChunkLoadError' || this.state.error?.message?.includes('Loading chunk');
+      const category = categorizeError(this.state.error);
 
       // Auto-reload on chunk load errors (stale JS after rebuild)
-      if (isChunkError) {
+      if (category === 'chunk') {
         return (
           <div className="flex items-center justify-center h-full bg-slate-950 p-8">
             <div className="max-w-md text-center">
               <RefreshCw className="w-10 h-10 text-blue-400 mx-auto mb-4" />
               <h2 className="text-lg font-semibold text-slate-100 mb-2">Page update available</h2>
               <p className="text-sm text-slate-400 mb-4">
-                The application was updated. Please reload to get the latest version.
+                {errorSuggestion('chunk')}
               </p>
               <button
                 onClick={() => window.location.reload()}
@@ -78,15 +113,21 @@ export class ErrorBoundary extends React.Component<Props, State> {
         );
       }
 
+      const Icon = category === 'network' ? WifiOff : AlertCircle;
+      const iconColor = category === 'network' ? 'text-amber-500' : 'text-red-500';
+
       return (
         <div className="flex items-center justify-center h-full bg-slate-950 p-8">
           <div className="max-w-md text-center">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h2 className="text-lg font-semibold text-slate-100 mb-2">
+            <Icon className={`w-12 h-12 ${iconColor} mx-auto mb-4`} />
+            <h2 className="text-xl font-bold text-slate-100 mb-1">
               {this.props.fallbackTitle || 'Something went wrong'}
             </h2>
+            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">
+              {errorSubtitle(category)}
+            </p>
             <p className="text-sm text-slate-400 mb-4">
-              {this.state.error?.message || 'An unexpected error occurred while rendering this view.'}
+              {errorSuggestion(category)}
             </p>
             <div className="flex items-center justify-center gap-3">
               <button
