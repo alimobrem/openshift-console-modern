@@ -143,7 +143,7 @@ export default function CreateView({ gvrKey }: CreateViewProps) {
             schemaYaml = generateSpecFromSchema(schema);
           }
         }
-      } catch {}
+      } catch (err) { console.warn('Failed to fetch CRD schema:', err); }
     }
 
     setYaml([

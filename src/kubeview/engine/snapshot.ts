@@ -53,7 +53,7 @@ export function saveSnapshots(snapshots: ClusterSnapshot[]) {
     localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(trimmed));
   } catch {
     const reduced = trimmed.slice(-5);
-    try { localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(reduced)); } catch {}
+    try { localStorage.setItem(SNAPSHOTS_KEY, JSON.stringify(reduced)); } catch (err) { console.warn('Failed to save snapshot to localStorage:', err); }
   }
 }
 
