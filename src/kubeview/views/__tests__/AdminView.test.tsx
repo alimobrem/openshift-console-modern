@@ -127,28 +127,28 @@ describe('AdminView', () => {
 
   it('shows Capture Snapshot button on snapshots tab', () => {
     renderAdmin();
-    const snapshotsTab = screen.getByRole('button', { name: /^Snapshots/ });
+    const snapshotsTab = screen.getByRole('tab', { name: /^Snapshots/ });
     fireEvent.click(snapshotsTab);
     expect(screen.getByText('Capture Snapshot')).toBeDefined();
   });
 
   it('shows No Snapshots Yet message on snapshots tab when none exist', () => {
     renderAdmin();
-    const snapshotsTab = screen.getByRole('button', { name: /^Snapshots/ });
+    const snapshotsTab = screen.getByRole('tab', { name: /^Snapshots/ });
     fireEvent.click(snapshotsTab);
     expect(screen.getByText('No Snapshots Yet')).toBeDefined();
   });
 
   it('shows Import button on snapshots tab', () => {
     renderAdmin();
-    const snapshotsTab = screen.getByRole('button', { name: /^Snapshots/ });
+    const snapshotsTab = screen.getByRole('tab', { name: /^Snapshots/ });
     fireEvent.click(snapshotsTab);
     expect(screen.getByText('Import')).toBeDefined();
   });
 
   it('shows quotas panels when switching to quotas tab', () => {
     renderAdmin();
-    const quotasTabs = screen.getAllByRole('button', { name: /Quotas/ });
+    const quotasTabs = screen.getAllByRole('tab', { name: /Quotas/ });
     fireEvent.click(quotasTabs[0]);
     expect(screen.getAllByText(/Resource Quotas/).length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText(/Limit Ranges/).length).toBeGreaterThanOrEqual(1);
@@ -156,7 +156,7 @@ describe('AdminView', () => {
 
   it('shows ClusterConfig component on config tab', () => {
     renderAdmin();
-    const configTab = screen.getByRole('button', { name: /Cluster Config/ });
+    const configTab = screen.getByRole('tab', { name: /Cluster Config/ });
     fireEvent.click(configTab);
     expect(screen.getByTestId('cluster-config')).toBeDefined();
   });

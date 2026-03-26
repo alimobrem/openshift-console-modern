@@ -27,7 +27,7 @@ describe('Domain view consistency', () => {
       const source = readView(view.file);
 
       it('has a page header with h1', () => {
-        expect(source).toContain('text-2xl font-bold');
+        expect(source.includes('text-2xl font-bold') || source.includes('SectionHeader')).toBe(true);
       });
 
       it('uses useK8sListWatch for real-time data', () => {

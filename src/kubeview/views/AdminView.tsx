@@ -27,7 +27,6 @@ import { GitOpsConfig } from '../components/GitOpsConfig';
 import { ErrorsTab } from './admin/ErrorsTab';
 import { useErrorStore } from '../store/errorStore';
 import { SectionHeader } from '../components/primitives/SectionHeader';
-import { TabsList, TabsTrigger, Tabs } from '../components/primitives/Tabs';
 
 /** OpenShift Infrastructure resource (config.openshift.io/v1) */
 interface Infrastructure extends K8sResource {
@@ -400,15 +399,13 @@ export default function AdminView() {
         />
 
         {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
-          <TabsList className="overflow-x-auto">
-            {tabs.map((t) => (
-              <TabsTrigger key={t.id} value={t.id}>
-                {t.icon}{t.label}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-        </Tabs>
+        <div className="flex gap-1 bg-slate-900 rounded-lg border border-slate-800 p-1 overflow-x-auto" role="tablist" aria-label="Administration tabs">
+          {tabs.map((t) => (
+            <button key={t.id} role="tab" aria-selected={activeTab === t.id} onClick={() => setActiveTab(t.id)} className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500', activeTab === t.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
+              {t.icon}{t.label}
+            </button>
+          ))}
+        </div>
 
         {/* ===== OVERVIEW ===== */}
         {activeTab === 'overview' && (
