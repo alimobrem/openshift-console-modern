@@ -192,8 +192,8 @@ export default function PodTerminal({ namespace, podName, containerName, onClose
             <span className="text-slate-300 font-mono">{containerName}</span>
             <span className="text-slate-600">in</span>
             <span className="text-slate-400 font-mono">{podName}</span>
-            <span className="px-1 py-0.5 rounded bg-slate-800 text-slate-500 font-mono text-[10px]">{namespace}</span>
-            {isNode && <span className="px-1 py-0.5 rounded bg-amber-900/30 text-amber-400 text-[10px]">node</span>}
+            <span className="px-1 py-0.5 rounded bg-slate-800 text-slate-500 font-mono text-xs">{namespace}</span>
+            {isNode && <span className="px-1 py-0.5 rounded bg-amber-900/30 text-amber-400 text-xs">node</span>}
           </div>
           <div className="flex items-center gap-1">
             <button onClick={handleCopyOutput} className="p-1 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300" title="Copy output">
@@ -259,12 +259,12 @@ export default function PodTerminal({ namespace, podName, containerName, onClose
               <span className="text-xs text-slate-300 font-mono font-medium">{containerName}</span>
               <span className="text-xs text-slate-600">in</span>
               <span className="text-xs text-slate-400 font-mono">{podName}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 font-mono">{namespace}</span>
+              <span className="text-xs px-1.5 py-0.5 rounded bg-slate-800 text-slate-500 font-mono">{namespace}</span>
             </div>
           </div>
           <div className="flex items-center gap-1">
             {commandCount > 0 && (
-              <span className="text-[10px] text-slate-600 mr-2">{commandCount} command{commandCount !== 1 ? 's' : ''}</span>
+              <span className="text-xs text-slate-600 mr-2">{commandCount} command{commandCount !== 1 ? 's' : ''}</span>
             )}
             <button
               onClick={handleCopyOutput}
@@ -291,7 +291,7 @@ export default function PodTerminal({ namespace, podName, containerName, onClose
           {lines.map((line, i) => (
             <div key={i} className="flex gap-2 group">
               {line.timestamp && (
-                <span className="text-[10px] text-slate-700 tabular-nums w-16 shrink-0 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="text-xs text-slate-700 tabular-nums w-16 shrink-0 pt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   {line.timestamp}
                 </span>
               )}
@@ -310,7 +310,7 @@ export default function PodTerminal({ namespace, podName, containerName, onClose
             <div className="flex items-center gap-2 text-slate-600 mt-1">
               <Loader2 className="w-3 h-3 animate-spin" />
               <span className="text-xs">Executing...</span>
-              <span className="text-[10px] text-slate-700">(Ctrl+C to cancel)</span>
+              <span className="text-xs text-slate-700">(Ctrl+C to cancel)</span>
             </div>
           )}
         </div>
@@ -330,7 +330,7 @@ export default function PodTerminal({ namespace, podName, containerName, onClose
             autoFocus
           />
           {history.length > 0 && !running && (
-            <span className="text-[10px] text-slate-700 hidden sm:block">
+            <span className="text-xs text-slate-700 hidden sm:block">
               {history.length} in history
             </span>
           )}

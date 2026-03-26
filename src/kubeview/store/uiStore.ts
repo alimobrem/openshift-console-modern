@@ -59,14 +59,12 @@ interface UIState {
 
   // Dock (right-side panel)
   dockPanel: DockPanel;
-  dockHeight: number;
   dockWidth: number;
   dockFullscreen: boolean;
   dockContext: { namespace: string; podName: string; containerName?: string } | null;
   terminalContext: { namespace: string; podName: string; containerName: string; isNode?: boolean } | null;
   openDock: (panel: DockPanel) => void;
   closeDock: () => void;
-  setDockHeight: (height: number) => void;
   setDockWidth: (width: number) => void;
   toggleDockFullscreen: () => void;
   setDockContext: (ctx: { namespace: string; podName: string; containerName?: string } | null) => void;
@@ -241,7 +239,6 @@ export const useUIStore = create<UIState>()(
 
       // Dock (right-side panel)
       dockPanel: null,
-      dockHeight: 250,
       dockWidth: 420,
       dockFullscreen: false,
       dockContext: null,
@@ -257,11 +254,6 @@ export const useUIStore = create<UIState>()(
 
       setDockContext: (ctx) => {
         set({ dockContext: ctx });
-      },
-
-      setDockHeight: (height) => {
-        const clampedHeight = Math.max(100, Math.min(600, height));
-        set({ dockHeight: clampedHeight });
       },
 
       setDockWidth: (width) => {
@@ -342,7 +334,6 @@ export const useUIStore = create<UIState>()(
         tabs: state.tabs,
         activeTabId: state.activeTabId,
         selectedNamespace: state.selectedNamespace,
-        dockHeight: state.dockHeight,
         dockWidth: state.dockWidth,
       }),
       merge: (persisted: any, current: any) => {

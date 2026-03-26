@@ -2,7 +2,7 @@
  * Smart Prompt Engine — generates context-aware AI prompts
  * based on current cluster state and user's current view.
  *
- * Consumed by: PulseView, AgentView, DockAgentPanel, CommandPalette, InlineAgent
+ * Consumed by: PulseView, DockAgentPanel, CommandPalette, InlineAgent
  */
 
 import type { ResourceContext } from './agentClient';

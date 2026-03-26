@@ -272,14 +272,12 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         await k8sCreate('/api/v1/namespaces/default/pods', debugPod);
         addToast({ type: 'success', title: `Debug pod created: ${debugName}`, detail: 'Host filesystem at /host. Run: chroot /host. Pod auto-deletes in 1 hour.' });
         // Open terminal to the debug pod in the dock panel (stay on node detail)
-        setTimeout(() => {
-          useUIStore.getState().openTerminal({
-            namespace: 'default',
-            podName: debugName,
-            containerName: 'debug',
-            isNode: false,
-          });
-        }, 2000); // Wait for pod to start
+        useUIStore.getState().openTerminal({
+          namespace: 'default',
+          podName: debugName,
+          containerName: 'debug',
+          isNode: false,
+        });
       } else if (resource.kind === 'Pod' && namespace) {
         // Create ephemeral debug container
         const debugContainerName = `debug-${Date.now().toString(36).slice(-6)}`;

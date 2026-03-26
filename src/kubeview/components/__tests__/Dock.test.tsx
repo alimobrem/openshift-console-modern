@@ -5,9 +5,12 @@ import React from 'react';
 
 const _mockUIState: Record<string, any> = {
   dockPanel: 'logs',
-  dockHeight: 250,
+  dockWidth: 420,
+  dockFullscreen: false,
   dockContext: null,
-  setDockHeight: vi.fn(),
+  terminalContext: null,
+  setDockWidth: vi.fn(),
+  toggleDockFullscreen: vi.fn(),
   openDock: vi.fn(),
   closeDock: vi.fn(),
 };
@@ -27,6 +30,7 @@ describe('Dock', () => {
   afterEach(() => {
     cleanup();
     _mockUIState.dockPanel = 'logs';
+    _mockUIState.terminalContext = null;
     _mockUIState.openDock.mockClear();
     _mockUIState.closeDock.mockClear();
   });
@@ -44,10 +48,10 @@ describe('Dock', () => {
     expect(screen.getByText(/Navigate to a pod/)).toBeDefined();
   });
 
-  it('shows terminal content when dockPanel is terminal', () => {
+  it('shows terminal placeholder when dockPanel is terminal and no context', () => {
     _mockUIState.dockPanel = 'terminal';
     renderDock();
-    expect(screen.getByText('$ _')).toBeDefined();
+    expect(screen.getByText(/Open a terminal/)).toBeDefined();
   });
 
   it('shows events content when dockPanel is events', () => {

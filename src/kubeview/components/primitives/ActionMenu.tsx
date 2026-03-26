@@ -26,7 +26,7 @@ export function ActionMenu({ items }: { items: ActionMenuItem[] }) {
               return (
                 <button
                   key={i}
-                  onClick={() => { setOpen(false); item.onClick(); }}
+                  onClick={() => { setOpen(false); if (!item.disabled) item.onClick(); }}
                   disabled={item.disabled}
                   title={item.title}
                   className={cn(

@@ -14,7 +14,7 @@ function resetStore() {
     actionPanelResource: null,
     browserOpen: false,
     dockPanel: null,
-    dockHeight: 250,
+    dockWidth: 420,
     toasts: [],
     connectionStatus: 'connected',
     lastSyncTime: Date.now(),
@@ -291,15 +291,15 @@ describe('uiStore', () => {
       expect(useUIStore.getState().dockPanel).toBe('terminal');
     });
 
-    it('clamps dock height', () => {
-      useUIStore.getState().setDockHeight(50);
-      expect(useUIStore.getState().dockHeight).toBe(100);
+    it('clamps dock width', () => {
+      useUIStore.getState().setDockWidth(100);
+      expect(useUIStore.getState().dockWidth).toBe(300);
 
-      useUIStore.getState().setDockHeight(800);
-      expect(useUIStore.getState().dockHeight).toBe(600);
+      useUIStore.getState().setDockWidth(1200);
+      expect(useUIStore.getState().dockWidth).toBe(900);
 
-      useUIStore.getState().setDockHeight(300);
-      expect(useUIStore.getState().dockHeight).toBe(300);
+      useUIStore.getState().setDockWidth(500);
+      expect(useUIStore.getState().dockWidth).toBe(500);
     });
   });
 
