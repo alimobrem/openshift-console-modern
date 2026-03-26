@@ -513,7 +513,7 @@ export default function YamlEditor({
         <div className="w-80 flex-shrink-0 border-l border-slate-700 bg-slate-900 flex flex-col overflow-hidden">
           <div className="flex items-center justify-between px-3 py-2 border-b border-slate-700">
             <span className="text-sm font-semibold text-slate-200">Changes</span>
-            <button onClick={() => setShowDiffMode(false)} className="text-slate-400 hover:text-slate-200">
+            <button onClick={() => setShowDiffMode(false)} className="text-slate-400 hover:text-slate-200" aria-label="Close diff">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -577,7 +577,7 @@ export default function YamlEditor({
             <span className="text-sm font-semibold text-slate-200">
               {sidePanel === 'snippets' ? 'Snippets' : 'YAML Help'}
             </span>
-            <button onClick={() => setSidePanel('none')} className="text-slate-400 hover:text-slate-200">
+            <button onClick={() => setSidePanel('none')} className="text-slate-400 hover:text-slate-200" aria-label="Close panel">
               <X className="w-4 h-4" />
             </button>
           </div>

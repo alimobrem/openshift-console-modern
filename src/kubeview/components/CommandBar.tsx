@@ -347,6 +347,7 @@ export function CommandBar() {
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
             className="flex items-center gap-2 p-1.5 rounded-md text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-colors"
+            aria-label="User menu"
           >
             <div className="w-6 h-6 rounded-full bg-slate-700 flex items-center justify-center">
               <User className="w-3.5 h-3.5" />

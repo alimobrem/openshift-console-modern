@@ -242,6 +242,7 @@ export function TabBar() {
               <button
                 onClick={(e) => handleTabClose(e, tab.id)}
                 className="rounded p-0.5 opacity-0 transition-opacity hover:bg-slate-600 group-hover:opacity-100"
+                aria-label="Close tab"
               >
                 <X className="h-3 w-3" />
               </button>
