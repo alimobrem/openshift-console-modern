@@ -32,6 +32,7 @@ interface AlertGroup {
 // ── Transform functions ──
 
 export function alertsToTimeline(alertGroups: AlertGroup[]): TimelineEntry[] {
+  if (!Array.isArray(alertGroups)) return [];
   const entries: TimelineEntry[] = [];
 
   for (const group of alertGroups) {
@@ -102,6 +103,7 @@ export function eventsToTimeline(events: Event[]): TimelineEntry[] {
 }
 
 export function rolloutsToTimeline(replicaSets: ReplicaSet[], deployments: Deployment[]): TimelineEntry[] {
+  if (!Array.isArray(replicaSets) || !Array.isArray(deployments)) return [];
   const deployMap = new Map<string, Deployment>();
   for (const d of deployments) {
     deployMap.set(`${d.metadata.namespace}/${d.metadata.name}`, d);
@@ -151,7 +153,7 @@ export function configChangesToTimeline(
   const entries: TimelineEntry[] = [];
 
   // ClusterVersion history
-  if (clusterVersion?.status?.history) {
+  if (clusterVersion?.status?.history && Array.isArray(clusterVersion.status.history)) {
     for (const h of clusterVersion.status.history) {
       entries.push({
         id: `cv-${h.version}-${h.startedTime || ''}`,
@@ -168,7 +170,7 @@ export function configChangesToTimeline(
   }
 
   // Operator condition transitions
-  for (const op of operators) {
+  for (const op of operators || []) {
     const conditions = op.status?.conditions || [];
     for (const cond of conditions) {
       if (cond.status !== 'True') continue;
