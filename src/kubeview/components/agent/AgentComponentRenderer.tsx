@@ -237,14 +237,14 @@ function AgentChart({ spec }: { spec: ChartSpec }) {
       )}
       <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
         {/* Y-axis labels */}
-        <text x={padding.left - 4} y={padding.top + 4} className="text-[9px] fill-slate-500" textAnchor="end">
+        <text x={padding.left - 4} y={padding.top + 4} className="text-xs fill-slate-500" textAnchor="end">
           {maxVal.toFixed(1)}
         </text>
-        <text x={padding.left - 4} y={height - padding.bottom} className="text-[9px] fill-slate-500" textAnchor="end">
+        <text x={padding.left - 4} y={height - padding.bottom} className="text-xs fill-slate-500" textAnchor="end">
           {minVal.toFixed(1)}
         </text>
         {spec.yAxisLabel && (
-          <text x={8} y={height / 2} className="text-[8px] fill-slate-500" textAnchor="middle" transform={`rotate(-90, 8, ${height / 2})`}>
+          <text x={8} y={height / 2} className="text-xs fill-slate-500" textAnchor="middle" transform={`rotate(-90, 8, ${height / 2})`}>
             {spec.yAxisLabel}
           </text>
         )}

@@ -152,7 +152,7 @@ export function TabBar() {
   }
 
   return (
-    <div className="flex h-9 items-center gap-0.5 border-b border-slate-700 bg-slate-800 px-2 overflow-x-auto hide-scrollbar">
+    <div className="flex h-9 items-center gap-0.5 border-b border-slate-700 bg-slate-800 px-2 overflow-x-auto hide-scrollbar" role="tablist">
       {tabs.map((tab, tabIndex) => {
         const Icon = getIcon(tab.icon);
         const isActive = tab.id === activeTabId;
@@ -162,6 +162,7 @@ export function TabBar() {
           <div
             key={tab.id}
             role="tab"
+            aria-selected={isActive}
             draggable={!tab.pinned}
             onDragStart={() => setDraggedIdx(tabIndex)}
             onDragOver={(e) => { e.preventDefault(); setDragOverIdx(tabIndex); }}
@@ -223,6 +224,7 @@ export function TabBar() {
               <button
                 onClick={(e) => { e.stopPropagation(); unpinTab(tab.id); }}
                 className="rounded p-0.5 opacity-0 transition-opacity hover:bg-slate-600 group-hover:opacity-100 text-blue-400"
+                aria-label="Unpin tab"
                 title="Unpin tab"
               >
                 <PinOff className="h-3 w-3" />
@@ -231,6 +233,7 @@ export function TabBar() {
               <button
                 onClick={(e) => { e.stopPropagation(); pinTab(tab.id); }}
                 className="rounded p-0.5 opacity-0 transition-opacity hover:bg-slate-600 group-hover:opacity-100"
+                aria-label="Pin tab"
                 title="Pin tab"
               >
                 <Pin className="h-3 w-3" />
@@ -242,6 +245,7 @@ export function TabBar() {
               <button
                 onClick={(e) => handleTabClose(e, tab.id)}
                 className="rounded p-0.5 opacity-0 transition-opacity hover:bg-slate-600 group-hover:opacity-100"
+                aria-label="Close tab"
               >
                 <X className="h-3 w-3" />
               </button>

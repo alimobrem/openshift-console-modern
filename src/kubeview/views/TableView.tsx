@@ -589,6 +589,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
                 value={searchInput}
                 onChange={(e) => setSearchInput(e.target.value)}
                 placeholder="Search..."
+                aria-label="Search resources"
                 className="pl-9 pr-3 py-1.5 text-sm bg-slate-900 border border-slate-700 rounded text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64"
               />
             </div>
@@ -928,7 +929,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
                 }}
                 className="w-full px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
               >
-                Open Detail Page →
+                Open Detail View →
               </button>
             </div>
           </div>

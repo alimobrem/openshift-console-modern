@@ -702,7 +702,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                           <span className="text-xs text-slate-400 font-mono flex-shrink-0 w-48 truncate" title={key}>{key}</span>
                           <span className="text-xs text-slate-200 font-mono flex-1">{value}</span>
                           <button onClick={() => { navigator.clipboard.writeText(`${key}=${value}`); addToast({ type: 'success', title: 'Label copied' }); }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity" title="Copy label">
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity" title="Copy label">
                             <Copy className="w-3 h-3" />
                           </button>
                         </div>
@@ -752,7 +752,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                           <span className="text-xs text-slate-400 font-mono flex-shrink-0 w-48 truncate" title={key}>{key}</span>
                           <span className="text-xs text-slate-200 font-mono flex-1">{value}</span>
                           <button onClick={() => { navigator.clipboard.writeText(`${key}=${value}`); addToast({ type: 'success', title: 'Label copied' }); }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity" title="Copy label">
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity" title="Copy label">
                             <Copy className="w-3 h-3" />
                           </button>
                         </div>
@@ -887,7 +887,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                       <span className="text-xs text-slate-200 font-mono flex-1">{value}</span>
                       <button
                         onClick={() => copyToClipboard(`${key}=${value}`, 'Label copied')}
-                        className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity"
                         title="Copy label"
                       >
                         <Copy className="w-3 h-3" />
@@ -916,7 +916,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                           </span>
                           <button
                             onClick={() => { navigator.clipboard.writeText(`${key}: ${value}`); addToast({ type: 'success', title: 'Annotation copied' }); }}
-                            className="opacity-0 group-hover:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity flex-shrink-0"
+                            className="opacity-0 group-hover:opacity-100 focus:opacity-100 p-0.5 rounded text-slate-500 hover:text-slate-300 transition-opacity flex-shrink-0"
                           >
                             <Copy className="w-3 h-3" />
                           </button>

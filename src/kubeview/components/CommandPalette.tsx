@@ -487,7 +487,7 @@ function renderGroups(
     const group = item.type === 'recent' ? 'FAVORITES' :
                   item.type === 'resource' ? 'RESOURCES' :
                   item.type === 'action' ? 'ACTIONS' :
-                  item.type === 'ai' ? 'PULSE AI' : 'PAGES';
+                  item.type === 'ai' ? 'PULSE AI' : 'VIEWS';
 
     if (!grouped.has(group)) {
       grouped.set(group, []);
