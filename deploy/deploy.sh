@@ -62,11 +62,13 @@ cd "$AGENT_REPO"
 if helm status pulse-agent -n "$NAMESPACE" &>/dev/null; then
   helm upgrade pulse-agent chart/ -n "$NAMESPACE" \
     --set rbac.allowWriteOperations=true \
-    --set rbac.allowSecretAccess=true --quiet
+    --set rbac.allowSecretAccess=true \
+    --set networkPolicy.disabled=true --quiet
 else
   helm install pulse-agent chart/ -n "$NAMESPACE" \
     --set rbac.allowWriteOperations=true \
-    --set rbac.allowSecretAccess=true
+    --set rbac.allowSecretAccess=true \
+    --set networkPolicy.disabled=true
 fi
 
 # 6. Build Agent image (two-stage: deps base + code overlay)
