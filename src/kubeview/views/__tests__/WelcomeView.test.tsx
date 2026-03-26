@@ -103,13 +103,13 @@ describe('WelcomeView', () => {
   });
 
   const allCapabilities = [
-    'YAML Editor', 'GitOps / ArgoCD', 'AI Agent', 'Incident Timeline',
+    'YAML Editor', 'GitOps / ArgoCD', 'Incident Timeline',
     'Health Audits', 'Security Audit', 'Rollback', 'Impersonation',
     'Dependency Graph', 'Log Streaming', 'Cluster Snapshots', 'Resource Diffing',
     'Pod Shell',
   ];
 
-  it('renders all 12 capability rows visible by default', () => {
+  it('renders all capability rows visible by default', () => {
     renderView();
     for (const cap of allCapabilities) {
       expect(screen.getByText(cap)).toBeDefined();
