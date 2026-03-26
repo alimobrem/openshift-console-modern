@@ -18,6 +18,7 @@ import { CHART_COLORS } from '../engine/colors';
 import { Panel } from '../components/primitives/Panel';
 import { sanitizePromQL } from '../engine/query';
 import { Card } from '../components/primitives/Card';
+import { SectionHeader } from '../components/primitives/SectionHeader';
 
 /** Local PDB type — not yet in engine/types */
 interface PodDisruptionBudget extends K8sResource {
@@ -124,17 +125,11 @@ export default function WorkloadsView() {
     <div className="h-full overflow-auto bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-              <Package className="w-6 h-6 text-blue-500" /> Workloads
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Deployments, StatefulSets, DaemonSets, Jobs, and Pods
-              {nsFilter && <span className="text-blue-400 ml-1">in {nsFilter}</span>}
-            </p>
-          </div>
-        </div>
+        <SectionHeader
+          icon={<Package className="w-6 h-6 text-blue-500" />}
+          title="Workloads"
+          subtitle={<>Deployments, StatefulSets, DaemonSets, Jobs, and Pods{nsFilter && <span className="text-blue-400 ml-1">in {nsFilter}</span>}</>}
+        />
 
         {/* Issues */}
         {issues.length > 0 && (

@@ -26,6 +26,8 @@ import { loadSnapshots } from '../engine/snapshot';
 import { GitOpsConfig } from '../components/GitOpsConfig';
 import { ErrorsTab } from './admin/ErrorsTab';
 import { useErrorStore } from '../store/errorStore';
+import { SectionHeader } from '../components/primitives/SectionHeader';
+import { TabsList, TabsTrigger, Tabs } from '../components/primitives/Tabs';
 
 /** OpenShift Infrastructure resource (config.openshift.io/v1) */
 interface Infrastructure extends K8sResource {
@@ -391,22 +393,22 @@ export default function AdminView() {
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <Settings className="w-6 h-6 text-slate-400" />
-            Administration
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">Cluster configuration, updates, and snapshots</p>
-        </div>
+        <SectionHeader
+          icon={<Settings className="w-6 h-6 text-slate-400" />}
+          title="Administration"
+          subtitle="Cluster configuration, updates, and snapshots"
+        />
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-slate-900 rounded-lg p-1 overflow-x-auto">
-          {tabs.map((t) => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)} className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap', activeTab === t.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
-              {t.icon}{t.label}
-            </button>
-          ))}
-        </div>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v)}>
+          <TabsList className="overflow-x-auto">
+            {tabs.map((t) => (
+              <TabsTrigger key={t.id} value={t.id}>
+                {t.icon}{t.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
 
         {/* ===== OVERVIEW ===== */}
         {activeTab === 'overview' && (

@@ -23,6 +23,20 @@
   --kv-radius-lg: 12px;
   --kv-font-mono: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
 
+  /* Elevation */
+  --kv-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --kv-shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -2px rgba(0, 0, 0, 0.3);
+  --kv-shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.4);
+
+  /* Transitions */
+  --kv-transition-fast: 150ms ease;
+  --kv-transition-normal: 200ms ease;
+
+  /* Z-index scale */
+  --kv-z-dropdown: 50;
+  --kv-z-modal: 100;
+  --kv-z-toast: 200;
+
   /* Terminal theme (GitHub Dark) */
   --kv-term-bg: #0d1117;
   --kv-term-surface: #161b22;

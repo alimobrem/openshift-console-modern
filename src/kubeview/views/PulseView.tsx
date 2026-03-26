@@ -8,6 +8,7 @@ import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { ReportTab } from './pulse/ReportTab';
 import { FleetReportTab } from './pulse/FleetReportTab';
 import { AIOnboarding } from '../components/agent/AIOnboarding';
+import { SectionHeader } from '../components/primitives/SectionHeader';
 
 export default function PulseView() {
   const go = useNavigateTab();
@@ -26,16 +27,11 @@ export default function PulseView() {
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">
       <div className="max-w-5xl mx-auto space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-            <HeartPulse className="w-6 h-6 text-blue-500" />
-            Cluster Pulse
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Daily briefing — control plane, capacity, workload health, and next steps
-            {selectedNamespace !== '*' && <span className="text-blue-400 ml-1">· {selectedNamespace}</span>}
-          </p>
-        </div>
+        <SectionHeader
+          icon={<HeartPulse className="w-6 h-6 text-blue-500" />}
+          title="Cluster Pulse"
+          subtitle={<>Daily briefing — control plane, capacity, workload health, and next steps{selectedNamespace !== '*' && <span className="text-blue-400 ml-1">· {selectedNamespace}</span>}</>}
+        />
 
         <AIOnboarding compact className="mb-2" />
 

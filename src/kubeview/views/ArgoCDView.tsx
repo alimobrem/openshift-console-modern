@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { GitBranch, RefreshCw, Loader2, Info, ArrowRight, Sparkles } from 'lucide-react';
+import { GitBranch, RefreshCw, Loader2, ArrowRight, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useArgoCD, useArgoCDRefresh } from '../hooks/useArgoCD';
 import { useArgoCDStore } from '../store/argoCDStore';
@@ -10,6 +10,10 @@ import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import { Card } from '../components/primitives/Card';
 import { showErrorToast } from '../engine/errorToast';
 import { MetricGrid } from '../components/primitives/MetricGrid';
+import { SectionHeader } from '../components/primitives/SectionHeader';
+import { StatCard } from '../components/primitives/StatCard';
+import { Button } from '../components/primitives/Button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/primitives/Tabs';
 import { useGitOpsConfig } from '../hooks/useGitOpsConfig';
 import { useGitOpsSetupStore } from '../store/gitopsSetupStore';
 import { GitOpsSetupWizard } from './argocd/GitOpsSetupWizard';
@@ -82,12 +86,11 @@ export default function ArgoCDView() {
     return (
       <div className="h-full overflow-auto bg-slate-950 p-6">
         <div className="max-w-3xl mx-auto space-y-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-              <GitBranch className="w-6 h-6 text-violet-500" /> GitOps
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">Manage your cluster declaratively via Git</p>
-          </div>
+          <SectionHeader
+            icon={<GitBranch className="w-6 h-6 text-violet-500" />}
+            title="GitOps"
+            subtitle="Manage your cluster declaratively via Git"
+          />
 
           <Card className="p-8 text-center">
             <Sparkles className="w-12 h-12 text-violet-400 mx-auto mb-4" />
@@ -96,13 +99,10 @@ export default function ArgoCDView() {
               A guided wizard will install the OpenShift GitOps operator, configure your Git provider,
               and create your first ArgoCD application — all without leaving Pulse.
             </p>
-            <button
-              onClick={() => openWizard()}
-              className="px-8 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors inline-flex items-center gap-2"
-            >
+            <Button onClick={() => openWizard()} size="lg" className="bg-violet-600 hover:bg-violet-500 px-8 py-3">
               <Sparkles className="w-4 h-4" />
               Start Setup Wizard
-            </button>
+            </Button>
           </Card>
 
           <Card className="p-4">
@@ -131,26 +131,17 @@ export default function ArgoCDView() {
     <div className="h-full overflow-auto bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-              <GitBranch className="w-6 h-6 text-violet-500" />
-              GitOps
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              ArgoCD Applications, sync status, and drift detection
-              {namespace && <span className="text-violet-400 ml-1">· {namespace}</span>}
-            </p>
-          </div>
-          <button
-            onClick={() => refresh()}
-            disabled={applicationsLoading}
-            className="px-3 py-1.5 text-xs text-slate-400 rounded hover:bg-slate-800 hover:text-slate-200 flex items-center gap-1.5 transition-colors disabled:opacity-50"
-          >
-            <RefreshCw className={cn('w-3.5 h-3.5', applicationsLoading && 'animate-spin')} />
-            Refresh
-          </button>
-        </div>
+        <SectionHeader
+          icon={<GitBranch className="w-6 h-6 text-violet-500" />}
+          title="GitOps"
+          subtitle={<>ArgoCD Applications, sync status, and drift detection{namespace && <span className="text-violet-400 ml-1">· {namespace}</span>}</>}
+          actions={
+            <Button variant="ghost" size="sm" onClick={() => refresh()} disabled={applicationsLoading}>
+              <RefreshCw className={cn('w-3.5 h-3.5', applicationsLoading && 'animate-spin')} />
+              Refresh
+            </Button>
+          }
+        />
 
         {/* Continue setup banner (partially set up) */}
         {(!isConfigured || applications.length === 0) && (
@@ -166,40 +157,19 @@ export default function ArgoCDView() {
                 </p>
               </div>
             </div>
-            <button
-              onClick={() => openWizard(!isConfigured ? 'git-config' : 'first-app')}
-              className="px-4 py-2 text-xs bg-violet-600 hover:bg-violet-500 text-white rounded-lg transition-colors flex items-center gap-1.5"
-            >
+            <Button size="sm" onClick={() => openWizard(!isConfigured ? 'git-config' : 'first-app')} className="bg-violet-600 hover:bg-violet-500">
               <Sparkles className="w-3.5 h-3.5" />
               {!isConfigured ? 'Open Wizard' : 'Create Application'}
-            </button>
+            </Button>
           </div>
         )}
 
         {/* Summary */}
         <MetricGrid>
-          <Card className="p-3">
-            <div className="text-xs text-slate-400 mb-1">Applications</div>
-            <div className="text-xl font-bold text-slate-100">{applications.length}</div>
-          </Card>
-          <Card className="p-3">
-            <div className="text-xs text-slate-400 mb-1">Synced</div>
-            <div className="text-xl font-bold text-emerald-400">
-              {applications.filter(a => a.status?.sync?.status === 'Synced').length}
-            </div>
-          </Card>
-          <Card className={cn('p-3', outOfSyncCount > 0 && 'border-amber-800')}>
-            <div className="text-xs text-slate-400 mb-1">Out of Sync</div>
-            <div className={cn('text-xl font-bold', outOfSyncCount > 0 ? 'text-amber-400' : 'text-slate-400')}>
-              {outOfSyncCount}
-            </div>
-          </Card>
-          <Card className={cn('p-3', degradedCount > 0 && 'border-red-800')}>
-            <div className="text-xs text-slate-400 mb-1">Degraded</div>
-            <div className={cn('text-xl font-bold', degradedCount > 0 ? 'text-red-400' : 'text-slate-400')}>
-              {degradedCount}
-            </div>
-          </Card>
+          <StatCard label="Applications" value={applications.length} />
+          <StatCard label="Synced" value={applications.filter(a => a.status?.sync?.status === 'Synced').length} variant="success" />
+          <StatCard label="Out of Sync" value={outOfSyncCount} variant={outOfSyncCount > 0 ? 'warning' : 'default'} highlight={outOfSyncCount > 0} />
+          <StatCard label="Degraded" value={degradedCount} variant={degradedCount > 0 ? 'error' : 'default'} highlight={degradedCount > 0} />
         </MetricGrid>
 
         {/* Git repo setup guidance when not configured */}
@@ -219,60 +189,54 @@ export default function ArgoCDView() {
                   <span><span className="text-emerald-400">2.</span> Generate a personal access token</span>
                   <span><span className="text-emerald-400">3.</span> Configure in Admin → GitOps</span>
                 </div>
-                <button
-                  onClick={() => go('/admin?tab=gitops', 'Admin')}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs bg-violet-600 hover:bg-violet-500 text-white rounded transition-colors"
-                >
+                <Button size="sm" onClick={() => go('/admin?tab=gitops', 'Admin')} className="bg-violet-600 hover:bg-violet-500">
                   Configure Git Provider <ArrowRight className="w-3 h-3" />
-                </button>
+                </Button>
               </div>
             </div>
           </Card>
         )}
 
         {/* Tabs */}
-        <Card className="flex gap-1 p-1">
-          {tabs.map((t) => (
-            <button
-              key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={cn(
-                'px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap',
-                activeTab === t.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'
-              )}
-            >
-              {t.label}
-            </button>
-          ))}
-        </Card>
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as Tab)}>
+          <TabsList>
+            {tabs.map((t) => (
+              <TabsTrigger key={t.id} value={t.id}>{t.label}</TabsTrigger>
+            ))}
+          </TabsList>
 
-        {/* Loading */}
-        {(detecting || applicationsLoading) && applications.length === 0 ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
-          </div>
-        ) : (
-          <>
-            {activeTab === 'applications' && (
-              <ApplicationsTab
-                applications={applications || []}
-                syncing={syncing}
-                onSync={handleSync}
-                go={go}
-              />
-            )}
-            {activeTab === 'history' && (
-              <SyncHistoryTab applications={applications || []} go={go} />
-            )}
-            {activeTab === 'drift' && (
-              <DriftTab applications={applications || []} onSync={handleSync} syncing={syncing} go={go} />
-            )}
-            {activeTab === 'projects' && (
-              <ProjectsTab />
-            )}
-            {activeTab === 'rollouts' && <RolloutsTab rollouts={useArgoCDStore.getState().rollouts || []} go={go} />}
-          </>
-        )}
+          {/* Loading */}
+          {(detecting || applicationsLoading) && applications.length === 0 ? (
+            <div className="flex items-center justify-center h-48">
+              <Loader2 className="w-6 h-6 text-violet-400 animate-spin" />
+            </div>
+          ) : (
+            <>
+              <TabsContent value="applications">
+                <ApplicationsTab
+                  applications={applications || []}
+                  syncing={syncing}
+                  onSync={handleSync}
+                  go={go}
+                />
+              </TabsContent>
+              <TabsContent value="history">
+                <SyncHistoryTab applications={applications || []} go={go} />
+              </TabsContent>
+              <TabsContent value="drift">
+                <DriftTab applications={applications || []} onSync={handleSync} syncing={syncing} go={go} />
+              </TabsContent>
+              <TabsContent value="projects">
+                <ProjectsTab />
+              </TabsContent>
+              {useArgoCDStore.getState().rolloutsAvailable && (
+                <TabsContent value="rollouts">
+                  <RolloutsTab rollouts={useArgoCDStore.getState().rollouts || []} go={go} />
+                </TabsContent>
+              )}
+            </>
+          )}
+        </Tabs>
       </div>
 
       <ConfirmDialog

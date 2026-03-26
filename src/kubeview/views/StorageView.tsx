@@ -16,6 +16,7 @@ import { CHART_COLORS } from '../engine/colors';
 import { MetricGrid } from '../components/primitives/MetricGrid';
 import { Panel } from '../components/primitives/Panel';
 import { Card } from '../components/primitives/Card';
+import { SectionHeader } from '../components/primitives/SectionHeader';
 
 export default function StorageView() {
   const selectedNamespace = useUIStore((s) => s.selectedNamespace);
@@ -110,18 +111,11 @@ export default function StorageView() {
     <div className="h-full overflow-auto bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-              <HardDrive className="w-6 h-6 text-orange-500" />
-              Storage
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Persistent volumes, claims, storage classes, and capacity
-              {nsFilter && <span className="text-blue-400 ml-1">in {nsFilter}</span>}
-            </p>
-          </div>
-        </div>
+        <SectionHeader
+          icon={<HardDrive className="w-6 h-6 text-orange-500" />}
+          title="Storage"
+          subtitle={<>Persistent volumes, claims, storage classes, and capacity{nsFilter && <span className="text-blue-400 ml-1">in {nsFilter}</span>}</>}
+        />
 
         {/* Issues banner */}
         {issues.length > 0 && (
