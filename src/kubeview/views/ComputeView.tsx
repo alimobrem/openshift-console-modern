@@ -13,6 +13,7 @@ import { MetricGrid } from '../components/primitives/MetricGrid';
 import type { K8sResource } from '../engine/renderers';
 import type { Node, Pod, Machine, MachineSet, Taint, NodePool, Condition } from '../engine/types';
 import { getNodeStatus } from '../engine/renderers/statusUtils';
+import { parseResourceValue, formatBytes, formatCpu } from '../engine/formatting';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { useClusterStore } from '../store/clusterStore';
@@ -65,37 +66,7 @@ interface NodeDetail {
   name: string;
 }
 
-function parseQuantity(q: string | undefined): number {
-  if (!q) return 0;
-  const match = q.match(/^(\d+\.?\d*)\s*([A-Za-z]*)/);
-  if (!match) return 0;
-  const val = parseFloat(match[1]);
-  const unit = match[2];
-  if (unit === 'Ki') return val * 1024;
-  if (unit === 'Mi') return val * 1024 * 1024;
-  if (unit === 'Gi') return val * 1024 * 1024 * 1024;
-  if (unit === 'Ti') return val * 1024 * 1024 * 1024 * 1024;
-  if (unit === 'Pi') return val * 1024 * 1024 * 1024 * 1024 * 1024;
-  if (unit === 'Ei') return val * 1024 * 1024 * 1024 * 1024 * 1024 * 1024;
-  if (unit === 'm') return val / 1000;
-  if (unit === 'k') return val * 1000;
-  if (unit === 'M') return val * 1000 * 1000;
-  if (unit === 'G') return val * 1000 * 1000 * 1000;
-  return val;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes >= 1024 ** 4) return `${(bytes / 1024 ** 4).toFixed(1)} Ti`;
-  if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} Gi`;
-  if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(0)} Mi`;
-  if (bytes >= 1024) return `${(bytes / 1024).toFixed(0)} Ki`;
-  return `${bytes}`;
-}
-
-function formatCpu(cores: number): string {
-  if (cores >= 1) return `${cores.toFixed(1)} cores`;
-  return `${Math.round(cores * 1000)}m`;
-}
+// parseQuantity, formatBytes, formatCpu imported from engine/formatting.ts
 
 export default function ComputeView() {
   const go = useNavigateTab();
@@ -207,9 +178,9 @@ export default function ComputeView() {
     let cpuCores = 0, memBytes = 0, podCapacity = 0;
     for (const n of nodes as unknown as Node[]) {
       const cap = n.status?.capacity;
-      cpuCores += parseQuantity(cap?.cpu);
-      memBytes += parseQuantity(cap?.memory);
-      podCapacity += parseQuantity(cap?.pods);
+      cpuCores += parseResourceValue(cap?.cpu);
+      memBytes += parseResourceValue(cap?.memory);
+      podCapacity += parseResourceValue(cap?.pods);
     }
     return { cpuCores, memBytes, podCapacity, totalPods: pods.length };
   }, [nodes, pods]);
@@ -227,9 +198,9 @@ export default function ComputeView() {
       const taints = node.spec?.taints || [];
       const unschedulable = node.spec?.unschedulable;
       const podCount = podsByNode.get(node.metadata.name) || 0;
-      const podCap = parseQuantity(allocatable.pods || capacity.pods);
-      const cpuCap = parseQuantity(capacity.cpu);
-      const memCap = parseQuantity(capacity.memory);
+      const podCap = parseResourceValue(allocatable.pods || capacity.pods);
+      const cpuCap = parseResourceValue(capacity.cpu);
+      const memCap = parseResourceValue(capacity.memory);
 
       // Match per-node metrics: prefer `node` label (from kube_node_info join), fall back to `instance` substring
       const nodeName = node.metadata.name;

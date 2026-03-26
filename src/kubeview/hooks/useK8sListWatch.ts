@@ -15,6 +15,7 @@ import { k8sList } from '../engine/query';
 import { watchManager, type WatchEvent } from '../engine/watch';
 import type { K8sResource } from '../engine/renderers';
 import { useUIStore } from '../store/uiStore';
+import { useDocumentVisibility } from './useDocumentVisibility';
 
 const SAFETY_POLL_INTERVAL = 60_000;
 
@@ -33,6 +34,7 @@ export function useK8sListWatch<T extends K8sResource = K8sResource>({
 }: UseK8sListWatchOptions) {
   const queryClient = useQueryClient();
   const setConnectionStatus = useUIStore((s) => s.setConnectionStatus);
+  const isVisible = useDocumentVisibility();
 
   const queryKey = ['k8s', 'list', apiPath, namespace, clusterId];
 
@@ -40,8 +42,8 @@ export function useK8sListWatch<T extends K8sResource = K8sResource>({
     queryKey,
     queryFn: () => k8sList<T>(apiPath, namespace, clusterId),
     enabled,
-    // Always poll as safety net (WebSocket provides instant updates on top)
-    refetchInterval: SAFETY_POLL_INTERVAL,
+    // Pause polling when tab is unfocused — WebSocket still delivers instant updates
+    refetchInterval: isVisible ? SAFETY_POLL_INTERVAL : false,
     staleTime: 10_000,
   });
 
