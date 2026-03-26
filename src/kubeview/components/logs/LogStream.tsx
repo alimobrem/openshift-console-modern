@@ -115,7 +115,7 @@ export default function LogStream({
               if (prevResponse.ok) {
                 response = prevResponse;
               }
-            } catch {}
+            } catch (err) { console.warn('Failed to fetch previous container logs:', err); }
           } else {
             // Current has content — parse it directly and skip re-reading
             if (mounted) {

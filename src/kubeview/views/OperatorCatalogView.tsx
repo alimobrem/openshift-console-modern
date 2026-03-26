@@ -8,10 +8,11 @@ import {
 import { cn } from '@/lib/utils';
 import { k8sList, k8sCreate, k8sDelete, k8sGet } from '../engine/query';
 import { useUIStore } from '../store/uiStore';
+import { showErrorToast } from '../engine/errorToast';
+import { PulseError } from '../engine/errors';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import { Card } from '../components/primitives/Card';
-import { showErrorToast } from '../engine/errorToast';
 
 interface PackageManifest {
   metadata: { name: string; namespace?: string };
@@ -138,7 +139,9 @@ export default function OperatorCatalogView() {
       if (ns !== 'openshift-operators') {
         try {
           await k8sCreate('/api/v1/namespaces', { apiVersion: 'v1', kind: 'Namespace', metadata: { name: ns } });
-        } catch {} // might already exist
+        } catch (err: unknown) {
+          if (!(err instanceof PulseError && err.statusCode === 409)) showErrorToast(err, 'Failed to create namespace');
+        }
       }
 
       // Create OperatorGroup if namespace is not openshift-operators (which has a global one)
@@ -150,7 +153,9 @@ export default function OperatorCatalogView() {
             metadata: { name: `${pkg.metadata.name}-group`, namespace: ns },
             spec: { targetNamespaces: [ns] },
           });
-        } catch {} // might already exist
+        } catch (err: unknown) {
+          if (!(err instanceof PulseError && err.statusCode === 409)) showErrorToast(err, 'Failed to create OperatorGroup');
+        }
       }
 
       // Create Subscription

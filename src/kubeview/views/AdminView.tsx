@@ -334,7 +334,7 @@ export default function AdminView() {
         const daysLeft = Math.floor((expDate.getTime() - Date.now()) / 86400000);
         return { date: expDate, daysLeft };
       }
-    } catch {}
+    } catch (err) { console.warn('Failed to parse certificate expiry:', err); }
     return null;
   }, [routerCert]);
 

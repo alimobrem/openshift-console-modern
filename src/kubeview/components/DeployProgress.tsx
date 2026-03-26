@@ -311,7 +311,7 @@ function PodLogs({ namespace, podName }: { namespace: string; podName: string })
           const text = await res.text();
           if (!cancelled) setLogs(text.split('\n').filter(Boolean));
         }
-      } catch {}
+      } catch (err) { console.warn('Failed to fetch pod logs:', err); }
     };
     fetchLogs();
     const interval = setInterval(fetchLogs, 3000);

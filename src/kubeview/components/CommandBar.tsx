@@ -405,7 +405,7 @@ export function CommandBar() {
                         const infraData = await infraRes.json();
                         server = infraData.status?.apiServerURL || server;
                       }
-                    } catch {}
+                    } catch (err) { console.warn('Failed to detect API server URL:', err); }
                     const loginCmd = `oc login --server=${server}`;
                     try {
                       await navigator.clipboard.writeText(loginCmd);

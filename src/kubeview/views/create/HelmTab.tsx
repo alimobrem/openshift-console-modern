@@ -220,7 +220,7 @@ export function HelmTab() {
             const parsed = parseHelmIndex(text, repo.name, repo.url);
             allCharts.push(...parsed);
           }
-        } catch {}
+        } catch (err) { showErrorToast(err, 'Failed to load Helm chart'); }
       }
 
       return allCharts;
