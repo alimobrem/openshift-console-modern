@@ -43,7 +43,9 @@ describe('ErrorBoundary', () => {
     );
 
     expect(screen.getByText('Something went wrong')).toBeDefined();
-    expect(screen.getByText('test crash')).toBeDefined();
+    expect(screen.getByText('Render error')).toBeDefined();
+    // Raw message is still visible in error details
+    expect(screen.getByText(/test crash/)).toBeDefined();
   });
 
   it('shows custom fallbackTitle when provided', () => {
