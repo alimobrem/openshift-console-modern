@@ -71,7 +71,9 @@ export function domainRoutes() {
       <Route path="security" element={<Lazy><SecurityView /></Lazy>} />
       <Route path="access-control" element={<Lazy><AccessControlView /></Lazy>} />
       <Route path="users" element={<Lazy><UserManagementView /></Lazy>} />
-      <Route path="identity" element={<Lazy><IdentityView /></Lazy>} />
+      {isFeatureEnabled('identityView') && (
+        <Route path="identity" element={<Lazy><IdentityView /></Lazy>} />
+      )}
       <Route path="admin" element={<Lazy><AdminView /></Lazy>} />
       <Route path="alerts" element={<Lazy><AlertsView /></Lazy>} />
       <Route path="gitops" element={<Lazy><ArgoCDView /></Lazy>} />

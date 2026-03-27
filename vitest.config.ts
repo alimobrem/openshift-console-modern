@@ -12,5 +12,6 @@ export default defineConfig({
   },
   test: {
     css: false,
+    exclude: ['**/node_modules/**', '**/.claude/worktrees/**'],
   },
 });

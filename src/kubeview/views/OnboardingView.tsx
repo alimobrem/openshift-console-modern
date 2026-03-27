@@ -5,8 +5,9 @@ import { SectionHeader } from '../components/primitives/SectionHeader';
 import { ReadinessWizard } from '../components/onboarding/ReadinessWizard';
 import { ReadinessChecklist } from '../components/onboarding/ReadinessChecklist';
 import { buildStubReport } from '../components/onboarding/stubData';
-import type { OnboardingMode, ReadinessReport } from '../components/onboarding/types';
-import { computeScore } from '../components/onboarding/types';
+import type { OnboardingMode, ReadinessReport, CategoryView, GateStatus } from '../components/onboarding/types';
+import { buildCategoryViews, computeScore } from '../components/onboarding/types';
+import { ALL_GATES } from '../engine/readiness/gates';
 
 const STORAGE_KEY = 'openshiftpulse:onboarding-completed';
 
@@ -41,48 +42,71 @@ export default function OnboardingView() {
     return () => clearTimeout(timer);
   }, []);
 
+  const categoryViews: CategoryView[] = React.useMemo(() => {
+    if (!report) return [];
+    return buildCategoryViews(report.results, report.categories, ALL_GATES);
+  }, [report]);
+
   const handleWaive = React.useCallback((gateId: string, reason: string) => {
     setReport((prev) => {
       if (!prev) return prev;
-      const categories = prev.categories.map((cat) => ({
-        ...cat,
-        gates: cat.gates.map((g) =>
-          g.id === gateId ? { ...g, status: 'waived' as const, waiverReason: reason } : g,
-        ),
-      }));
-      return { ...prev, categories, score: computeScore(categories) };
+      const results = { ...prev.results };
+      if (results[gateId]) {
+        results[gateId] = { ...results[gateId], status: 'waived' as GateStatus };
+      }
+      // Recompute category summaries
+      const categories = { ...prev.categories };
+      for (const [catId, summary] of Object.entries(categories)) {
+        const catGates = ALL_GATES.filter((g) => g.category === catId);
+        let passed = 0;
+        let failed = 0;
+        let needs_attention = 0;
+        let not_started = 0;
+        for (const g of catGates) {
+          const status = results[g.id]?.status ?? 'not_started';
+          switch (status) {
+            case 'passed': case 'waived': passed++; break;
+            case 'failed': failed++; break;
+            case 'needs_attention': needs_attention++; break;
+            default: not_started++; break;
+          }
+        }
+        categories[catId as keyof typeof categories] = {
+          ...summary,
+          passed,
+          failed,
+          needs_attention,
+          not_started,
+          score: catGates.length > 0 ? Math.round((passed / catGates.length) * 100) : 0,
+        };
+      }
+      return { ...prev, results, categories, score: computeScore(categories) };
     });
   }, []);
 
   const handleReVerify = React.useCallback((gateId: string) => {
-    // Stub: set to loading briefly then restore
     setReport((prev) => {
       if (!prev) return prev;
-      return {
-        ...prev,
-        categories: prev.categories.map((cat) => ({
-          ...cat,
-          gates: cat.gates.map((g) =>
-            g.id === gateId ? { ...g, status: 'loading' as const } : g,
-          ),
-        })),
-      };
+      const results = { ...prev.results };
+      if (results[gateId]) {
+        results[gateId] = { ...results[gateId], status: 'checking' as GateStatus };
+      }
+      return { ...prev, results };
     });
     // Simulate re-check completing after a moment
     setTimeout(() => {
       setReport((prev) => {
         if (!prev) return prev;
-        return {
-          ...prev,
-          categories: prev.categories.map((cat) => ({
-            ...cat,
-            gates: cat.gates.map((g) =>
-              g.id === gateId && g.status === 'loading'
-                ? { ...g, status: 'unknown' as const, evidence: { summary: 'Re-verification pending real engine', evaluatedAt: new Date().toISOString() } }
-                : g,
-            ),
-          })),
-        };
+        const results = { ...prev.results };
+        if (results[gateId]?.status === 'checking') {
+          results[gateId] = {
+            ...results[gateId],
+            status: 'not_started' as GateStatus,
+            detail: 'Re-verification pending real engine',
+            evaluatedAt: Date.now(),
+          };
+        }
+        return { ...prev, results };
       });
     }, 1500);
   }, []);
@@ -138,14 +162,16 @@ export default function OnboardingView() {
           </div>
         ) : mode === 'wizard' ? (
           <ReadinessWizard
-            report={report}
+            score={report.score}
+            categories={categoryViews}
             onWaive={handleWaive}
             onReVerify={handleReVerify}
             onSwitchToChecklist={switchToChecklist}
           />
         ) : (
           <ReadinessChecklist
-            report={report}
+            score={report.score}
+            categories={categoryViews}
             onWaive={handleWaive}
             onReVerify={handleReVerify}
             onSwitchToWizard={switchToWizard}

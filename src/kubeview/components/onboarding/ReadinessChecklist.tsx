@@ -6,22 +6,23 @@ import { Badge } from '../primitives/Badge';
 import { GateCard } from './GateCard';
 import { ReadinessScore } from './ReadinessScore';
 import { WaiverDialog } from './WaiverDialog';
-import type { ReadinessReport, ReadinessCategory } from './types';
+import type { ReadinessCategory, CategoryView } from './types';
 
 interface ReadinessChecklistProps {
-  report: ReadinessReport;
+  score: number;
+  categories: CategoryView[];
   onWaive: (gateId: string, reason: string) => void;
   onReVerify: (gateId: string) => void;
   onSwitchToWizard: () => void;
 }
 
 /** Dashboard-style checklist with expandable category sections. */
-export function ReadinessChecklist({ report, onWaive, onReVerify, onSwitchToWizard }: ReadinessChecklistProps) {
+export function ReadinessChecklist({ score, categories, onWaive, onReVerify, onSwitchToWizard }: ReadinessChecklistProps) {
   const [expanded, setExpanded] = React.useState<Set<ReadinessCategory>>(() => {
     // Auto-expand categories with failures
     const failing = new Set<ReadinessCategory>();
-    for (const cat of report.categories) {
-      if (cat.gates.some((g) => g.status === 'fail')) {
+    for (const cat of categories) {
+      if (cat.summary.failed > 0) {
         failing.add(cat.id);
       }
     }
@@ -39,17 +40,16 @@ export function ReadinessChecklist({ report, onWaive, onReVerify, onSwitchToWiza
   };
 
   const waiverGate = waiverTarget
-    ? report.categories.flatMap((c) => c.gates).find((g) => g.id === waiverTarget)
+    ? categories.flatMap((c) => c.gates).find((g) => g.id === waiverTarget)
     : null;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px] gap-6">
       {/* Main checklist */}
       <div className="space-y-3">
-        {report.categories.map((cat) => {
+        {categories.map((cat) => {
           const isOpen = expanded.has(cat.id);
-          const passCount = cat.gates.filter((g) => g.status === 'pass' || g.status === 'waived').length;
-          const failCount = cat.gates.filter((g) => g.status === 'fail').length;
+          const { passed, failed, total } = cat.summary;
 
           return (
             <Card key={cat.id}>
@@ -72,10 +72,10 @@ export function ReadinessChecklist({ report, onWaive, onReVerify, onSwitchToWiza
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <Badge variant="success" size="sm">{passCount} passed</Badge>
-                  {failCount > 0 && <Badge variant="error" size="sm">{failCount} failed</Badge>}
+                  <Badge variant="success" size="sm">{passed} passed</Badge>
+                  {failed > 0 && <Badge variant="error" size="sm">{failed} failed</Badge>}
                   <span className="text-xs text-slate-500">
-                    {passCount}/{cat.gates.length}
+                    {passed}/{total}
                   </span>
                 </div>
               </button>
@@ -86,6 +86,7 @@ export function ReadinessChecklist({ report, onWaive, onReVerify, onSwitchToWiza
                     <GateCard
                       key={gate.id}
                       gate={gate}
+                      result={cat.results[gate.id]}
                       onReVerify={onReVerify}
                       onWaive={(gateId) => setWaiverTarget(gateId)}
                     />
@@ -100,7 +101,7 @@ export function ReadinessChecklist({ report, onWaive, onReVerify, onSwitchToWiza
       {/* Right sidebar — score */}
       <div className="space-y-4">
         <Card className="p-4">
-          <ReadinessScore score={report.score} categories={report.categories} />
+          <ReadinessScore score={score} categories={categories} />
         </Card>
 
         <button

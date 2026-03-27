@@ -11,7 +11,19 @@ export function redirectRoutes() {
       <Route path="morning-report" element={<Navigate to={isFeatureEnabled('incidentCenter') ? '/incidents' : '/pulse'} replace />} />
       <Route path="troubleshoot" element={<Navigate to={isFeatureEnabled('incidentCenter') ? '/incidents' : '/pulse'} replace />} />
       <Route path="config-compare" element={<Navigate to="/admin" replace />} />
-      <Route path="timeline" element={<Navigate to="/admin?tab=timeline" replace />} />
+      <Route path="timeline" element={<Navigate to={isFeatureEnabled('incidentCenter') ? '/incidents' : '/admin?tab=timeline'} replace />} />
+      {isFeatureEnabled('incidentCenter') && (
+        <>
+          <Route path="monitor" element={<Navigate to="/incidents" replace />} />
+          <Route path="alerts" element={<Navigate to="/incidents" replace />} />
+        </>
+      )}
+      {isFeatureEnabled('identityView') && (
+        <>
+          <Route path="users" element={<Navigate to="/identity" replace />} />
+          <Route path="access-control" element={<Navigate to="/identity" replace />} />
+        </>
+      )}
     </>
   );
 }

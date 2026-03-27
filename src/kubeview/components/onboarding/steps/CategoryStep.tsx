@@ -1,7 +1,7 @@
 import React from 'react';
 import { Server, Shield, HeartPulse, Eye, Wrench, GitBranch, type LucideIcon } from 'lucide-react';
 import { GateCard } from '../GateCard';
-import type { CategoryResult, ReadinessCategory } from '../types';
+import type { CategoryView, ReadinessCategory } from '../types';
 
 const CATEGORY_ICON: Record<ReadinessCategory, LucideIcon> = {
   prerequisites: Server,
@@ -13,7 +13,7 @@ const CATEGORY_ICON: Record<ReadinessCategory, LucideIcon> = {
 };
 
 interface Props {
-  category: CategoryResult;
+  category: CategoryView;
   onReVerify?: (gateId: string) => void;
   onWaive?: (gateId: string) => void;
 }
@@ -33,7 +33,13 @@ export function CategoryStep({ category, onReVerify, onWaive }: Props) {
       </div>
       <div className="space-y-2">
         {category.gates.map((gate) => (
-          <GateCard key={gate.id} gate={gate} onReVerify={onReVerify} onWaive={onWaive} />
+          <GateCard
+            key={gate.id}
+            gate={gate}
+            result={category.results[gate.id]}
+            onReVerify={onReVerify}
+            onWaive={onWaive}
+          />
         ))}
       </div>
     </div>

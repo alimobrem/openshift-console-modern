@@ -1,10 +1,10 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import type { CategoryResult } from './types';
+import type { CategoryView } from './types';
 
 interface ReadinessScoreProps {
   score: number;
-  categories: CategoryResult[];
+  categories: CategoryView[];
   className?: string;
 }
 
@@ -53,10 +53,8 @@ export function ReadinessScore({ score, categories, className }: ReadinessScoreP
       {/* Category bars */}
       <div className="w-full space-y-2">
         {categories.map((cat) => {
-          const total = cat.gates.length;
-          const passed = cat.gates.filter(
-            (g) => g.status === 'pass' || g.status === 'waived',
-          ).length;
+          const total = cat.summary.total;
+          const passed = cat.summary.passed;
           const pct = total > 0 ? Math.round((passed / total) * 100) : 0;
 
           return (

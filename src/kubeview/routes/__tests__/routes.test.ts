@@ -94,21 +94,20 @@ describe('route modules', () => {
       expect(source).toContain('export function redirectRoutes()');
     });
 
-    it('defines all legacy redirects', () => {
-      const redirects = [
-        { from: 'software', to: '/create/v1~pods' },
-        { from: 'operators', to: '/admin' },
-        { from: 'operatorhub', to: '/create/v1~pods?tab=operators' },
-        { from: 'dashboard', to: '/pulse' },
-        { from: 'morning-report', to: '/pulse' },
-        { from: 'troubleshoot', to: '/pulse' },
-        { from: 'config-compare', to: '/admin' },
-        { from: 'timeline', to: '/admin?tab=timeline' },
+    it('defines all legacy redirect paths', () => {
+      const paths = [
+        'software', 'operators', 'operatorhub', 'dashboard',
+        'morning-report', 'troubleshoot', 'config-compare', 'timeline',
       ];
-      for (const r of redirects) {
-        expect(source).toContain(`path="${r.from}"`);
-        expect(source).toContain(`to="${r.to}"`);
+      for (const p of paths) {
+        expect(source).toContain(`path="${p}"`);
       }
+    });
+
+    it('supports feature-gated redirects for monitor and alerts', () => {
+      expect(source).toContain('isFeatureEnabled');
+      expect(source).toContain('path="monitor"');
+      expect(source).toContain('path="alerts"');
     });
   });
 

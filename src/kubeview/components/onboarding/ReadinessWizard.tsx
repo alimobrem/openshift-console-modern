@@ -4,10 +4,11 @@ import { cn } from '@/lib/utils';
 import { ReadinessScore } from './ReadinessScore';
 import { WaiverDialog } from './WaiverDialog';
 import { CategoryStep } from './steps/CategoryStep';
-import type { ReadinessReport, ReadinessCategory } from './types';
+import type { ReadinessCategory, CategoryView } from './types';
 
 interface ReadinessWizardProps {
-  report: ReadinessReport;
+  score: number;
+  categories: CategoryView[];
   onWaive: (gateId: string, reason: string) => void;
   onReVerify: (gateId: string) => void;
   onSwitchToChecklist: () => void;
@@ -18,28 +19,28 @@ const STEP_ORDER: ReadinessCategory[] = [
 ];
 
 /** 6-step wizard with non-linear sidebar navigation — modeled on GitOpsSetupWizard. */
-export function ReadinessWizard({ report, onWaive, onReVerify, onSwitchToChecklist }: ReadinessWizardProps) {
+export function ReadinessWizard({ score, categories, onWaive, onReVerify, onSwitchToChecklist }: ReadinessWizardProps) {
   const [activeStep, setActiveStep] = React.useState<ReadinessCategory>('prerequisites');
   const [waiverTarget, setWaiverTarget] = React.useState<string | null>(null);
 
-  const activeCategory = report.categories.find((c) => c.id === activeStep);
+  const activeCategory = categories.find((c) => c.id === activeStep);
 
   const waiverGate = waiverTarget
-    ? report.categories.flatMap((c) => c.gates).find((g) => g.id === waiverTarget)
+    ? categories.flatMap((c) => c.gates).find((g) => g.id === waiverTarget)
     : null;
 
   return (
     <div className="flex gap-6 min-h-[600px]">
       {/* Left sidebar */}
       <div className="w-60 shrink-0 space-y-4">
-        <ReadinessScore score={report.score} categories={report.categories} />
+        <ReadinessScore score={score} categories={categories} />
 
         <nav className="space-y-1">
           {STEP_ORDER.map((stepId) => {
-            const cat = report.categories.find((c) => c.id === stepId);
+            const cat = categories.find((c) => c.id === stepId);
             if (!cat) return null;
 
-            const allPassed = cat.gates.every((g) => g.status === 'pass' || g.status === 'waived');
+            const allPassed = cat.summary.passed === cat.summary.total;
             const isCurrent = activeStep === stepId;
 
             return (
