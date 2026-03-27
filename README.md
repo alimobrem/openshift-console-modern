@@ -186,6 +186,8 @@ ANTHROPIC_API_KEY=sk-ant-... ./deploy/deploy.sh --agent-repo /path/to/pulse-agen
 
 Auto-detects cluster domain, OAuth proxy image, monitoring stack. Prerequisite checks for `oc`, `helm`, `npm`. Fails early with clear fix instructions if credentials are missing.
 
+**WS token sync**: On re-deploys, `deploy.sh` reads the existing WS token from the agent's auto-generated Kubernetes Secret. This prevents token mismatches between the UI (nginx proxy) and agent — no manual token management needed.
+
 ### Helm (UI only)
 
 ```bash

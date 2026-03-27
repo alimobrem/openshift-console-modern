@@ -17,8 +17,9 @@ PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 AGENT_REPO=""
 NO_AGENT=false
 NAMESPACE="openshiftpulse"
-WS_TOKEN="${PULSE_AGENT_WS_TOKEN:-$(openssl rand -hex 16 2>/dev/null || echo pulse-agent-internal-token)}"
 AGENT_RELEASE="pulse-agent"
+# WS token — resolved after namespace is known (see below)
+_WS_TOKEN_OVERRIDE="${PULSE_AGENT_WS_TOKEN:-}"
 GCP_KEY_FILE=""
 
 while [[ $# -gt 0 ]]; do
@@ -176,6 +177,20 @@ if [[ "$NO_AGENT" == "false" ]]; then
   info "Agent deploy: $AGENT_DEPLOY"
 fi
 
+# ─── Resolve WS Token ─────────────────────────────────────────────────────
+# Priority: env/flag override > existing agent secret > generate new
+WS_TOKEN_SECRET="${AGENT_RELEASE}-openshift-sre-agent-ws-token"
+if [[ -n "$_WS_TOKEN_OVERRIDE" ]]; then
+  WS_TOKEN="$_WS_TOKEN_OVERRIDE"
+  info "WS token: from environment/flag"
+elif EXISTING_TOKEN=$(oc get secret "$WS_TOKEN_SECRET" -n "$NAMESPACE" -o jsonpath='{.data.token}' 2>/dev/null) && [[ -n "$EXISTING_TOKEN" ]]; then
+  WS_TOKEN=$(echo "$EXISTING_TOKEN" | base64 -d 2>/dev/null || echo "$EXISTING_TOKEN")
+  info "WS token: read from existing secret ($WS_TOKEN_SECRET)"
+else
+  WS_TOKEN=$(openssl rand -hex 16 2>/dev/null || echo "pulse-agent-internal-token")
+  info "WS token: auto-generated (new install)"
+fi
+
 # ─── Deploy Pulse UI ────────────────────────────────────────────────────────
 
 step "Building Pulse UI"
@@ -224,7 +239,7 @@ helm upgrade --install "$AGENT_RELEASE" chart/ \
   -n "$NAMESPACE" \
   --set rbac.allowWriteOperations=true \
   --set rbac.allowSecretAccess=true \
-  --wait --timeout 60s
+  --timeout 120s
 info "Helm release: $AGENT_RELEASE"
 
 # Build agent image (two-stage: deps base + code overlay)

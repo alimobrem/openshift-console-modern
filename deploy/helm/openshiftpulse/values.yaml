@@ -59,7 +59,12 @@ agent:
   # Default assumes: helm install pulse-agent chart/
   # which creates service: pulse-agent-openshift-sre-agent
   serviceName: pulse-agent-openshift-sre-agent
-  wsToken: ""  # Set by deploy.sh
+  # WS token — set ONE of these:
+  #   wsToken: "literal-value"          # deploy.sh injects this
+  #   wsTokenSecret: "secret-name"      # reads token from agent's auto-generated secret
+  wsToken: ""
+  wsTokenSecret: ""  # e.g. pulse-agent-openshift-sre-agent-ws-token
+  wsTokenSecretKey: "token"
 
 # Quota for the namespace
 quota:
