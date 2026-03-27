@@ -408,7 +408,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
         await k8sPatch(resourcePath, { spec: { replicas: newReplicas } });
         addToast({ type: 'success', title: `Scaled "${resourceName}" to ${newReplicas} replicas` });
       } else if (action === 'scale-to') {
-        const replicas = p?.replicas ?? 0;
+        const replicas = ((p as { replicas?: number } | undefined)?.replicas) ?? 0;
         await k8sPatch(resourcePath, { spec: { replicas } });
         addToast({ type: 'success', title: `Scaled "${resourceName}" to ${replicas} replicas` });
       } else if (action === 'cordon') {

@@ -210,9 +210,9 @@ export default function ComputeView() {
         </div>
 
         {/* Tabs */}
-        <Card className="flex gap-1 p-1" role="tablist" aria-label="Compute tabs">
+        <Card className="flex gap-1 p-1">
           {([['overview', 'Overview'], ['capacity', 'Capacity Planning']] as const).map(([id, label]) => (
-            <button key={id} role="tab" aria-selected={computeTab === id} onClick={() => { const url = new URL(window.location.href); if (id === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', id); window.history.replaceState(null, '', url.toString()); setComputeTab(id); }}
+            <button key={id} role="tab" aria-selected={computeTab === id} aria-label={label} onClick={() => { const url = new URL(window.location.href); if (id === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', id); window.history.replaceState(null, '', url.toString()); setComputeTab(id); }}
               className={cn('px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500', computeTab === id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
               {label}
             </button>
@@ -308,6 +308,7 @@ interface AuditItem {
   name?: string;
   _pressureTypes?: string;
   _kubeletVersion?: string;
+  [key: string]: unknown;
 }
 
 
@@ -343,8 +344,8 @@ function ComputeHealthAudit({
         title: 'HA Control Plane',
         description: 'Production clusters should have 3+ control plane nodes for high availability',
         why: 'etcd requires an odd-numbered quorum (3 or 5 nodes). With fewer than 3 masters, losing a single node causes cluster failure. 3 masters can tolerate 1 failure; 5 can tolerate 2.',
-        passing: hasHA ? masterNodes : [],
-        failing: hasHA ? [] : masterNodes,
+        passing: hasHA ? (masterNodes as unknown as AuditItem[]) : [],
+        failing: hasHA ? [] : (masterNodes as unknown as AuditItem[]),
         yamlExample: `# Control plane nodes are provisioned during cluster installation.
 # To scale control plane nodes post-install, you must:
 # 1. Create new master Machines via MachineSet
@@ -364,8 +365,8 @@ function ComputeHealthAudit({
       title: isHyperShift ? 'Worker Nodes' : 'Dedicated Worker Nodes',
       description: isHyperShift ? 'Worker nodes for workload scheduling (all nodes are workers on hosted clusters)' : 'Production workloads should run on 2+ dedicated worker nodes (not on masters)',
       why: isHyperShift ? 'On HyperShift clusters, all visible nodes are workers. The control plane runs externally in a management cluster.' : 'Running application pods on control plane nodes creates resource contention with etcd and apiserver. Control plane stability is critical — separating workloads protects cluster availability.',
-      passing: hasWorkers ? workerNodes : [],
-      failing: hasWorkers ? [] : workerNodes,
+      passing: hasWorkers ? (workerNodes as unknown as AuditItem[]) : [],
+      failing: hasWorkers ? [] : (workerNodes as unknown as AuditItem[]),
       yamlExample: `# Worker nodes are created via MachineSets.
 # View existing MachineSets and scale them up:
 #   oc get machinesets -n openshift-machine-api
@@ -418,7 +419,7 @@ spec:
       passing: nodeDetails.filter(nd => {
         const s = nd.status;
         return s.ready && !s.pressure?.disk && !s.pressure?.memory && !s.pressure?.pid;
-      }),
+      }) as unknown as AuditItem[],
       failing: pressureNodes.map(nd => {
         const pressures: string[] = [];
         if (nd.status.pressure?.disk) pressures.push('Disk');

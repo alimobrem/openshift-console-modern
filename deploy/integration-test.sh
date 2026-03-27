@@ -24,6 +24,7 @@ AGENT_DEPLOY="${AGENT_RELEASE}-openshift-sre-agent"
 
 pass() { echo "  ✓ $1"; }
 fail() { echo "  ✗ $1"; FAILURES=$((FAILURES + 1)); }
+warn() { echo "  - $1"; }
 
 # Execute a command on the agent pod with timeout
 agent_exec() {

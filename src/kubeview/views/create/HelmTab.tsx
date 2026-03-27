@@ -427,7 +427,7 @@ export function HelmTab() {
             Installed Releases ({helmReleases.length})
           </h3>
           <div className="flex flex-wrap gap-2">
-            {helmReleases.map((r, i: number) => (
+            {helmReleases.map((r: { name?: string; version?: string; status?: string }, i: number) => (
               <span key={i} className="px-3 py-1.5 text-xs bg-slate-800 text-slate-300 rounded border border-slate-700 flex items-center gap-2">
                 <Ship className="w-3 h-3 text-blue-400" />
                 {r.name}

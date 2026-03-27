@@ -53,7 +53,7 @@ export function SelectResourcesStep({ onComplete }: Props) {
       // Final fallback: truncated cluster ID
       try {
         const cv = await k8sGet<K8sResource>('/apis/config.openshift.io/v1/clusterversions/version');
-        const id = cv.spec?.clusterID as string;
+        const id = (cv.spec as { clusterID?: string } | undefined)?.clusterID;
         if (id) setClusterName(`cluster-${id.slice(0, 8)}`);
       } catch {
         if (clusterVersion) {

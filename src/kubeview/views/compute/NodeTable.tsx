@@ -48,7 +48,7 @@ export function NodeTable({ nodeDetails, totalCount, go }: NodeTableProps) {
                     <div className="flex items-center gap-2">
                       {nd.status.ready ? <CheckCircle className="w-3.5 h-3.5 text-green-500 shrink-0" /> : <XCircle className="w-3.5 h-3.5 text-red-500 shrink-0" />}
                       <span className="text-slate-200 truncate max-w-[200px]" title={nd.name}>{nd.name}</span>
-                      {nd.unschedulable && <Ban className="w-3 h-3 text-yellow-500" title="Cordoned" />}
+                      {nd.unschedulable && <Ban className="w-3 h-3 text-yellow-500" aria-label="Cordoned" />}
                     </div>
                     {nd.taints.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">

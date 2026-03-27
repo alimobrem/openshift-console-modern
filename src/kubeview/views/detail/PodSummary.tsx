@@ -52,7 +52,7 @@ function StateIcon({ state }: { state: ContainerStatus['state'] }) {
 
 export function PodSummary({ resource, go }: PodSummaryProps) {
   const spec = resource.spec as Pod['spec'];
-  const status = (resource.status as Pod['status']) || {};
+  const status = resource.status as Pod['status'] | undefined;
   const ns = resource.metadata.namespace || '';
   const name = resource.metadata.name;
   const [expandedContainers, setExpandedContainers] = React.useState<Set<string>>(new Set());
@@ -65,11 +65,11 @@ export function PodSummary({ resource, go }: PodSummaryProps) {
     });
   };
 
-  const phase = status.phase || 'Unknown';
-  const podIP = status.podIP || '—';
-  const hostIP = status.hostIP || '';
+  const phase = status?.phase || 'Unknown';
+  const podIP = status?.podIP || '—';
+  const hostIP = status?.hostIP || '';
   const nodeName = spec?.nodeName || '—';
-  const qosClass = status.qosClass || '—';
+  const qosClass = status?.qosClass || '—';
   const serviceAccount = spec?.serviceAccountName || spec?.serviceAccount || '—';
   const restartPolicy = spec?.restartPolicy || 'Always';
   const containers: Container[] = spec?.containers || [];
@@ -243,8 +243,8 @@ export function PodSummary({ resource, go }: PodSummaryProps) {
                   <div className="flex items-center gap-2 shrink-0">
                     {hasLimits ? (
                       <span className="text-xs px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded flex items-center gap-1">
-                        <Cpu className="w-3 h-3" /> {c.resources.limits.cpu || '—'}
-                        <MemoryStick className="w-3 h-3 ml-1" /> {c.resources.limits.memory || '—'}
+                        <Cpu className="w-3 h-3" /> {c.resources?.limits?.cpu || '—'}
+                        <MemoryStick className="w-3 h-3 ml-1" /> {c.resources?.limits?.memory || '—'}
                       </span>
                     ) : (
                       <span className="text-xs px-1.5 py-0.5 bg-yellow-900/30 text-yellow-400 rounded">no limits</span>
@@ -261,8 +261,8 @@ export function PodSummary({ resource, go }: PodSummaryProps) {
                         <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Requests</div>
                         {hasRequests ? (
                           <div className="text-xs text-slate-300 font-mono space-y-0.5">
-                            {c.resources.requests.cpu && <div>CPU: {c.resources.requests.cpu}</div>}
-                            {c.resources.requests.memory && <div>Memory: {c.resources.requests.memory}</div>}
+                            {c.resources?.requests?.cpu && <div>CPU: {c.resources.requests.cpu}</div>}
+                            {c.resources?.requests?.memory && <div>Memory: {c.resources.requests.memory}</div>}
                           </div>
                         ) : <div className="text-xs text-slate-600">none</div>}
                       </div>
@@ -270,8 +270,8 @@ export function PodSummary({ resource, go }: PodSummaryProps) {
                         <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">Limits</div>
                         {hasLimits ? (
                           <div className="text-xs text-slate-300 font-mono space-y-0.5">
-                            {c.resources.limits.cpu && <div>CPU: {c.resources.limits.cpu}</div>}
-                            {c.resources.limits.memory && <div>Memory: {c.resources.limits.memory}</div>}
+                            {c.resources?.limits?.cpu && <div>CPU: {c.resources.limits.cpu}</div>}
+                            {c.resources?.limits?.memory && <div>Memory: {c.resources.limits.memory}</div>}
                           </div>
                         ) : <div className="text-xs text-slate-600">none</div>}
                       </div>

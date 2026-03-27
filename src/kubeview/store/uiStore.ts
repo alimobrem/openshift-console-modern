@@ -126,14 +126,19 @@ const TOAST_DURATIONS = {
 };
 
 export const useUIStore = create<UIState>()(
-  persist(
+  persist<
+    UIState,
+    [],
+    [],
+    Pick<UIState, 'tabs' | 'activeTabId' | 'selectedNamespace' | 'dockWidth'>
+  >(
     (set, get) => ({
       // Tabs - default state
       tabs: DEFAULT_TABS,
       activeTabId: 'pulse',
       _pendingNavigate: null,
 
-      addTab: (tab) => {
+      addTab: (tab: Omit<Tab, 'id'>) => {
         // Normalize path: strip trailing slash (except root)
         const normalizedPath = tab.path.length > 1 && tab.path.endsWith('/') ? tab.path.slice(0, -1) : tab.path;
         // Ensure title is never empty
@@ -336,9 +341,10 @@ export const useUIStore = create<UIState>()(
         activeTabId: state.activeTabId,
         selectedNamespace: state.selectedNamespace,
         dockWidth: state.dockWidth,
-      }),
-      merge: (persisted: any, current: any) => {
-        if (!persisted) return current;
+      } as Pick<UIState, 'tabs' | 'activeTabId' | 'selectedNamespace' | 'dockWidth'>),
+      merge: (persisted, current) => {
+        if (persisted == null) return current;
+        const persistedState = persisted as Partial<Pick<UIState, 'tabs' | 'activeTabId'>>;
 
         // Paths that are redirects — discard tabs for these on rehydration
         const STALE_PATHS = new Set([
@@ -348,7 +354,7 @@ export const useUIStore = create<UIState>()(
 
         // Re-assign unique IDs to persisted tabs to avoid key collisions
         const seen = new Set<string>();
-        const tabs = (persisted.tabs || current.tabs).map((tab: Tab) => {
+        const tabs = (persistedState.tabs || current.tabs).map((tab: Tab) => {
           // Deduplicate by path
           if (seen.has(tab.path)) return null;
           seen.add(tab.path);
@@ -363,11 +369,11 @@ export const useUIStore = create<UIState>()(
         }).filter(Boolean) as Tab[];
 
         // Find active tab in the cleaned list
-        const activeTab = tabs.find((t: Tab) => t.path === (persisted.tabs || []).find((pt: Tab) => pt.id === persisted.activeTabId)?.path);
+        const activeTab = tabs.find((t: Tab) => t.path === (persistedState.tabs || []).find((pt: Tab) => pt.id === persistedState.activeTabId)?.path);
 
         return {
           ...current,
-          ...persisted,
+          ...persistedState,
           tabs,
           activeTabId: activeTab?.id || 'pulse',
         };

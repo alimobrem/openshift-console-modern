@@ -22,6 +22,7 @@ export interface ClusterVersion {
     observedGeneration?: number;
     versionHash?: string;
   };
+  [key: string]: unknown;
 }
 
 export interface ClusterOperator {
@@ -34,6 +35,7 @@ export interface ClusterOperator {
     versions?: Array<{ name: string; version: string }>;
     relatedObjects?: Array<{ group: string; resource: string; namespace?: string; name: string }>;
   };
+  [key: string]: unknown;
 }
 
 export interface BuildConfig {
@@ -50,6 +52,7 @@ export interface BuildConfig {
   status?: {
     lastVersion?: number;
   };
+  [key: string]: unknown;
 }
 
 export interface Build {
@@ -69,6 +72,7 @@ export interface Build {
     message?: string;
     reason?: string;
   };
+  [key: string]: unknown;
 }
 
 export interface ImageStream {
@@ -84,6 +88,7 @@ export interface ImageStream {
     publicDockerImageRepository?: string;
     tags?: Array<{ tag: string; items?: Array<{ created: string; dockerImageReference: string; image: string }> }>;
   };
+  [key: string]: unknown;
 }
 
 export interface MachineSet {
@@ -102,6 +107,7 @@ export interface MachineSet {
     fullyLabeledReplicas?: number;
     observedGeneration?: number;
   };
+  [key: string]: unknown;
 }
 
 export interface Machine {
@@ -117,6 +123,7 @@ export interface Machine {
     providerStatus?: Record<string, unknown>;
     addresses?: Array<{ type: string; address: string }>;
   };
+  [key: string]: unknown;
 }
 
 export interface NodePool {
@@ -147,4 +154,5 @@ export interface NodePool {
     version?: string;
     conditions?: Condition[];
   };
+  [key: string]: unknown;
 }

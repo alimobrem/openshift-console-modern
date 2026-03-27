@@ -10,6 +10,7 @@ import { Bot, Shield } from 'lucide-react';
 const MODE_ICON: Record<AgentMode, typeof Bot> = {
   sre: Bot,
   security: Shield,
+  monitor: Shield,
 };
 
 /** Describe a write tool in plain English for confirmation dialogs */

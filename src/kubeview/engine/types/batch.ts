@@ -25,7 +25,9 @@ export interface Job {
     active?: number;
     succeeded?: number;
     failed?: number;
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }
 
 export interface CronJob {
@@ -46,4 +48,5 @@ export interface CronJob {
     lastScheduleTime?: string;
     lastSuccessfulTime?: string;
   };
+  [key: string]: unknown;
 }

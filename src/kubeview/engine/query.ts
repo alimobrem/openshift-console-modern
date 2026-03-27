@@ -9,6 +9,7 @@ import { K8S_BASE as BASE } from './gvr';
 import { getClusterBase } from './clusterConnection';
 import { useUIStore } from '../store/uiStore';
 import { parseK8sErrorResponse, wrapNetworkError } from './errors';
+import type { K8sResource } from './renderers';
 
 /** Sanitize a value for safe interpolation into PromQL label matchers */
 export function sanitizePromQL(value: string): string {
@@ -46,7 +47,7 @@ interface K8sListResponse<T> {
 /**
  * List resources
  */
-export async function k8sList<T>(
+export async function k8sList<T = K8sResource>(
   apiPath: string,
   namespace?: string,
   clusterId?: string
@@ -88,7 +89,7 @@ export async function k8sList<T>(
 /**
  * Get a single resource
  */
-export async function k8sGet<T>(apiPath: string, clusterId?: string): Promise<T> {
+export async function k8sGet<T = K8sResource>(apiPath: string, clusterId?: string): Promise<T> {
   let response: Response;
   try {
     response = await fetch(`${getClusterBase(clusterId)}${apiPath}`, { headers: getImpersonationHeaders() });
@@ -229,7 +230,7 @@ export async function k8sDelete(apiPath: string, clusterId?: string): Promise<vo
 /**
  * Hook to list resources
  */
-export function useK8sList<T>(
+export function useK8sList<T = K8sResource>(
   apiPath: string,
   namespace?: string,
   options?: {
@@ -249,7 +250,7 @@ export function useK8sList<T>(
 /**
  * Hook to get a single resource
  */
-export function useK8sGet<T>(
+export function useK8sGet<T = K8sResource>(
   apiPath: string,
   options?: {
     enabled?: boolean;

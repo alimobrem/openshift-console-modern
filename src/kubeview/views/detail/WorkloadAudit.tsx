@@ -103,7 +103,7 @@ export function WorkloadAudit({ resource, go }: { resource: K8sResource; go: (pa
   const hasRunAsNonRoot = podSecCtx.runAsNonRoot === true;
   const noPrivEscalation = containers.every(c => c.securityContext?.allowPrivilegeEscalation === false);
   const dropAllCaps = containers.every(c => {
-    const drop = c.securityContext?.capabilities?.drop || [];
+    const drop = ((c.securityContext as { capabilities?: { drop?: string[] } } | undefined)?.capabilities?.drop) || [];
     return drop.some((d: string) => d === 'ALL' || d === 'all');
   });
   checks.push({

@@ -16,6 +16,8 @@ export interface Deployment {
     revisionHistoryLimit?: number;
     minReadySeconds?: number;
     paused?: boolean;
+    updateStrategy?: { type?: string };
+    [key: string]: unknown;
   };
   status?: {
     replicas?: number;
@@ -25,7 +27,9 @@ export interface Deployment {
     updatedReplicas?: number;
     observedGeneration?: number;
     conditions?: Condition[];
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }
 
 export interface StatefulSet {
@@ -50,7 +54,9 @@ export interface StatefulSet {
     updatedReplicas?: number;
     observedGeneration?: number;
     conditions?: Condition[];
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }
 
 export interface DaemonSet {
@@ -72,7 +78,9 @@ export interface DaemonSet {
     numberMisscheduled?: number;
     observedGeneration?: number;
     conditions?: Condition[];
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }
 
 export interface ReplicaSet {
@@ -90,5 +98,7 @@ export interface ReplicaSet {
     availableReplicas?: number;
     observedGeneration?: number;
     conditions?: Condition[];
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }

@@ -147,7 +147,6 @@ export function RollbackPanel({ resource, namespace }: { resource: K8sResource; 
         { spec: { template: rollbackTarget.podTemplate } },
       );
       addToast({
-        id: `rollback-${Date.now()}`,
         type: 'success',
         title: `Rollback to revision ${rollbackTarget.number} started`,
         detail: `Deployment "${deploymentName}" is rolling back.`,
@@ -156,7 +155,6 @@ export function RollbackPanel({ resource, namespace }: { resource: K8sResource; 
       queryClient.invalidateQueries({ queryKey: ['k8s'] });
     } catch (err: unknown) {
       addToast({
-        id: `rollback-err-${Date.now()}`,
         type: 'error',
         title: 'Rollback failed',
         detail: err instanceof Error ? err.message : 'Unknown error',

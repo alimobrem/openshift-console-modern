@@ -378,7 +378,7 @@ export default function BuildsView() {
                     ><ScrollText className="w-3.5 h-3.5" /></button>
                     <div className="text-xs text-slate-500 shrink-0 flex items-center gap-2">
                       <span>{start && end ? formatDuration(start, end) : '—'}</span>
-                      <span>{timeAgo(b.metadata?.creationTimestamp)}</span>
+                      <span>{timeAgo(b.metadata?.creationTimestamp || '')}</span>
                     </div>
                   </div>
                 );
@@ -428,7 +428,7 @@ export default function BuildsView() {
                         <td className="py-2 pr-4 text-slate-500">{ns}</td>
                         <td className="py-2 pr-4 text-slate-500">{strategy}</td>
                         <td className="py-2 pr-4 text-slate-400 font-mono">{start ? formatDuration(start, end || undefined) : '—'}</td>
-                        <td className="py-2 pr-4 text-slate-500">{timeAgo(b.metadata?.creationTimestamp)}</td>
+                        <td className="py-2 pr-4 text-slate-500">{timeAgo(b.metadata?.creationTimestamp || '')}</td>
                         <td className="py-2 pr-4">
                           <button
                             onClick={(e) => { e.stopPropagation(); go(`/logs/${ns}/${name}?container=&kind=Build`, `${name} (Logs)`); }}

@@ -108,7 +108,7 @@ function WorkloadLogsView({ namespace, name, selector, kind }: {
         </button>
         {podNames.map((pn: string) => {
           const pod = pods.find((p: any) => p.metadata.name === pn);
-          const phase = pod?.status?.phase || 'Unknown';
+          const phase = (pod?.status as { phase?: string } | undefined)?.phase || 'Unknown';
           const isRunning = phase === 'Running';
           return (
             <button

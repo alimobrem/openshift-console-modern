@@ -14,10 +14,14 @@
     "type-check": "tsc --noEmit",
     "type-check:strict": "tsc --noEmit -p tsconfig.strict.json",
     "type-check:watch": "tsc --noEmit --watch",
-    "lint": "eslint src/ --fix",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
     "format": "prettier --write \"src/**/*.{ts,tsx,json,css}\"",
-    "test": "vitest",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest --run --coverage",
     "test:ui": "vitest --ui",
+    "verify": "npm run type-check && npm run type-check:strict && npm run lint && npm run test && npm run build",
     "clean": "rm -rf dist .rspack_cache node_modules/.cache"
   },
   "dependencies": {

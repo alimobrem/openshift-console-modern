@@ -9,6 +9,7 @@ export type K8sResource = {
     name: string;
     namespace?: string;
     resourceVersion?: string;
+    generation?: number;
     uid?: string;
     labels?: Record<string, string>;
     annotations?: Record<string, string>;
@@ -16,9 +17,10 @@ export type K8sResource = {
     ownerReferences?: Array<{ apiVersion: string; kind: string; name: string; uid: string; controller?: boolean; blockOwnerDeletion?: boolean }>;
     deletionTimestamp?: string;
   };
-  spec?: Record<string, unknown>;
-  status?: Record<string, unknown>;
-  [key: string]: unknown;
+  type?: string;
+  data?: Record<string, string>;
+  spec?: unknown;
+  status?: unknown;
 };
 
 // Column definition for list views
@@ -354,9 +356,10 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
   // Check top-level scalar fields (e.g., "type" on Secrets)
   const topFields = new Set<string>();
   for (const r of sample) {
+    const record = r as Record<string, unknown>;
     for (const key of Object.keys(r)) {
       if (skip.has(key)) continue;
-      const val = r[key];
+      const val = record[key];
       if (val !== null && val !== undefined && typeof val !== 'object') {
         topFields.add(key);
       }
@@ -373,9 +376,10 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
   // Check top-level objects → extract scalar sub-fields (e.g., roleRef.name, roleRef.kind)
   const topObjectFields: Array<{ parent: string; child: string }> = [];
   for (const r of sample) {
+    const record = r as Record<string, unknown>;
     for (const key of Object.keys(r)) {
       if (skip.has(key)) continue;
-      const val = r[key];
+      const val = record[key];
       if (val && typeof val === 'object' && !Array.isArray(val)) {
         for (const childKey of Object.keys(val as Record<string, unknown>)) {
           const childVal = (val as Record<string, unknown>)[childKey];
@@ -393,9 +397,10 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
   // Check top-level arrays → show count (e.g., subjects: 3)
   const topArrayFields = new Set<string>();
   for (const r of sample) {
+    const record = r as Record<string, unknown>;
     for (const key of Object.keys(r)) {
       if (skip.has(key)) continue;
-      const val = r[key];
+      const val = record[key];
       if (Array.isArray(val)) {
         topArrayFields.add(key);
       }
@@ -406,7 +411,7 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
     addCol({
       id: `top_${field}`,
       header: formatHeader(field),
-      accessorFn: (resource) => resource[field] ?? '-',
+      accessorFn: (resource) => (resource as Record<string, unknown>)[field] ?? '-',
       render: renderAutoValue,
       sortable: true,
       priority: 10 + cols.length,
@@ -429,7 +434,7 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
       id: `obj_${field}_${sub}`,
       header: `${formatHeader(field)} ${formatHeader(sub)}`,
       accessorFn: (resource) => {
-        const obj = resource[field] as Record<string, unknown> | undefined;
+        const obj = (resource as Record<string, unknown>)[field] as Record<string, unknown> | undefined;
         return obj?.[sub] ?? '-';
       },
       render: renderAutoValue,
@@ -445,7 +450,7 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
       id: `arr_${f}`,
       header: formatHeader(f),
       accessorFn: (resource) => {
-        const arr = resource[f] as unknown[] | undefined;
+        const arr = (resource as Record<string, unknown>)[f] as unknown[] | undefined;
         return arr ? arr.length : 0;
       },
       render: (value) => {
@@ -611,7 +616,10 @@ export function autoDetectColumns(resources: K8sResource[]): ColumnDef[] {
   }
 
   // Check data keys count (for ConfigMaps/Secrets-like resources)
-  const hasData = sample.some(r => r.data && typeof r.data === 'object');
+  const hasData = sample.some((r) => {
+    const data = (r as Record<string, unknown>).data;
+    return !!data && typeof data === 'object';
+  });
   if (hasData) {
     addCol({
       id: 'data_keys',

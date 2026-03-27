@@ -35,7 +35,7 @@ export function DockAgentPanel() {
   }, []);
 
   // Auto-scroll — debounced during streaming to prevent layout thrashing
-  const scrollTimer = useRef<ReturnType<typeof setTimeout>>();
+  const scrollTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   useEffect(() => {
     clearTimeout(scrollTimer.current);
     scrollTimer.current = setTimeout(() => {

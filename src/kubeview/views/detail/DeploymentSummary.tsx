@@ -122,6 +122,7 @@ export function DeploymentSummary({ resource, managedPods, go }: DeploymentSumma
           {containers.map((c) => {
             const hasLimits = c.resources?.limits?.cpu && c.resources?.limits?.memory;
             const hasRequests = c.resources?.requests?.cpu && c.resources?.requests?.memory;
+            const limits = c.resources?.limits;
             const hasProbes = c.livenessProbe || c.readinessProbe;
             return (
               <div key={c.name} className="px-4 py-2.5 flex items-center gap-4">
@@ -140,17 +141,17 @@ export function DeploymentSummary({ resource, managedPods, go }: DeploymentSumma
                 <div className="flex items-center gap-2 shrink-0">
                   {hasLimits && (
                     <span className="text-xs px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded flex items-center gap-1">
-                      <Cpu className="w-3 h-3" /> {c.resources.limits.cpu}
-                      <MemoryStick className="w-3 h-3 ml-1" /> {c.resources.limits.memory}
+                      <Cpu className="w-3 h-3" /> {limits?.cpu}
+                      <MemoryStick className="w-3 h-3 ml-1" /> {limits?.memory}
                     </span>
                   )}
                   {!hasLimits && (
                     <span className="text-xs px-1.5 py-0.5 bg-yellow-900/30 text-yellow-400 rounded">no limits</span>
                   )}
                   {hasProbes ? (
-                    <Shield className="w-3.5 h-3.5 text-green-500" title="Has probes" />
+                    <Shield className="w-3.5 h-3.5 text-green-500" aria-label="Has probes" />
                   ) : (
-                    <Shield className="w-3.5 h-3.5 text-slate-600" title="No probes" />
+                    <Shield className="w-3.5 h-3.5 text-slate-600" aria-label="No probes" />
                   )}
                 </div>
               </div>

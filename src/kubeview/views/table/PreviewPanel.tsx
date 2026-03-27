@@ -56,10 +56,10 @@ export function PreviewPanel({ resource, gvrKey, onClose }: PreviewPanelProps) {
             </div>
           </div>
         )}
-        {resource.spec && (
+        {Boolean(resource.spec) && (
           <div>
             <div className="text-slate-500 mb-1">Spec:</div>
-            <pre className="text-xs text-emerald-400 font-mono bg-slate-950 p-2 rounded overflow-auto max-h-48">{jsonToYaml(resource.spec).slice(0, 500)}</pre>
+            <pre className="text-xs text-emerald-400 font-mono bg-slate-950 p-2 rounded overflow-auto max-h-48">{String(jsonToYaml(resource.spec)).slice(0, 500)}</pre>
           </div>
         )}
         <div className="pt-2 border-t border-slate-800">

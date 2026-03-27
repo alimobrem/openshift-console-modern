@@ -98,6 +98,7 @@ export function SnapshotsTab() {
           crds: raw.crds,
           storageClasses: raw.storageClasses || [],
           namespaceCount: raw.namespaceCount || 0,
+          controlPlaneTopology: raw.controlPlaneTopology || 'Unknown',
         };
         const updated = [snap, ...savedSnapshots].slice(0, 20);
         setSavedSnapshots(updated);

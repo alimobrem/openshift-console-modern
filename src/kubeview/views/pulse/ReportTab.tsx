@@ -308,7 +308,7 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
       const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
       return events.filter((e) => {
         const ev = e as unknown as Event;
-        return (ev.lastTimestamp || ev.metadata.creationTimestamp) >= oneHourAgo;
+        return (ev.lastTimestamp || ev.metadata?.creationTimestamp || '') >= oneHourAgo;
       });
     },
     staleTime: 60_000, refetchInterval: 120_000,

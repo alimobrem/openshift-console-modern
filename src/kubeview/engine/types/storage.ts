@@ -14,6 +14,7 @@ export interface StorageClass {
   volumeBindingMode?: 'Immediate' | 'WaitForFirstConsumer';
   allowVolumeExpansion?: boolean;
   mountOptions?: string[];
+  [key: string]: unknown;
 }
 
 export interface VolumeSnapshot {
@@ -31,6 +32,7 @@ export interface VolumeSnapshot {
     boundVolumeSnapshotContentName?: string;
     error?: { time?: string; message?: string };
   };
+  [key: string]: unknown;
 }
 
 export interface CSIDriver {
@@ -44,4 +46,5 @@ export interface CSIDriver {
     storageCapacity?: boolean;
     fsGroupPolicy?: string;
   };
+  [key: string]: unknown;
 }

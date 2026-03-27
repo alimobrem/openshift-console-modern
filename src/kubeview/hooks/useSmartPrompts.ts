@@ -26,10 +26,11 @@ export interface SmartPromptItem {
 function detectFailedPods(pods: K8sResource[]): Array<{ name: string; namespace: string; status: string }> {
   const failed: Array<{ name: string; namespace: string; status: string }> = [];
   for (const pod of pods) {
-    const phase = pod.status?.phase;
-    const containerStatuses = pod.status?.containerStatuses as Array<{
+    const status = (pod.status ?? {}) as { phase?: string; containerStatuses?: Array<{
       state?: { waiting?: { reason?: string } };
-    }> | undefined;
+    }> };
+    const phase = status.phase;
+    const containerStatuses = status.containerStatuses;
 
     // Check container waiting reasons
     const waitingReason = containerStatuses?.find(
@@ -60,7 +61,7 @@ function detectFailedPods(pods: K8sResource[]): Array<{ name: string; namespace:
  */
 function detectPendingPods(pods: K8sResource[]): Array<{ name: string; namespace: string }> {
   return pods
-    .filter((pod) => pod.status?.phase === 'Pending')
+    .filter((pod) => ((pod.status as { phase?: string } | undefined)?.phase === 'Pending'))
     .map((pod) => ({
       name: pod.metadata.name,
       namespace: pod.metadata.namespace ?? 'default',
@@ -72,7 +73,7 @@ function detectPendingPods(pods: K8sResource[]): Array<{ name: string; namespace
  */
 function detectPendingPVCs(pvcs: K8sResource[]): Array<{ name: string; namespace: string }> {
   return pvcs
-    .filter((pvc) => pvc.status?.phase === 'Pending')
+    .filter((pvc) => ((pvc.status as { phase?: string } | undefined)?.phase === 'Pending'))
     .map((pvc) => ({
       name: pvc.metadata.name,
       namespace: pvc.metadata.namespace ?? 'default',
@@ -85,8 +86,10 @@ function detectPendingPVCs(pvcs: K8sResource[]): Array<{ name: string; namespace
 function detectUnhealthyDeployments(deployments: K8sResource[]): Array<{ name: string; namespace: string; ready: number; desired: number }> {
   const unhealthy: Array<{ name: string; namespace: string; ready: number; desired: number }> = [];
   for (const dep of deployments) {
-    const desired = (dep.spec?.replicas as number | undefined) ?? 0;
-    const ready = (dep.status?.readyReplicas as number | undefined) ?? 0;
+    const spec = (dep.spec ?? {}) as { replicas?: number };
+    const status = (dep.status ?? {}) as { readyReplicas?: number };
+    const desired = spec.replicas ?? 0;
+    const ready = status.readyReplicas ?? 0;
     if (desired > 0 && ready < desired) {
       unhealthy.push({
         name: dep.metadata.name,

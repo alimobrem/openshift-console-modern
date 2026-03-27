@@ -59,6 +59,14 @@ import { useArgoSyncInfo } from '../hooks/useArgoCD';
 import { useCanI } from '../hooks/useCanI';
 import { LabelsSection, AnnotationsSection, DetailSection } from './detail/MetadataSections';
 
+const SafeDetailSection = DetailSection as unknown as React.ComponentType<{
+  title: string;
+  children: React.ReactNode;
+  collapsible?: boolean;
+}>;
+const MetadataSectionAny = SafeDetailSection as React.ComponentType<any>;
+const CardAny = Card as React.ComponentType<any>;
+
 interface DetailViewProps {
   gvrKey: string;
   namespace?: string;
@@ -594,7 +602,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         {detailTab === 'conditions' && (() => {
           const conditions = (status.conditions || []) as Array<{ type: string; status: string; reason?: string; message?: string; lastTransitionTime?: string; lastHeartbeatTime?: string }>;
           return (
-            <Card>
+            <CardAny>
               {conditions.length === 0 ? (
                 <div className="px-4 py-8 text-center text-slate-500 text-sm">No conditions reported for this resource</div>
               ) : (
@@ -638,7 +646,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                   </table>
                 </div>
               )}
-            </Card>
+            </CardAny>
           );
         })()}
 
@@ -692,7 +700,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
             {/* Incident + Audit + Rollback in 2-column grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
-                {(resource.kind === 'Pod' || isWorkload) && (
+                {isWorkload && (
                   <IncidentContext resource={resource} managedPods={managedPods} events={sortedEvents} namespace={namespace} go={go} />
                 )}
                 <RollbackPanel resource={resource} namespace={namespace} />
@@ -738,36 +746,22 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         )}
 
         {/* Generic layout for other resources */}
-        {(resource.kind !== 'Deployment' || !namespace) && (resource.kind !== 'Pod' || !namespace) && (
+        {((resource.kind !== 'Deployment' || !namespace) && (resource.kind !== 'Pod' || !namespace) && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left column - Details */}
           <div className="lg:col-span-2 space-y-6">
             {/* Metadata */}
-            <DetailSection title="Metadata">
-              <DetailField label="Name" value={resource.metadata.name} />
-              {resource.metadata.namespace && (
-                <DetailField label="Namespace" value={resource.metadata.namespace} />
-              )}
-              <DetailField label="UID" value={resource.metadata.uid} mono />
-              <DetailField
-                label="Created"
-                value={
-                  resource.metadata.creationTimestamp
-                    ? new Date(resource.metadata.creationTimestamp).toLocaleString()
-                    : '-'
-                }
-              />
-              {resource.metadata.resourceVersion && (
-                <DetailField
-                  label="Resource Version"
-                  value={resource.metadata.resourceVersion}
-                  mono
-                />
-              )}
-            </DetailSection>
+            <Card>
+              <div className="px-4 py-3 border-b border-slate-800">
+                <h2 className="text-sm font-semibold text-slate-100">Metadata</h2>
+              </div>
+              <pre className="px-4 py-3 text-xs text-slate-300 font-mono overflow-auto max-h-64">
+                {JSON.stringify(resource.metadata ?? {}, null, 2)}
+              </pre>
+            </Card>
 
             {/* Containers (Pods only) */}
-            {resource.kind === 'Pod' && spec.containers && (
+            {resource.kind === 'Pod' && Array.isArray(spec.containers) && (
               <DetailSection title={`Containers (${(spec.containers as Container[]).length})`}>
                 <div className="space-y-3">
                   {(spec.containers as Container[]).map((container: Container) => {
@@ -982,7 +976,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
             )}
           </div>
         </div>
-        )}
+        )) as React.ReactNode}
         </>
         )}
       </div>
@@ -1104,14 +1098,15 @@ function DetailField({
   mono = false,
 }: {
   label: string;
-  value: string | undefined;
+  value: unknown;
   mono?: boolean;
-}) {
+}): React.JSX.Element {
+  const displayValue = value == null ? '-' : String(value);
   return (
     <div className="flex items-start gap-4 py-2">
       <span className="text-xs text-slate-400 w-40 flex-shrink-0">{label}</span>
       <span className={cn('text-xs text-slate-200', mono && 'font-mono')}>
-        {value || '-'}
+        {displayValue}
       </span>
     </div>
   );

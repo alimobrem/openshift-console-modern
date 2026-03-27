@@ -20,6 +20,7 @@ export interface Ingress {
   status?: {
     loadBalancer?: { ingress?: Array<{ ip?: string; hostname?: string }> };
   };
+  [key: string]: unknown;
 }
 
 export interface NetworkPolicy {
@@ -38,6 +39,7 @@ export interface NetworkPolicy {
       ports?: Array<{ port?: number | string; protocol?: string }>;
     }>;
   };
+  [key: string]: unknown;
 }
 
 // OpenShift Route
@@ -56,4 +58,5 @@ export interface Route {
   status?: {
     ingress?: Array<{ host?: string; conditions?: Condition[]; routerName?: string }>;
   };
+  [key: string]: unknown;
 }

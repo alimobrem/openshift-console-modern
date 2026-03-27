@@ -84,6 +84,7 @@ export function IncidentContext({ resource, managedPods, events, namespace, go }
     const seen = new Set<string>();
     return all.filter(e => {
       const uid = e.metadata?.uid;
+      if (!uid) return true;
       if (seen.has(uid)) return false;
       seen.add(uid);
       return true;

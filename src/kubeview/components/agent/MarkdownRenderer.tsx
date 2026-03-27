@@ -5,6 +5,8 @@
 
 import { cn } from '@/lib/utils';
 
+import type { ReactNode } from 'react';
+
 interface Props {
   content: string;
   className?: string;
@@ -121,7 +123,7 @@ function Block({ block }: { block: BlockNode }) {
 /** Render inline formatting: **bold**, *italic*, `code`, [links] */
 function InlineText({ text }: { text: string }) {
   // Split on inline patterns
-  const parts: (string | JSX.Element)[] = [];
+  const parts: ReactNode[] = [];
   let remaining = text;
   let key = 0;
 

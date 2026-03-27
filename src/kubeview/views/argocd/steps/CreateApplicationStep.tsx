@@ -310,7 +310,7 @@ export function CreateApplicationStep({ onComplete }: Props) {
 
         // Ensure ArgoCD has repo credentials and target path exists
         await ensureArgoRepoSecret(argoNamespace, config);
-        await ensureGitPath(provider, config.baseBranch, rootAppObj.spec.source.path);
+        await ensureGitPath(provider, config.baseBranch, (rootAppObj as { spec?: { source?: { path?: string } } }).spec?.source?.path || '');
 
         await k8sCreate(
           `/apis/argoproj.io/v1alpha1/namespaces/${argoNamespace}/applications`,
@@ -328,7 +328,7 @@ export function CreateApplicationStep({ onComplete }: Props) {
         // Ensure ArgoCD has repo credentials and target path exists
         if (isConfigured && config) {
           await ensureArgoRepoSecret(argoNamespace, config);
-          const appPath = applicationObj.spec?.source?.path;
+          const appPath = (applicationObj as { spec?: { source?: { path?: string } } }).spec?.source?.path;
           if (appPath) {
             const provider = createGitProvider(config);
             await ensureGitPath(provider, config.baseBranch, appPath);

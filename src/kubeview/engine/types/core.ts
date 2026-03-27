@@ -20,7 +20,9 @@ export interface Pod {
     hostIP?: string;
     startTime?: string;
     qosClass?: string;
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }
 
 export interface Node {
@@ -48,7 +50,9 @@ export interface Node {
     };
     addresses?: Array<{ type: string; address: string }>;
     images?: Array<{ names?: string[]; sizeBytes?: number }>;
+    [key: string]: unknown;
   };
+  [key: string]: unknown;
 }
 
 export interface Service {
@@ -68,6 +72,7 @@ export interface Service {
   status?: {
     loadBalancer?: { ingress?: Array<{ ip?: string; hostname?: string }> };
   };
+  [key: string]: unknown;
 }
 
 export interface ConfigMap {
@@ -76,6 +81,7 @@ export interface ConfigMap {
   metadata: ObjectMeta;
   data?: Record<string, string>;
   binaryData?: Record<string, string>;
+  [key: string]: unknown;
 }
 
 export interface Secret {
@@ -85,6 +91,7 @@ export interface Secret {
   data?: Record<string, string>;
   stringData?: Record<string, string>;
   type?: string;
+  [key: string]: unknown;
 }
 
 export interface Namespace {
@@ -123,6 +130,7 @@ export interface PersistentVolumeClaim {
     capacity?: Record<string, string>;
     conditions?: Condition[];
   };
+  [key: string]: unknown;
 }
 
 export interface PersistentVolume {
@@ -142,6 +150,7 @@ export interface PersistentVolume {
     phase?: 'Available' | 'Bound' | 'Released' | 'Failed';
     reason?: string;
   };
+  [key: string]: unknown;
 }
 
 export interface Event {
@@ -156,4 +165,5 @@ export interface Event {
   firstTimestamp?: string;
   lastTimestamp?: string;
   source?: { component?: string; host?: string };
+  [key: string]: unknown;
 }

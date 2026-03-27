@@ -21,6 +21,9 @@ interface DeployProgressProps {
   onClose: () => void;
 }
 
+type DeployPhase = 'creating' | 'pulling' | 'starting' | 'running' | 'failed' | 'succeeded';
+type DeletePhase = 'deleting' | 'terminating' | 'cleaning-pods' | 'cleaning' | 'gone';
+
 export default function DeployProgress({ type, name, namespace, mode = 'deploy', onClose }: DeployProgressProps) {
   const go = useNavigateTab();
   const [showLogs, setShowLogs] = useState(false);
@@ -75,19 +78,20 @@ export default function DeployProgress({ type, name, namespace, mode = 'deploy',
   });
 
   // === DEPLOY phase logic ===
-  const deployPhase = React.useMemo(() => {
+  const deployPhase = React.useMemo<DeployPhase>(() => {
     if (!resource) return 'creating';
     if (type === 'job') {
-      const status = resource.status || {};
-      if (status.succeeded > 0) return 'succeeded';
-      if (status.failed > 0) return 'failed';
-      if (status.active > 0) return 'running';
+      const status = (resource.status ?? {}) as { succeeded?: number; failed?: number; active?: number };
+      if ((status.succeeded ?? 0) > 0) return 'succeeded';
+      if ((status.failed ?? 0) > 0) return 'failed';
+      if ((status.active ?? 0) > 0) return 'running';
       return 'creating';
     }
-    const status = resource.status || {};
-    const desired = resource.spec?.replicas || 1;
-    const available = status.availableReplicas || 0;
-    const ready = status.readyReplicas || 0;
+    const status = (resource.status ?? {}) as { availableReplicas?: number; readyReplicas?: number };
+    const spec = (resource.spec ?? {}) as { replicas?: number };
+    const desired = spec.replicas ?? 1;
+    const available = status.availableReplicas ?? 0;
+    const ready = status.readyReplicas ?? 0;
     if (available >= desired && ready >= desired) return 'running';
     for (const pod of pods) {
       const cs = pod.status?.containerStatuses || [];
@@ -105,7 +109,7 @@ export default function DeployProgress({ type, name, namespace, mode = 'deploy',
   // === DELETE phase logic ===
   // We already sent the delete — so if the resource still exists, it's
   // being torn down (even if deletionTimestamp hasn't propagated yet).
-  const deletePhase = React.useMemo(() => {
+  const deletePhase = React.useMemo<DeletePhase>(() => {
     if (!resource && pods.length === 0) return 'gone';
     if (!resource && pods.length > 0) return 'cleaning-pods';
     // Resource still exists — it's being deleted (GC working)
@@ -113,7 +117,7 @@ export default function DeployProgress({ type, name, namespace, mode = 'deploy',
     return 'cleaning';
   }, [resource, pods]);
 
-  const phase = isDelete ? deletePhase : deployPhase;
+  const phase: DeployPhase | DeletePhase = isDelete ? deletePhase : deployPhase;
   const isTerminal = isDelete
     ? phase === 'gone'
     : (phase === 'running' || phase === 'failed' || phase === 'succeeded');
@@ -153,8 +157,21 @@ export default function DeployProgress({ type, name, namespace, mode = 'deploy',
       ];
 
   const phaseLabel = isDelete
-    ? { deleting: 'Deleting...', terminating: 'Terminating pods...', 'cleaning-pods': 'Cleaning up pods...', cleaning: 'Waiting for cleanup...', gone: 'Deleted' }[phase] || phase
-    : { creating: 'Creating...', pulling: 'Pulling image...', starting: 'Starting...', running: 'Running', failed: 'Failed', succeeded: 'Completed' }[phase] || phase;
+    ? ({
+      deleting: 'Deleting...',
+      terminating: 'Terminating pods...',
+      'cleaning-pods': 'Cleaning up pods...',
+      cleaning: 'Waiting for cleanup...',
+      gone: 'Deleted',
+    } as Record<DeletePhase, string>)[phase as DeletePhase] || phase
+    : ({
+      creating: 'Creating...',
+      pulling: 'Pulling image...',
+      starting: 'Starting...',
+      running: 'Running',
+      failed: 'Failed',
+      succeeded: 'Completed',
+    } as Record<DeployPhase, string>)[phase as DeployPhase] || phase;
 
   return (
     <Card className="overflow-hidden">

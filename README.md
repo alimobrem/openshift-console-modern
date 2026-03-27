@@ -211,7 +211,11 @@ oc create secret generic openshiftpulse-oauth-secrets \
   --from-literal=cookie-secret="$COOKIE_SECRET" \
   -n openshiftpulse
 
-oc apply -f deploy/deployment.yaml
+helm template openshiftpulse deploy/helm/openshiftpulse/ \
+  -n openshiftpulse \
+  --set oauthProxy.clientSecret="$CLIENT_SECRET" \
+  --set oauthProxy.cookieSecret="$COOKIE_SECRET" \
+  | oc apply -f -
 oc patch oauthclient openshiftpulse -p "{\"secret\":\"$CLIENT_SECRET\"}"
 oc new-build --binary --name=openshiftpulse --to=openshiftpulse:latest -n openshiftpulse
 
@@ -271,7 +275,7 @@ npm install          # Install dependencies
 cp .env.example .env # Configure cluster URLs (optional)
 oc proxy --port=8001 & # Start API proxy
 npm run dev          # Dev server on port 9000
-npm test             # 1700 tests in ~4s
+npm test             # Run test suite once
 npm run build        # Production build (~1s)
 npm run type-check   # TypeScript checking
 ```

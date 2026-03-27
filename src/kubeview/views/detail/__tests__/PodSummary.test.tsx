@@ -7,7 +7,7 @@ const source = fs.readFileSync(path.join(__dirname, '..', 'PodSummary.tsx'), 'ut
 describe('PodSummary', () => {
   describe('status cards', () => {
     it('shows pod phase status', () => {
-      expect(source).toContain('status.phase');
+      expect(source).toContain('status?.phase');
       expect(source).toContain("'Running'");
       expect(source).toContain("'Failed'");
       expect(source).toContain("'Succeeded'");

@@ -130,7 +130,7 @@ export function InstalledTab() {
             <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">{filteredSubscriptions.length}</span>
           </h3>
           <button
-            onClick={() => go('/create/v1~pods?tab=operators')}
+            onClick={() => go('/create/v1~pods?tab=operators', 'Operators')}
             className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
           >
             View all <ArrowRight className="w-3 h-3" />
@@ -209,7 +209,7 @@ export function InstalledTab() {
           <p className="text-xs text-slate-500 text-center py-4">No Helm releases installed</p>
         ) : (
           <div className="space-y-2">
-            {filteredHelmReleases.slice(0, 5).map((release, i: number) => (
+            {filteredHelmReleases.slice(0, 5).map((release: { name?: string; namespace?: string; version?: string; status?: string }, i: number) => (
               <div
                 key={i}
                 className="flex items-center justify-between p-3 bg-slate-800/50 rounded border border-slate-700"
@@ -252,7 +252,7 @@ export function InstalledTab() {
             <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">{filteredDeployments.length}</span>
           </h3>
           <button
-            onClick={() => go('/workloads')}
+            onClick={() => go('/workloads', 'Workloads')}
             className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
           >
             View all <ArrowRight className="w-3 h-3" />
@@ -277,7 +277,7 @@ export function InstalledTab() {
                 >
                   <div className="flex-1 min-w-0">
                     <button
-                      onClick={() => go(`/r/apps~v1~deployments/${ns}/${name}`)}
+                      onClick={() => go(`/r/apps~v1~deployments/${ns}/${name}`, name)}
                       className="text-sm font-medium text-slate-100 hover:text-blue-400 transition-colors"
                     >
                       {name}
@@ -331,7 +331,7 @@ export function InstalledTab() {
             <span className="text-xs text-slate-500 bg-slate-800 px-2 py-0.5 rounded">{filteredStatefulSets.length}</span>
           </h3>
           <button
-            onClick={() => go('/workloads')}
+            onClick={() => go('/workloads', 'Workloads')}
             className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
           >
             View all <ArrowRight className="w-3 h-3" />
@@ -356,7 +356,7 @@ export function InstalledTab() {
                 >
                   <div className="flex-1 min-w-0">
                     <button
-                      onClick={() => go(`/r/apps~v1~statefulsets/${ns}/${name}`)}
+                      onClick={() => go(`/r/apps~v1~statefulsets/${ns}/${name}`, name)}
                       className="text-sm font-medium text-slate-100 hover:text-blue-400 transition-colors"
                     >
                       {name}

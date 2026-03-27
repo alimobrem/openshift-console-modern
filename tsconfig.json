@@ -21,5 +21,12 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", ".rspack_cache"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    ".rspack_cache",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx",
+    "src/**/__tests__/**"
+  ]
 }

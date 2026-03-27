@@ -7,11 +7,13 @@ export interface ObjectMeta {
   namespace?: string;
   resourceVersion?: string;
   uid?: string;
+  generation?: number;
   labels?: Record<string, string>;
   annotations?: Record<string, string>;
   creationTimestamp?: string;
   ownerReferences?: OwnerReference[];
   deletionTimestamp?: string;
+  [key: string]: unknown;
 }
 
 export interface OwnerReference {
@@ -54,6 +56,9 @@ export interface Container {
   command?: string[];
   args?: string[];
   imagePullPolicy?: string;
+  envFrom?: unknown[];
+  securityContext?: Record<string, unknown>;
+  [key: string]: unknown;
 }
 
 export interface ContainerPort {
@@ -140,4 +145,7 @@ export interface PodSpec {
   terminationGracePeriodSeconds?: number;
   priorityClassName?: string;
   affinity?: unknown;
+  securityContext?: Record<string, unknown>;
+  serviceAccount?: string;
+  [key: string]: unknown;
 }
