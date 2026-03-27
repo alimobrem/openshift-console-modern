@@ -1,16 +1,8 @@
 import { AlertTriangle, Info, Search, X, Wrench, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Finding } from '../../engine/monitorClient';
 
-export interface Finding {
-  id: string;
-  severity: 'critical' | 'warning' | 'info';
-  category: string;
-  title: string;
-  summary: string;
-  resources: Array<{ kind: string; name: string; namespace?: string }>;
-  autoFixable: boolean;
-  timestamp: number;
-}
+export type { Finding };
 
 export interface FindingCardProps {
   finding: Finding;

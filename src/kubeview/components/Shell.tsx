@@ -11,8 +11,9 @@ import { useKeyboardShortcuts, useDiscovery } from '../hooks';
 import { useUIStore } from '../store/uiStore';
 import { registerBuiltinEnhancers } from '../engine/enhancers/register';
 import { startAgentNotifications, stopAgentNotifications } from '../engine/agentNotifications';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { NotificationCenter } from './agent/NotificationCenter';
+import { useMonitorStore } from '../store/monitorStore';
 
 // Register enhancers once at module load
 registerBuiltinEnhancers();
@@ -30,10 +31,12 @@ export function Shell() {
     return () => stopAgentNotifications();
   }, []);
 
-  // Notification center state
-  const [notificationCenterOpen, setNotificationCenterOpen] = useState(false);
-  const toggleNotifications = useCallback(() => setNotificationCenterOpen((prev) => !prev), []);
-  const closeNotifications = useCallback(() => setNotificationCenterOpen(false), []);
+  // Notification center state — from monitorStore
+  const notificationCenterOpen = useMonitorStore((s) => s.notificationCenterOpen);
+  const toggleNotifications = useMonitorStore((s) => s.toggleNotificationCenter);
+  const closeNotifications = useCallback(() => {
+    if (notificationCenterOpen) useMonitorStore.getState().toggleNotificationCenter();
+  }, [notificationCenterOpen]);
 
   // Get overlay state
   const commandPaletteOpen = useUIStore((s) => s.commandPaletteOpen);

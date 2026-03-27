@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Bot, Shield } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useFleetStore } from '../store/fleetStore';
+import { useMonitorStore } from '../store/monitorStore';
 import { isMultiCluster } from '../engine/clusterConnection';
 import { cn } from '@/lib/utils';
 
@@ -30,6 +31,10 @@ export function StatusBar({ onToggleNotifications, notificationCenterOpen }: Sta
   const closeDock = useUIStore((s) => s.closeDock);
   const location = useLocation();
   const activeCluster = useFleetStore((s) => s.clusters.find(c => c.id === s.activeClusterId));
+  const monitorConnected = useMonitorStore((s) => s.connected);
+  const monitorFindings = useMonitorStore((s) => s.findings);
+  const monitorUnreadCount = useMonitorStore((s) => s.unreadCount);
+  const monitorCriticalCount = monitorFindings.filter((f) => f.severity === 'critical').length;
 
   const [relativeTime, setRelativeTime] = useState(formatRelativeTime(lastSyncTime));
 
@@ -90,12 +95,28 @@ export function StatusBar({ onToggleNotifications, notificationCenterOpen }: Sta
           onClick={onToggleNotifications}
           className={cn(
             'flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors',
-            notificationCenterOpen ? 'bg-emerald-600/30 text-emerald-400' : 'text-slate-500 hover:text-slate-300'
+            notificationCenterOpen
+              ? 'bg-emerald-600/30 text-emerald-400'
+              : monitorCriticalCount > 0
+                ? 'text-red-400 hover:text-red-300'
+                : monitorFindings.length > 0
+                  ? 'text-amber-400 hover:text-amber-300'
+                  : 'text-slate-500 hover:text-slate-300',
           )}
           title="Toggle Notifications"
           aria-label="Toggle notifications"
         >
-          <Shield className="h-3 w-3 text-emerald-500" />
+          <Shield className={cn(
+            'h-3 w-3',
+            monitorConnected
+              ? monitorCriticalCount > 0 ? 'text-red-500' : monitorFindings.length > 0 ? 'text-amber-500' : 'text-emerald-500'
+              : 'text-slate-500',
+          )} />
+          {monitorUnreadCount > 0 && (
+            <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+              {monitorUnreadCount > 99 ? '99+' : monitorUnreadCount}
+            </span>
+          )}
         </button>
         <button
           onClick={() => dockPanel === 'agent' ? closeDock() : openDock('agent')}

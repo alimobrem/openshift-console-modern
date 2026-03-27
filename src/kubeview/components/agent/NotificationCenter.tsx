@@ -1,35 +1,26 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, CheckCheck, ChevronDown, ChevronRight, AlertTriangle, TrendingUp, ListTodo, Inbox } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { FindingCard, type Finding } from './FindingCard';
-import { PredictionCard, type Prediction } from './PredictionCard';
+import { FindingCard } from './FindingCard';
+import { PredictionCard } from './PredictionCard';
+import { useMonitorStore } from '../../store/monitorStore';
 
 export interface NotificationCenterProps {
   open: boolean;
   onClose: () => void;
 }
 
-interface PendingAction {
-  id: string;
-  title: string;
-  description: string;
-  timestamp: number;
-}
-
-/** Stub hook — will be replaced by monitorStore integration later */
-function useMonitorData() {
-  return {
-    findings: [] as Finding[],
-    predictions: [] as Prediction[],
-    pendingActions: [] as PendingAction[],
-    unreadCount: 0,
-  };
-}
-
 type SeverityFilter = 'all' | 'critical' | 'warning' | 'info';
 
 export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
-  const { findings, predictions, pendingActions, unreadCount } = useMonitorData();
+  const findings = useMonitorStore((s) => s.findings);
+  const predictions = useMonitorStore((s) => s.predictions);
+  const pendingActions = useMonitorStore((s) => s.pendingActions);
+  const unreadCount = useMonitorStore((s) => s.unreadCount);
+  const markAllRead = useMonitorStore((s) => s.markAllRead);
+  const dismissFinding = useMonitorStore((s) => s.dismissFinding);
+  const approveAction = useMonitorStore((s) => s.approveAction);
+  const rejectAction = useMonitorStore((s) => s.rejectAction);
   const panelRef = useRef<HTMLDivElement>(null);
 
   const [expandedSections, setExpandedSections] = useState({
@@ -98,7 +89,7 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => {/* Mark all read - stub for now */}}
+              onClick={markAllRead}
               className="flex items-center gap-1 rounded px-2 py-1 text-xs text-slate-400 transition-colors hover:bg-slate-800 hover:text-slate-200"
               aria-label="Mark all read"
             >
@@ -152,7 +143,7 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
                   <EmptySection icon={AlertTriangle} message="No active findings" />
                 ) : (
                   filteredFindings.map((f) => (
-                    <FindingCard key={f.id} finding={f} compact />
+                    <FindingCard key={f.id} finding={f} compact onDismiss={dismissFinding} />
                   ))
                 )}
               </div>
@@ -201,8 +192,24 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
                 ) : (
                   pendingActions.map((a) => (
                     <div key={a.id} className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-2">
-                      <h4 className="text-xs font-medium text-slate-100">{a.title}</h4>
-                      <p className="mt-0.5 text-xs text-slate-400">{a.description}</p>
+                      <h4 className="text-xs font-medium text-slate-100">{a.tool}</h4>
+                      <p className="mt-0.5 text-xs text-slate-400">
+                        {a.reasoning || `Proposed action for finding ${a.findingId}`}
+                      </p>
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <button
+                          onClick={() => approveAction(a.id)}
+                          className="px-2 py-0.5 text-[10px] rounded bg-emerald-700 text-white hover:bg-emerald-600 transition-colors"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => rejectAction(a.id)}
+                          className="px-2 py-0.5 text-[10px] rounded bg-slate-700 text-slate-300 hover:bg-slate-600 transition-colors"
+                        >
+                          Reject
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}

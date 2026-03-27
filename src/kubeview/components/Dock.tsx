@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { Minus, X, GripVertical, Maximize2, Minimize2, Shield, ExternalLink } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
-import { useMonitor } from '../hooks/useMonitor';
+import { useMonitorStore } from '../store/monitorStore';
 import { AIIconStatic, AIBadge, AI_ACCENT, aiActiveClass } from './agent/AIBranding';
 import { cn } from '@/lib/utils';
 
@@ -22,7 +22,14 @@ export function Dock() {
   const terminalContext = useUIStore((s) => s.terminalContext);
   const hasUnreadInsight = useAgentStore((s) => s.hasUnreadInsight);
   const clearUnread = useAgentStore((s) => s.setUnreadInsight);
-  const monitor = useMonitor();
+  const monitorConnected = useMonitorStore((s) => s.connected);
+  const monitorFindings = useMonitorStore((s) => s.findings);
+  const monitorUnreadCount = useMonitorStore((s) => s.unreadCount);
+  const monitorPendingActions = useMonitorStore((s) => s.pendingActions);
+  const monitorMarkAllRead = useMonitorStore((s) => s.markAllRead);
+  const monitorDismissFinding = useMonitorStore((s) => s.dismissFinding);
+  const monitorCriticalCount = monitorFindings.filter((f) => f.severity === 'critical').length;
+  const monitorWarningCount = monitorFindings.filter((f) => f.severity === 'warning').length;
 
   const [isResizing, setIsResizing] = useState(false);
   const startX = useRef(0);
@@ -118,7 +125,7 @@ export function Dock() {
           <button
             role="tab"
             aria-selected={dockPanel === 'monitor'}
-            onClick={() => { openDock('monitor'); monitor.markAllRead(); }}
+            onClick={() => { openDock('monitor'); monitorMarkAllRead(); }}
             className={cn(
               'relative flex items-center gap-1 px-2 py-1 rounded transition-colors',
               dockPanel === 'monitor'
@@ -128,9 +135,9 @@ export function Dock() {
           >
             <Shield className="h-3 w-3" />
             Monitor
-            {monitor.unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[9px] font-bold text-white">
-                {monitor.unreadCount > 9 ? '9+' : monitor.unreadCount}
+            {monitorUnreadCount > 0 && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                {monitorUnreadCount > 9 ? '9+' : monitorUnreadCount}
               </span>
             )}
           </button>
@@ -220,33 +227,33 @@ export function Dock() {
             <div className="flex items-center gap-2 text-xs">
               <span className={cn(
                 'h-2 w-2 rounded-full',
-                monitor.connected ? 'bg-green-500' : 'bg-red-500',
+                monitorConnected ? 'bg-green-500' : 'bg-red-500',
               )} />
-              <span className={monitor.connected ? 'text-green-400' : 'text-red-400'}>
-                {monitor.connected ? 'Connected' : 'Disconnected'}
+              <span className={monitorConnected ? 'text-green-400' : 'text-red-400'}>
+                {monitorConnected ? 'Connected' : 'Disconnected'}
               </span>
             </div>
 
             {/* Severity breakdown */}
             <div className="flex items-center gap-3 text-xs">
               <span className="text-slate-400">
-                {monitor.findings.length} finding{monitor.findings.length !== 1 ? 's' : ''}
+                {monitorFindings.length} finding{monitorFindings.length !== 1 ? 's' : ''}
               </span>
-              {monitor.criticalCount > 0 && (
-                <span className="text-red-400">{monitor.criticalCount} critical</span>
+              {monitorCriticalCount > 0 && (
+                <span className="text-red-400">{monitorCriticalCount} critical</span>
               )}
-              {monitor.warningCount > 0 && (
-                <span className="text-amber-400">{monitor.warningCount} warning</span>
+              {monitorWarningCount > 0 && (
+                <span className="text-amber-400">{monitorWarningCount} warning</span>
               )}
-              {monitor.pendingActions.length > 0 && (
-                <span className="text-blue-400">{monitor.pendingActions.length} pending action{monitor.pendingActions.length !== 1 ? 's' : ''}</span>
+              {monitorPendingActions.length > 0 && (
+                <span className="text-blue-400">{monitorPendingActions.length} pending action{monitorPendingActions.length !== 1 ? 's' : ''}</span>
               )}
             </div>
 
             {/* Compact findings list */}
-            {monitor.findings.length > 0 ? (
+            {monitorFindings.length > 0 ? (
               <ul className="space-y-1">
-                {monitor.findings.slice(0, 20).map((f) => (
+                {monitorFindings.slice(0, 20).map((f) => (
                   <li key={f.id} className="flex items-center gap-2 text-xs py-1 border-b border-slate-800 last:border-0">
                     <span className={cn(
                       'h-1.5 w-1.5 rounded-full shrink-0',

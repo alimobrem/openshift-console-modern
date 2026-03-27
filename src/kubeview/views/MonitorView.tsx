@@ -1,63 +1,24 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Shield, ShieldCheck, ShieldAlert, Clock, Activity, Settings, Search,
   ChevronDown, ChevronRight, RotateCcw, Play, CheckCircle, AlertTriangle,
-  XCircle, X, Eye, Trash2,
+  XCircle, X, Eye,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '../components/primitives/Card';
 import { EmptyState } from '../components/primitives/EmptyState';
-
-// ===== Types =====
-
-interface Finding {
-  id: string;
-  severity: 'critical' | 'warning' | 'info';
-  category: string;
-  title: string;
-  summary: string;
-  resources: Array<{ kind: string; name: string; namespace?: string }>;
-  autoFixable: boolean;
-  timestamp: number;
-}
-
-interface Prediction {
-  id: string;
-  category: string;
-  title: string;
-  detail: string;
-  eta: string;
-  confidence: number;
-  resources: Array<{ kind: string; name: string; namespace?: string }>;
-  recommendedAction?: string;
-  timestamp: number;
-}
-
-interface ActionRecord {
-  id: string;
-  findingId: string;
-  timestamp: number;
-  category: string;
-  tool: string;
-  input: Record<string, unknown>;
-  status: 'proposed' | 'executing' | 'completed' | 'failed' | 'rolled_back';
-  beforeState: string;
-  afterState: string;
-  error?: string;
-  reasoning: string;
-  durationMs: number;
-  rollbackAvailable: boolean;
-  resources: Array<{ kind: string; name: string; namespace?: string }>;
-}
+import { useMonitorStore } from '../store/monitorStore';
+import { useTrustStore, TRUST_LABELS, type TrustLevel } from '../store/trustStore';
+import type { ActionRecord } from '../engine/fixHistory';
 
 type MonitorTab = 'status' | 'history' | 'config';
 
 const TRUST_LEVELS = [
-  { level: 0, label: 'Monitor Only', description: 'Observe and report findings. No automated actions.' },
-  { level: 1, label: 'Suggest', description: 'Suggest fixes with dry-run previews. Requires manual approval.' },
-  { level: 2, label: 'Ask First', description: 'Propose fixes and wait for confirmation before applying.' },
-  { level: 3, label: 'Auto-fix Safe', description: 'Automatically fix low-risk issues. Confirm dangerous changes.' },
-  { level: 4, label: 'Full Auto', description: 'Automatically fix all issues within enabled categories.' },
+  { level: 0 as TrustLevel, label: 'Monitor Only', description: 'Observe and report findings. No automated actions.' },
+  { level: 1 as TrustLevel, label: 'Suggest', description: 'Suggest fixes with dry-run previews. Requires manual approval.' },
+  { level: 2 as TrustLevel, label: 'Ask First', description: 'Propose fixes and wait for confirmation before applying.' },
+  { level: 3 as TrustLevel, label: 'Auto-fix Safe', description: 'Automatically fix low-risk issues. Confirm dangerous changes.' },
+  { level: 4 as TrustLevel, label: 'Full Auto', description: 'Automatically fix all issues within enabled categories.' },
 ] as const;
 
 const AUTO_FIX_CATEGORIES = [
@@ -77,7 +38,7 @@ const STATUS_COLORS: Record<ActionRecord['status'], string> = {
   rolled_back: 'bg-slate-700 text-slate-300',
 };
 
-const SEVERITY_COLORS: Record<Finding['severity'], string> = {
+const SEVERITY_COLORS: Record<'critical' | 'warning' | 'info', string> = {
   critical: 'bg-red-900/50 text-red-300',
   warning: 'bg-yellow-900/50 text-yellow-300',
   info: 'bg-blue-900/50 text-blue-300',
@@ -100,13 +61,29 @@ function formatDuration(ms: number): string {
 export default function MonitorView() {
   const [activeTab, setActiveTab] = useState<MonitorTab>('status');
 
-  // Live Status state
-  const [findings, setFindings] = useState<Finding[]>([]);
-  const [predictions, setPredictions] = useState<Prediction[]>([]);
-  const [connected, setConnected] = useState(false);
+  // Monitor store — single source of truth
+  const findings = useMonitorStore((s) => s.findings);
+  const predictions = useMonitorStore((s) => s.predictions);
+  const connected = useMonitorStore((s) => s.connected);
+  const monitorEnabled = useMonitorStore((s) => s.monitorEnabled);
+  const setMonitorEnabled = useMonitorStore((s) => s.setMonitorEnabled);
+  const dismissFinding = useMonitorStore((s) => s.dismissFinding);
+  const fixHistory = useMonitorStore((s) => s.fixHistory);
+  const fixHistoryLoading = useMonitorStore((s) => s.fixHistoryLoading);
+  const loadFixHistory = useMonitorStore((s) => s.loadFixHistory);
+  const storeAutoFixCategories = useMonitorStore((s) => s.autoFixCategories);
+  const setStoreAutoFixCategories = useMonitorStore((s) => s.setAutoFixCategories);
 
-  // Fix History state
-  const [actions, setActions] = useState<ActionRecord[]>([]);
+  // Trust store
+  const trustLevel = useTrustStore((s) => s.trustLevel);
+  const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
+  const trustAutoFixCategories = useTrustStore((s) => s.autoFixCategories);
+  const setTrustAutoFixCategories = useTrustStore((s) => s.setAutoFixCategories);
+
+  // Use fix history from the store as the actions source
+  const actions = fixHistory;
+
+  // Local UI state
   const [historySearch, setHistorySearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<ActionRecord['status'] | 'all'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
@@ -114,10 +91,18 @@ export default function MonitorView() {
   const [historyPage, setHistoryPage] = useState(0);
   const PAGE_SIZE = 20;
 
-  // Configuration state
-  const [monitorEnabled, setMonitorEnabled] = useState(false);
-  const [trustLevel, setTrustLevel] = useState(0);
-  const [autoFixCategories, setAutoFixCategories] = useState<Set<string>>(new Set());
+  // Load fix history when history tab is opened
+  useEffect(() => {
+    if (activeTab === 'history') {
+      loadFixHistory();
+    }
+  }, [activeTab, loadFixHistory]);
+
+  // Derive auto-fix categories set from both stores
+  const autoFixCategories = useMemo(
+    () => new Set([...storeAutoFixCategories, ...trustAutoFixCategories]),
+    [storeAutoFixCategories, trustAutoFixCategories],
+  );
 
   // Derived counts
   const criticalCount = findings.filter((f) => f.severity === 'critical').length;
@@ -151,12 +136,12 @@ export default function MonitorView() {
   }, [actions]);
 
   const toggleAutoFixCategory = (id: string) => {
-    setAutoFixCategories((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    const next = new Set(autoFixCategories);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    const arr = Array.from(next);
+    setStoreAutoFixCategories(arr);
+    setTrustAutoFixCategories(arr);
   };
 
   return (
@@ -291,7 +276,10 @@ export default function MonitorView() {
                           <Eye className="w-3.5 h-3.5" />
                           Investigate
                         </button>
-                        <button className="px-2.5 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded flex items-center gap-1.5 transition-colors">
+                        <button
+                          onClick={() => dismissFinding(finding.id)}
+                          className="px-2.5 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded flex items-center gap-1.5 transition-colors"
+                        >
                           <X className="w-3.5 h-3.5" />
                           Dismiss
                         </button>

@@ -44,12 +44,29 @@ vi.mock('../../store/uiStore', () => ({
   useUIStore: (selector: any) => selector(_mockUIState),
 }));
 
+vi.mock('../../store/monitorStore', () => ({
+  useMonitorStore: Object.assign(
+    (selector: any) => {
+      const state = {
+        notificationCenterOpen: false,
+        toggleNotificationCenter: vi.fn(),
+      };
+      return selector(state);
+    },
+    { getState: () => ({ toggleNotificationCenter: vi.fn() }) },
+  ),
+}));
+
 vi.mock('../../hooks', () => ({
   useKeyboardShortcuts: vi.fn(),
   useDiscovery: vi.fn(),
 }));
 vi.mock('../../engine/enhancers/register', () => ({
   registerBuiltinEnhancers: vi.fn(),
+}));
+vi.mock('../../engine/agentNotifications', () => ({
+  startAgentNotifications: vi.fn(),
+  stopAgentNotifications: vi.fn(),
 }));
 vi.mock('../CommandBar', () => ({
   CommandBar: () => <div data-testid="command-bar">CommandBar</div>,
@@ -71,6 +88,9 @@ vi.mock('../ResourceBrowser', () => ({
 }));
 vi.mock('../feedback/Toast', () => ({
   ToastContainer: () => null,
+}));
+vi.mock('../agent/NotificationCenter', () => ({
+  NotificationCenter: () => null,
 }));
 vi.mock('../ErrorBoundary', () => ({
   ErrorBoundary: ({ children }: any) => <>{children}</>,

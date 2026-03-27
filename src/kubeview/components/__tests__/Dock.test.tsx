@@ -18,6 +18,19 @@ const _mockUIState: Record<string, any> = {
 vi.mock('../../store/uiStore', () => ({
   useUIStore: (selector: any) => selector(_mockUIState),
 }));
+vi.mock('../../store/monitorStore', () => ({
+  useMonitorStore: (selector: any) => {
+    const state = {
+      connected: false,
+      findings: [],
+      unreadCount: 0,
+      pendingActions: [],
+      markAllRead: vi.fn(),
+      dismissFinding: vi.fn(),
+    };
+    return selector(state);
+  },
+}));
 vi.mock('@/lib/utils', () => ({ cn: (...args: any[]) => args.filter(Boolean).join(' ') }));
 
 import { Dock } from '../Dock';

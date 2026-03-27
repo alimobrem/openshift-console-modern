@@ -2,6 +2,23 @@
 import { render, screen, fireEvent, cleanup } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import React from 'react';
+
+vi.mock('../../../store/monitorStore', () => ({
+  useMonitorStore: (selector: any) => {
+    const state = {
+      findings: [],
+      predictions: [],
+      pendingActions: [],
+      unreadCount: 0,
+      markAllRead: vi.fn(),
+      dismissFinding: vi.fn(),
+      approveAction: vi.fn(),
+      rejectAction: vi.fn(),
+    };
+    return selector(state);
+  },
+}));
+
 import { NotificationCenter } from '../NotificationCenter';
 
 afterEach(() => cleanup());

@@ -3,7 +3,7 @@ import { Send, StopCircle, Bot, Loader2, Wrench, Brain, AlertTriangle, Trash2, S
 import { useAgentStore } from '../../store/agentStore';
 import { useTrustStore, TRUST_LABELS } from '../../store/trustStore';
 import { useSmartPrompts } from '../../hooks/useSmartPrompts';
-import { useMonitor } from '../../hooks/useMonitor';
+import { useMonitorStore } from '../../store/monitorStore';
 import { MessageBubble } from './MessageBubble';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { AgentComponentRenderer } from './AgentComponentRenderer';
@@ -24,7 +24,9 @@ export function DockAgentPanel() {
 
   const trustLevel = useTrustStore((s) => s.trustLevel);
   const smartPrompts = useSmartPrompts();
-  const { connected: monitorConnected, findings: monitorFindings, criticalCount: monitorCritical } = useMonitor();
+  const monitorConnected = useMonitorStore((s) => s.connected);
+  const monitorFindings = useMonitorStore((s) => s.findings);
+  const monitorCritical = monitorFindings.filter((f) => f.severity === 'critical').length;
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);

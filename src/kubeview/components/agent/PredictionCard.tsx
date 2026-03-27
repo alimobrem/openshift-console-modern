@@ -1,17 +1,8 @@
 import { HardDrive, Cpu, KeyRound, Package, Shield, Lightbulb, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { Prediction } from '../../engine/monitorClient';
 
-export interface Prediction {
-  id: string;
-  category: string;
-  title: string;
-  detail: string;
-  eta: string;
-  confidence: number;
-  resources: Array<{ kind: string; name: string; namespace?: string }>;
-  recommendedAction?: string;
-  timestamp: number;
-}
+export type { Prediction };
 
 export interface PredictionCardProps {
   prediction: Prediction;

@@ -1,43 +1,18 @@
 /**
- * useMonitor — hook for components to access real-time monitoring state.
+ * useMonitor — thin wrapper around useMonitorStore for backward compatibility.
  *
- * Provides findings, predictions, and action reports pushed via the
- * monitor WebSocket (v2) or polled via the agent (v1 fallback).
- * Uses a module-level event bus so multiple consumers stay in sync.
+ * Components should prefer importing useMonitorStore directly.
+ * The event bus (emitMonitorEvent) is retained for the useMonitor test suite
+ * but is no longer used in production — agentNotifications.ts writes
+ * directly to useMonitorStore.
  */
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import type { Finding, Prediction, ActionReport } from '../engine/monitorClient';
 
-export interface Finding {
-  id: string;
-  severity: 'critical' | 'warning' | 'info';
-  category: string;
-  title: string;
-  summary: string;
-  resources: Array<{ kind: string; name: string; namespace?: string }>;
-  autoFixable: boolean;
-  timestamp: number;
-}
+export type { Finding, Prediction, ActionReport };
 
-export interface Prediction {
-  id: string;
-  category: string;
-  title: string;
-  detail: string;
-  eta: string;
-  confidence: number;
-  resources: Array<{ kind: string; name: string; namespace?: string }>;
-  recommendedAction?: string;
-  timestamp: number;
-}
-
-export interface ActionReport {
-  id: string;
-  findingId: string;
-  tool: string;
-  status: 'proposed' | 'executing' | 'completed' | 'failed' | 'rolled_back';
-  timestamp: number;
-}
+// ---- Event bus (retained for tests and legacy compatibility) ----
 
 export type MonitorBusEvent =
   | { type: 'finding'; data: Finding }
@@ -62,6 +37,9 @@ export function _resetMonitorListeners() {
 const MAX_FINDINGS = 200;
 const MAX_PREDICTIONS = 50;
 
+/**
+ * @deprecated Use useMonitorStore directly for new code.
+ */
 export function useMonitor() {
   const [connected, setConnected] = useState(false);
   const [findings, setFindings] = useState<Finding[]>([]);

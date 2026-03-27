@@ -7,8 +7,8 @@ import { AgentClient } from './agentClient';
 import type { AgentEvent } from './agentClient';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
-import { emitMonitorEvent } from '../hooks/useMonitor';
-import type { Finding } from '../hooks/useMonitor';
+import { useMonitorStore } from '../store/monitorStore';
+import type { Finding, Prediction, ActionReport } from './monitorClient';
 
 const DEFAULT_INTERVAL = 300_000; // 5 minutes
 const PROMPT =
@@ -56,17 +56,24 @@ function connectMonitor() {
 
   monitorWs.onopen = () => {
     monitorReconnectAttempts = 0;
-    emitMonitorEvent({ type: 'status', connected: true });
+    useMonitorStore.setState({ connected: true });
   };
 
   monitorWs.onmessage = (event) => {
     try {
       const data = JSON.parse(event.data) as Record<string, unknown>;
       const eventType = data.type as string;
+      const monitorState = useMonitorStore.getState();
 
       if (eventType === 'finding') {
-        const finding = data as unknown as Finding;
-        emitMonitorEvent({ type: 'finding', data: finding });
+        const { type: _, ...finding } = data as unknown as { type: string } & Finding;
+        // Skip dismissed findings
+        if (!monitorState.dismissedFindingIds.includes(finding.id)) {
+          useMonitorStore.setState((s) => ({
+            findings: [...s.findings.filter((f) => f.id !== finding.id), finding].slice(-200),
+            unreadCount: s.unreadCount + 1,
+          }));
+        }
 
         // Show toast for critical/warning findings
         if (finding.severity === 'critical' || finding.severity === 'warning') {
@@ -91,14 +98,30 @@ function connectMonitor() {
           });
         }
       } else if (eventType === 'prediction') {
-        emitMonitorEvent({
-          type: 'prediction',
-          data: data as unknown as { id: string; category: string; title: string; detail: string; eta: string; confidence: number; resources: Array<{ kind: string; name: string; namespace?: string }>; recommendedAction?: string; timestamp: number },
-        });
+        const { type: _, ...prediction } = data as unknown as { type: string } & Prediction;
+        useMonitorStore.setState((s) => ({
+          predictions: [...s.predictions.filter((p) => p.id !== prediction.id), prediction].slice(-50),
+          unreadCount: s.unreadCount + 1,
+        }));
       } else if (eventType === 'action_report') {
-        emitMonitorEvent({
-          type: 'action_report',
-          data: data as unknown as { id: string; findingId: string; tool: string; status: 'proposed' | 'executing' | 'completed' | 'failed' | 'rolled_back'; timestamp: number },
+        const { type: _, ...report } = data as unknown as { type: string } & ActionReport;
+        if (report.status === 'proposed') {
+          useMonitorStore.setState((s) => ({
+            pendingActions: [...s.pendingActions, report],
+            unreadCount: s.unreadCount + 1,
+          }));
+        } else {
+          useMonitorStore.setState((s) => ({
+            pendingActions: s.pendingActions.filter((a) => a.id !== report.id),
+            recentActions: [...s.recentActions, report].slice(-50),
+          }));
+        }
+      } else if (eventType === 'monitor_status') {
+        const statusData = data as unknown as { activeWatches: string[]; lastScan: number; nextScan: number };
+        useMonitorStore.setState({
+          activeWatches: statusData.activeWatches,
+          lastScanTime: statusData.lastScan,
+          nextScanTime: statusData.nextScan,
         });
       }
     } catch {
@@ -108,7 +131,7 @@ function connectMonitor() {
 
   monitorWs.onclose = () => {
     monitorWs = null;
-    emitMonitorEvent({ type: 'status', connected: false });
+    useMonitorStore.setState({ connected: false });
 
     if (!running) return;
 
@@ -141,7 +164,7 @@ function disconnectMonitor() {
     monitorWs.close();
     monitorWs = null;
   }
-  emitMonitorEvent({ type: 'status', connected: false });
+  useMonitorStore.setState({ connected: false });
 }
 
 // --- v1: Polling fallback ---
