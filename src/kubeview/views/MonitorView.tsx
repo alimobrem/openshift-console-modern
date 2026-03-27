@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import {
   Shield, ShieldCheck, ShieldAlert, Clock, Activity, Settings, Search,
   ChevronDown, ChevronRight, RotateCcw, Play, CheckCircle, AlertTriangle,
-  XCircle, X, Eye,
+  XCircle, X, Eye, Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '../components/primitives/Card';
@@ -46,6 +46,15 @@ const SEVERITY_COLORS: Record<'critical' | 'warning' | 'info', string> = {
   info: 'bg-blue-900/50 text-blue-300',
 };
 
+const AGENT_BASE = '/api/agent';
+
+interface AgentInfo {
+  agent: string;
+  protocol: string;
+  tools: number;
+  features: string[];
+}
+
 function formatRelativeTime(timestamp: number): string {
   const ms = Date.now() - timestamp;
   if (ms < 60_000) return 'just now';
@@ -85,6 +94,32 @@ export default function MonitorView() {
 
   // Use fix history from the store as the actions source
   const actions = fixHistory;
+
+  // Agent info — lightweight fetch on mount
+  const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
+  const [agentHealthy, setAgentHealthy] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchAgentInfo() {
+      try {
+        const res = await fetch(`${AGENT_BASE}/version`);
+        if (!res.ok) throw new Error('version fetch failed');
+        const data = await res.json();
+        if (!cancelled) {
+          setAgentInfo(data);
+          setAgentHealthy(true);
+        }
+      } catch {
+        if (!cancelled) {
+          setAgentInfo(null);
+          setAgentHealthy(false);
+        }
+      }
+    }
+    fetchAgentInfo();
+    return () => { cancelled = true; };
+  }, []);
 
   // Local UI state
   const [historySearch, setHistorySearch] = useState('');
@@ -206,6 +241,40 @@ export default function MonitorView() {
         {/* Tab: Live Status */}
         {activeTab === 'status' && (
           <div className="space-y-6">
+            {/* Agent Info */}
+            <div className="bg-slate-900 rounded-lg border border-slate-800 px-4 py-3">
+              <div className="flex items-center gap-2 mb-2">
+                <Info className="w-4 h-4 text-slate-400" />
+                <span className="text-xs font-semibold text-slate-300">Agent Info</span>
+              </div>
+              {agentInfo ? (
+                <div className="grid grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <span className="text-slate-500">Version</span>
+                    <p className="text-slate-200 font-mono mt-0.5">{agentInfo.agent}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Protocol</span>
+                    <p className="text-slate-200 font-mono mt-0.5">v{agentInfo.protocol}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Tools</span>
+                    <p className="text-slate-200 font-mono mt-0.5">{agentInfo.tools}</p>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Health</span>
+                    <p className={cn('font-medium mt-0.5', agentHealthy ? 'text-green-400' : 'text-red-400')}>
+                      {agentHealthy ? 'Connected' : 'Unreachable'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <p className={cn('text-xs', agentHealthy === false ? 'text-red-400' : 'text-slate-500')}>
+                  {agentHealthy === false ? 'Agent unreachable' : 'Loading...'}
+                </p>
+              )}
+            </div>
+
             {/* Severity breakdown */}
             <div className="grid grid-cols-3 gap-3">
               <div className={cn('bg-slate-900 rounded-lg border p-4', criticalCount > 0 ? 'border-red-800' : 'border-slate-800')}>

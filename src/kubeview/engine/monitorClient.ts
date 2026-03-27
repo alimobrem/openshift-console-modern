@@ -241,7 +241,7 @@ export class MonitorClient {
       this.emit({ type: 'error', message: 'Not connected to monitor' });
       return;
     }
-    this.ws.send(JSON.stringify({ type: 'approve_action', actionId }));
+    this.ws.send(JSON.stringify({ type: 'action_response', actionId, approved: true }));
   }
 
   /** Reject a proposed action. */
@@ -250,7 +250,7 @@ export class MonitorClient {
       this.emit({ type: 'error', message: 'Not connected to monitor' });
       return;
     }
-    this.ws.send(JSON.stringify({ type: 'reject_action', actionId }));
+    this.ws.send(JSON.stringify({ type: 'action_response', actionId, approved: false }));
   }
 
   /** Request fix history with optional filters and pagination. */
@@ -260,7 +260,7 @@ export class MonitorClient {
       return;
     }
     this.ws.send(
-      JSON.stringify({ type: 'request_fix_history', filters, page }),
+      JSON.stringify({ type: 'get_fix_history', filters, page }),
     );
   }
 }
