@@ -157,7 +157,10 @@ class GitHubProvider implements GitProvider {
         headers: this.headers,
         body: JSON.stringify({ content: f.content, encoding: 'utf-8' }),
       });
-      if (!blobRes.ok) throw new Error(`Failed to create blob for ${f.path}: ${blobRes.status}`);
+      if (!blobRes.ok) {
+        const errBody = await blobRes.json().catch(() => ({}));
+        throw new Error(`Failed to create blob for ${f.path}: ${blobRes.status} ${errBody.message || ''}`);
+      }
       const blobData = await blobRes.json();
       return { path: f.path, mode: '100644' as const, type: 'blob' as const, sha: blobData.sha };
     }));
@@ -168,7 +171,10 @@ class GitHubProvider implements GitProvider {
       headers: this.headers,
       body: JSON.stringify({ base_tree: baseTreeSha, tree }),
     });
-    if (!treeRes.ok) throw new Error(`Failed to create tree: ${treeRes.status}`);
+    if (!treeRes.ok) {
+      const errBody = await treeRes.json().catch(() => ({}));
+      throw new Error(`Failed to create tree: ${treeRes.status} ${errBody.message || ''}`);
+    }
     const treeData = await treeRes.json();
 
     // Create the commit

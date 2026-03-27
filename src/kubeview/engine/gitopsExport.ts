@@ -238,11 +238,16 @@ export async function* exportClusterToGit(
                 };
               });
 
-              await provider.commitMultipleFiles(
-                targetBranch,
-                files,
-                `Export ${files.length} ${resDef.kind} resources from ${clusterName}`,
-              );
+              // Commit in chunks of 30 to avoid GitHub API limits
+              const CHUNK_SIZE = 30;
+              for (let i = 0; i < files.length; i += CHUNK_SIZE) {
+                const chunk = files.slice(i, i + CHUNK_SIZE);
+                await provider.commitMultipleFiles(
+                  targetBranch,
+                  chunk,
+                  `Export ${resDef.kind} (${i + 1}-${Math.min(i + CHUNK_SIZE, files.length)} of ${files.length}) from ${clusterName}`,
+                );
+              }
               categoryResourceCount += files.length;
             }
           } catch (err) {
