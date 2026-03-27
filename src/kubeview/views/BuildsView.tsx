@@ -7,11 +7,8 @@ import { cn } from '@/lib/utils';
 import { useUIStore } from '../store/uiStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
-import { k8sCreate, k8sGet, k8sPatch } from '../engine/query';
-import { useQuery } from '@tanstack/react-query';
+import { k8sCreate, k8sPatch } from '../engine/query';
 import { Panel } from '../components/primitives/Panel';
-import { MetricCard } from '../components/metrics/Sparkline';
-import { CHART_COLORS } from '../engine/colors';
 import { formatDuration, timeAgo } from '../engine/dateUtils';
 import type { Build, BuildConfig, ImageStream } from '../engine/types';
 import { Card } from '../components/primitives/Card';
@@ -119,6 +116,49 @@ export default function BuildsView() {
     (imageStreams as ImageStream[]).reduce((sum, is) => sum + (is.status?.tags?.length || 0), 0),
   [imageStreams]);
 
+  // Computed build metrics (no Prometheus dependency)
+  const computedMetrics = React.useMemo(() => {
+    const allBuilds = builds as Build[];
+    const now = Date.now();
+    const oneHourAgo = now - 3600_000;
+
+    // Build rate: builds started in the last hour
+    const buildsLastHour = allBuilds.filter(
+      (b) => new Date(b.metadata?.creationTimestamp || 0).getTime() >= oneHourAgo,
+    ).length;
+
+    // Average duration from completed builds (using start/completion timestamps)
+    let totalDurationMs = 0;
+    let durationCount = 0;
+    for (const b of allBuilds) {
+      const start = b.status?.startTimestamp;
+      const end = b.status?.completionTimestamp;
+      if (start && end) {
+        totalDurationMs += new Date(end).getTime() - new Date(start).getTime();
+        durationCount++;
+      }
+    }
+    const avgDurationMin = durationCount > 0 ? totalDurationMs / durationCount / 60_000 : null;
+
+    // Failure rate: (Failed + Error + Cancelled) / total finished builds
+    const finished = allBuilds.filter(
+      (b) =>
+        b.status?.phase === 'Complete' ||
+        b.status?.phase === 'Failed' ||
+        b.status?.phase === 'Error' ||
+        b.status?.phase === 'Cancelled',
+    );
+    const failures = finished.filter(
+      (b) =>
+        b.status?.phase === 'Failed' ||
+        b.status?.phase === 'Error' ||
+        b.status?.phase === 'Cancelled',
+    );
+    const failureRate = finished.length > 0 ? (failures.length / finished.length) * 100 : null;
+
+    return { buildsLastHour, avgDurationMin, failureRate };
+  }, [builds]);
+
   // Issues
   const issues: Array<{ msg: string; severity: 'warning' | 'critical' }> = [];
   if (failedBuilds.length > 0) issues.push({ msg: `${failedBuilds.length} failed build${failedBuilds.length > 1 ? 's' : ''}`, severity: 'critical' });
@@ -192,28 +232,39 @@ export default function BuildsView() {
           </Card>
         </MetricGrid>
 
-        {/* Build Metrics */}
+        {/* Build Metrics — computed from build objects (no Prometheus dependency) */}
         {builds.length > 0 && (
           <MetricGrid>
-            <MetricCard
-              title="Build Rate"
-              query='sum(increase(openshift_build_total[1h]))'
-              unit="/hr"
-              color={CHART_COLORS.blue}
-            />
-            <MetricCard
-              title="Avg Duration"
-              query='avg(openshift_build_duration_seconds) / 60'
-              unit=" min"
-              color={CHART_COLORS.amber}
-            />
-            <MetricCard
-              title="Failure Rate"
-              query='sum(openshift_build_total{phase=~"Failed|Error|Cancelled"}) / sum(openshift_build_total) * 100'
-              unit="%"
-              color={CHART_COLORS.red}
-              thresholds={{ warning: 10, critical: 30 }}
-            />
+            <Card className="p-3">
+              <div className="text-xs text-slate-400 mb-1">Build Rate</div>
+              <div className="text-xl font-bold text-blue-400">
+                {computedMetrics.buildsLastHour}/hr
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">last hour</div>
+            </Card>
+            <Card className="p-3">
+              <div className="text-xs text-slate-400 mb-1">Avg Duration</div>
+              <div className="text-xl font-bold text-amber-400">
+                {computedMetrics.avgDurationMin !== null
+                  ? `${computedMetrics.avgDurationMin.toFixed(1)} min`
+                  : '—'}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">completed builds</div>
+            </Card>
+            <Card className="p-3">
+              <div className="text-xs text-slate-400 mb-1">Failure Rate</div>
+              <div className={cn('text-xl font-bold',
+                computedMetrics.failureRate === null ? 'text-slate-400'
+                  : computedMetrics.failureRate >= 30 ? 'text-red-400'
+                  : computedMetrics.failureRate >= 10 ? 'text-amber-400'
+                  : 'text-emerald-400',
+              )}>
+                {computedMetrics.failureRate !== null
+                  ? `${computedMetrics.failureRate.toFixed(1)}%`
+                  : '—'}
+              </div>
+              <div className="text-xs text-slate-500 mt-0.5">failed + error + cancelled</div>
+            </Card>
             <Card className="p-3">
               <div className="text-xs text-slate-400 mb-1">Success Rate</div>
               <div className={cn('text-xl font-bold', (() => {
