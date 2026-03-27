@@ -6,7 +6,6 @@ import { useUIStore } from '../store/uiStore';
 import { useFleetStore } from '../store/fleetStore';
 import { useMonitorStore } from '../store/monitorStore';
 import { isMultiCluster } from '../engine/clusterConnection';
-import { isFeatureEnabled } from '../engine/featureFlags';
 import { cn } from '@/lib/utils';
 
 function formatRelativeTime(timestamp: number): string {
@@ -17,12 +16,7 @@ function formatRelativeTime(timestamp: number): string {
   return `${Math.floor(seconds / 86400)}d`;
 }
 
-interface StatusBarProps {
-  onToggleNotifications?: () => void;
-  notificationCenterOpen?: boolean;
-}
-
-export function StatusBar({ onToggleNotifications, notificationCenterOpen }: StatusBarProps = {}) {
+export function StatusBar() {
   const connectionStatus = useUIStore((s) => s.connectionStatus);
   const lastSyncTime = useUIStore((s) => s.lastSyncTime);
   const selectedNamespace = useUIStore((s) => s.selectedNamespace);
@@ -35,7 +29,6 @@ export function StatusBar({ onToggleNotifications, notificationCenterOpen }: Sta
   const activeCluster = useFleetStore((s) => s.clusters.find(c => c.id === s.activeClusterId));
   const monitorConnected = useMonitorStore((s) => s.connected);
   const monitorFindings = useMonitorStore((s) => s.findings);
-  const monitorUnreadCount = useMonitorStore((s) => s.unreadCount);
   const degradedReasons = useUIStore((s) => s.degradedReasons);
   const monitorCriticalCount = monitorFindings.filter((f) => f.severity === 'critical').length;
   const navigate = useNavigate();
@@ -95,50 +88,18 @@ export function StatusBar({ onToggleNotifications, notificationCenterOpen }: Sta
 
       {/* Right */}
       <div className="flex items-center gap-3">
-        {isFeatureEnabled('incidentCenter') && (
-          <button
-            onClick={() => navigate('/incidents')}
-            className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors text-slate-500 hover:text-slate-300"
-            title="Incidents"
-            aria-label="Open Incidents"
-          >
-            <Shield className="h-3 w-3 text-amber-500" />
-            <span className="text-[11px]">Incidents</span>
-          </button>
-        )}
         <button
-          onClick={() => navigate('/monitor')}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors text-slate-500 hover:text-slate-300"
-          title="Monitor"
-          aria-label="Open Monitor"
-        >
-          <span className={cn('inline-block h-1.5 w-1.5 rounded-full', monitorConnected ? 'bg-emerald-500' : 'bg-red-500')} />
-          <span className="text-[11px]">Monitor</span>
-        </button>
-        {degradedReasons.size > 0 && (
-          <button
-            onClick={onToggleNotifications}
-            className="flex items-center gap-1 text-amber-400 hover:text-amber-300 px-1.5 py-0.5 rounded transition-colors"
-            title={Array.from(degradedReasons).map((r) => DEGRADED_MESSAGES[r].title).join(', ')}
-          >
-            <AlertTriangle className="h-3 w-3" />
-            <span className="text-[11px]">Degraded</span>
-          </button>
-        )}
-        <button
-          onClick={onToggleNotifications}
+          onClick={() => navigate('/incidents')}
           className={cn(
             'flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors',
-            notificationCenterOpen
-              ? 'bg-emerald-600/30 text-emerald-400'
-              : monitorCriticalCount > 0
-                ? 'text-red-400 hover:text-red-300'
-                : monitorFindings.length > 0
-                  ? 'text-amber-400 hover:text-amber-300'
-                  : 'text-slate-500 hover:text-slate-300',
+            monitorCriticalCount > 0
+              ? 'text-red-400 hover:text-red-300'
+              : monitorFindings.length > 0
+                ? 'text-amber-400 hover:text-amber-300'
+                : 'text-slate-500 hover:text-slate-300',
           )}
-          title="Toggle Notifications"
-          aria-label="Toggle notifications"
+          title="Incidents"
+          aria-label="Open Incidents"
         >
           <Shield className={cn(
             'h-3 w-3',
@@ -146,12 +107,22 @@ export function StatusBar({ onToggleNotifications, notificationCenterOpen }: Sta
               ? monitorCriticalCount > 0 ? 'text-red-500' : monitorFindings.length > 0 ? 'text-amber-500' : 'text-emerald-500'
               : 'text-slate-500',
           )} />
-          {monitorUnreadCount > 0 && (
+          <span className="text-[11px]">Incidents</span>
+          {monitorFindings.length > 0 && (
             <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
-              {monitorUnreadCount > 99 ? '99+' : monitorUnreadCount}
+              {monitorFindings.length}
             </span>
           )}
         </button>
+        {degradedReasons.size > 0 && (
+          <span
+            className="flex items-center gap-1 text-amber-400 px-1.5 py-0.5"
+            title={Array.from(degradedReasons).map((r) => DEGRADED_MESSAGES[r].title).join(', ')}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            <span className="text-[11px]">Degraded</span>
+          </span>
+        )}
         <button
           onClick={() => dockPanel === 'agent' ? closeDock() : openDock('agent')}
           className={cn(
