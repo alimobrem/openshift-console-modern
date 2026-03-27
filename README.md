@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.12.0"><img src="https://img.shields.io/badge/release-v5.12.0-2563eb?style=for-the-badge" alt="Version"></a>
-  <img src="https://img.shields.io/badge/tests-1710%20passed-10b981?style=for-the-badge" alt="Tests">
+  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.13.0"><img src="https://img.shields.io/badge/release-v5.13.0-2563eb?style=for-the-badge" alt="Version"></a>
+  <img src="https://img.shields.io/badge/tests-1888%20passed-10b981?style=for-the-badge" alt="Tests">
   <img src="https://img.shields.io/badge/health%20checks-77-f59e0b?style=for-the-badge" alt="Health Checks">
   <img src="https://img.shields.io/badge/CVEs-0-10b981?style=for-the-badge" alt="CVEs">
   <img src="https://img.shields.io/badge/license-MIT-6366f1?style=for-the-badge" alt="License">
@@ -95,12 +95,16 @@ npm run dev    # http://localhost:9000
 | **Cluster Health** | 77 automated checks (31 cluster + 46 domain) with YAML fix examples and "Why it matters" explanations |
 | **Daily Briefing** | Risk score ring, control plane status, certificate expiry, attention items with remediation steps. "Cluster Zen" calm state when everything is healthy. |
 | **Instant Navigation** | Hover-prefetch preloads view data before click — navigation feels instant with zero skeleton flash. Applied to Welcome tiles and Command Palette. |
+| **Incident Center** | Consolidates Monitor + Alerts + Errors + Timeline into 4 tabs: Now (live findings), Investigate (alerts + errors), Actions (auto-fix history), History (correlated timeline) |
+| **Identity & Access** | Unified view merging User Management + Access Control into a single surface for users, groups, service accounts, RBAC audit, and impersonation |
 | **Incident Timeline** | Unified timeline merging alerts, events, rollouts, and config changes with correlation groups |
 | **Admin Overview** | Firing alerts, named degraded operators, cert warnings, quota hot spots, health score — the 8am view |
 | **ArgoCD / GitOps** | 4-step setup wizard (operator install → git config → first app → verify), sync badges, auto-PR on save, drift detection, Rollouts (canary/blue-green), Projects. GitHub, GitLab, Bitbucket. |
 | **Capacity Planning** | predict_linear() projections for CPU, memory, disk, pods with days-until-exhaustion and trend charts |
 | **HyperShift** | Auto-detects hosted control planes, adapts checks, hides irrelevant Machine API panels |
-| **Production Readiness** | 31-check automated score across infrastructure, security, observability, reliability |
+| **Production Readiness Program** | 30 gates across 6 categories (infrastructure, security, observability, reliability, operations, compliance). Wizard + checklist modes, blocking gates, waiver workflow, continuous re-checks on schedule |
+| **Degraded Mode UX** | Standardized failure handling across all views — graceful degradation with inline error states, retry actions, and partial data rendering when APIs are unavailable |
+| **Feature Flags** | localStorage-based feature flag system with toggle UI in Admin. Gate unreleased features, A/B test surfaces, disable features without redeployment |
 | **Security** | 10 audit checks incl. ACS/StackRox detection, HyperShift-adapted. [Full details](SECURITY.md) |
 
 ### Operations
@@ -160,7 +164,7 @@ npm run dev    # http://localhost:9000
 | **State** | Zustand + TanStack Query | Client + server state separation |
 | **Real-time** | WebSocket watches | Instant updates, 60s polling fallback |
 | **Styling** | Tailwind CSS 3.4 + Radix UI | Utility-first, headless components, CVA variants |
-| **Testing** | Vitest + jsdom | 1710 tests in ~4s |
+| **Testing** | Vitest + jsdom | 1888 tests in ~4s |
 | **Charts** | Pure SVG sparklines | Zero chart library dependency |
 | **Security** | Red Hat UBI images | 0 CVEs, all images from Red Hat registries |
 
@@ -186,7 +190,7 @@ ANTHROPIC_API_KEY=sk-ant-... ./deploy/deploy.sh --agent-repo /path/to/pulse-agen
 
 Auto-detects cluster domain, OAuth proxy image, monitoring stack. Prerequisite checks for `oc`, `helm`, `npm`. Fails early with clear fix instructions if credentials are missing.
 
-**WS token sync**: On re-deploys, `deploy.sh` reads the existing WS token from the agent's auto-generated Kubernetes Secret. This prevents token mismatches between the UI (nginx proxy) and agent — no manual token management needed.
+**WS token auto-sync**: On every deploy (initial or re-deploy), `deploy.sh` automatically reads the WS token from the agent's Kubernetes Secret and injects it into the UI's nginx proxy configuration. This ensures the UI and agent always share the same authentication token — no manual token management or coordination needed.
 
 ### Helm (UI only)
 
@@ -328,7 +332,7 @@ Browser --> OAuth Proxy (8443/TLS) --> nginx (8080) --> K8s API / Prometheus / A
 ---
 
 <p align="center">
-  <strong>1710 tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>15 views</strong> &bull; <strong>68 AI tools</strong> &bull; <strong>500+ operators</strong>
+  <strong>1888 tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>15 views</strong> &bull; <strong>68 AI tools</strong> &bull; <strong>500+ operators</strong>
 </p>
 
 <p align="center">
