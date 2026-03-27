@@ -1,8 +1,7 @@
 import { useState, useRef, useEffect, lazy, Suspense } from 'react';
-import { Minus, X, GripVertical, Maximize2, Minimize2, Shield, ExternalLink } from 'lucide-react';
+import { Minus, X, GripVertical, Maximize2, Minimize2 } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
-import { useMonitorStore } from '../store/monitorStore';
 import { AIIconStatic, AIBadge, AI_ACCENT, aiActiveClass } from './agent/AIBranding';
 import { DegradedBanner } from './primitives/DegradedBanner';
 import { cn } from '@/lib/utils';
@@ -29,14 +28,6 @@ export function Dock() {
   const terminalContext = useUIStore((s) => s.terminalContext);
   const hasUnreadInsight = useAgentStore((s) => s.hasUnreadInsight);
   const clearUnread = useAgentStore((s) => s.setUnreadInsight);
-  const monitorConnected = useMonitorStore((s) => s.connected);
-  const monitorFindings = useMonitorStore((s) => s.findings);
-  const monitorUnreadCount = useMonitorStore((s) => s.unreadCount);
-  const monitorPendingActions = useMonitorStore((s) => s.pendingActions);
-  const monitorMarkAllRead = useMonitorStore((s) => s.markAllRead);
-  const monitorDismissFinding = useMonitorStore((s) => s.dismissFinding);
-  const monitorCriticalCount = monitorFindings.filter((f) => f.severity === 'critical').length;
-  const monitorWarningCount = monitorFindings.filter((f) => f.severity === 'warning').length;
 
   const [isResizing, setIsResizing] = useState(false);
   const startX = useRef(0);
@@ -129,25 +120,6 @@ export function Dock() {
               <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-400" />
             )}
           </button>
-          <button
-            role="tab"
-            aria-selected={dockPanel === 'monitor'}
-            onClick={() => { openDock('monitor'); monitorMarkAllRead(); }}
-            className={cn(
-              'relative flex items-center gap-1 px-2 py-1 rounded transition-colors',
-              dockPanel === 'monitor'
-                ? 'bg-slate-700 text-emerald-400'
-                : 'text-slate-400 hover:text-slate-200',
-            )}
-          >
-            <Shield className="h-3 w-3" />
-            Monitor
-            {monitorUnreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
-                {monitorUnreadCount > 9 ? '9+' : monitorUnreadCount}
-              </span>
-            )}
-          </button>
         </div>
 
         <div className="flex items-center gap-1">
@@ -231,64 +203,6 @@ export function Dock() {
           </>
         )}
 
-        {dockPanel === 'monitor' && (
-          <div className="p-3 space-y-3 text-sm">
-            {/* Connection status */}
-            <div className="flex items-center gap-2 text-xs">
-              <span className={cn(
-                'h-2 w-2 rounded-full',
-                monitorConnected ? 'bg-green-500' : 'bg-red-500',
-              )} />
-              <span className={monitorConnected ? 'text-green-400' : 'text-red-400'}>
-                {monitorConnected ? 'Connected' : 'Disconnected'}
-              </span>
-            </div>
-
-            {/* Severity breakdown */}
-            <div className="flex items-center gap-3 text-xs">
-              <span className="text-slate-400">
-                {monitorFindings.length} finding{monitorFindings.length !== 1 ? 's' : ''}
-              </span>
-              {monitorCriticalCount > 0 && (
-                <span className="text-red-400">{monitorCriticalCount} critical</span>
-              )}
-              {monitorWarningCount > 0 && (
-                <span className="text-amber-400">{monitorWarningCount} warning</span>
-              )}
-              {monitorPendingActions.length > 0 && (
-                <span className="text-blue-400">{monitorPendingActions.length} pending action{monitorPendingActions.length !== 1 ? 's' : ''}</span>
-              )}
-            </div>
-
-            {/* Compact findings list */}
-            {monitorFindings.length > 0 ? (
-              <ul className="space-y-1">
-                {monitorFindings.slice(0, 20).map((f) => (
-                  <li key={f.id} className="flex items-center gap-2 text-xs py-1 border-b border-slate-800 last:border-0">
-                    <span className={cn(
-                      'h-1.5 w-1.5 rounded-full shrink-0',
-                      f.severity === 'critical' ? 'bg-red-500' : f.severity === 'warning' ? 'bg-amber-500' : 'bg-blue-500',
-                    )} />
-                    <span className="text-slate-300 truncate">{f.title}</span>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <div className="text-xs text-slate-500 py-4 text-center">
-                No findings — all clear
-              </div>
-            )}
-
-            {/* Link to full monitor view */}
-            <a
-              href="/monitor"
-              className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              Open full Monitor view
-              <ExternalLink className="h-3 w-3" />
-            </a>
-          </div>
-        )}
       </div>
     </div>
   );
