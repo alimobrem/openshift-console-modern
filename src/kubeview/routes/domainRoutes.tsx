@@ -21,6 +21,7 @@ const FleetWorkloadsView = lazy(() => import('../views/fleet/FleetWorkloadsView'
 const FleetAlertsView = lazy(() => import('../views/fleet/FleetAlertsView'));
 const DriftDetectorView = lazy(() => import('../views/fleet/DriftDetectorView').then(m => ({ default: m.DriftDetectorView })));
 const MonitorView = lazy(() => import('../views/MonitorView'));
+const IncidentCenterView = lazy(() => import('../views/IncidentCenterView'));
 const DynamicView = lazy(() => import('../views/DynamicView').then(m => ({ default: m.DynamicView })));
 
 function LoadingFallback() {
@@ -69,6 +70,7 @@ export function domainRoutes() {
       <Route path="fleet/r/:gvr" element={<Lazy><FleetResourceRoute /></Lazy>} />
       <Route path="fleet/drift" element={<Lazy><DriftDetectorView /></Lazy>} />
       <Route path="monitor" element={<Lazy><MonitorView /></Lazy>} />
+      <Route path="incidents" element={<Lazy><IncidentCenterView /></Lazy>} />
       <Route path="dynamic/:id" element={<Lazy><DynamicViewRoute /></Lazy>} />
     </>
   );
