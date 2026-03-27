@@ -109,7 +109,7 @@ export function DockAgentPanel() {
               </div>
             )}
             {streamingText && (
-              <MarkdownRenderer content={streamingText} className="text-sm" />
+              <pre className="text-sm text-slate-300 whitespace-pre-wrap font-sans">{streamingText}</pre>
             )}
             {!streamingText && !thinkingText && activeTools.length === 0 && streamingComponents.length === 0 && (
               <div className="flex items-center gap-2 text-xs text-slate-400">

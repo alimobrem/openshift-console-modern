@@ -82,9 +82,9 @@ function resetStreamingState() {
 function scheduleDeltaFlush(set: (fn: (s: AgentState) => Partial<AgentState>) => void) {
   if (rafScheduled) return;
   rafScheduled = true;
-  // Throttle to 100ms — 60fps text updates cause layout thrashing
-  // with MarkdownRenderer re-parsing + scrollIntoView on every frame
-  setTimeout(() => flushDeltas(set), 100);
+  // Throttle to 250ms — streaming renders plain text during stream,
+  // markdown parsing only happens on completed messages
+  setTimeout(() => flushDeltas(set), 250);
 }
 
 function trimMessages(messages: AgentMessage[]): AgentMessage[] {

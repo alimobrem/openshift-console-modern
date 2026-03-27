@@ -223,10 +223,10 @@ export const InlineAgent: React.FC<InlineAgentProps> = ({
           </div>
         )}
 
-        {/* Streaming text */}
+        {/* Streaming text — plain text during stream, markdown after completion */}
         {streamingText && (
           <div className="text-sm" data-testid="streaming-text">
-            <MarkdownRenderer content={streamingText} />
+            <pre className="text-slate-300 whitespace-pre-wrap font-sans">{streamingText}</pre>
           </div>
         )}
 
