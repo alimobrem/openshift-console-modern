@@ -150,7 +150,7 @@ export function ExportStep({ onComplete }: Props) {
     abortRef.current?.abort();
   };
 
-  const doneCategories = Object.values(categoryProgress).filter((p) => p.status === 'done').length;
+  const doneCategories = Object.values(categoryProgress).filter((p) => p.status === 'done' && p.fileCount > 0).length;
 
   return (
     <div className="space-y-6">
@@ -186,7 +186,8 @@ export function ExportStep({ onComplete }: Props) {
                 <div className="flex-shrink-0">
                   {progress.status === 'pending' && <Circle className="w-4 h-4 text-slate-500" />}
                   {progress.status === 'running' && <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />}
-                  {progress.status === 'done' && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                  {progress.status === 'done' && progress.fileCount > 0 && <CheckCircle2 className="w-4 h-4 text-emerald-500" />}
+                  {progress.status === 'done' && progress.fileCount === 0 && <Circle className="w-4 h-4 text-slate-500" />}
                   {progress.status === 'error' && <AlertTriangle className="w-4 h-4 text-red-400" />}
                 </div>
                 <span
@@ -201,7 +202,8 @@ export function ExportStep({ onComplete }: Props) {
                   {cat.label}
                 </span>
                 <span className="text-xs text-slate-500">
-                  {progress.status === 'done' && `${progress.fileCount} files`}
+                  {progress.status === 'done' && progress.fileCount > 0 && `${progress.fileCount} files`}
+                  {progress.status === 'done' && progress.fileCount === 0 && 'no resources found'}
                   {progress.status === 'error' && progress.error}
                 </span>
               </div>
