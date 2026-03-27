@@ -37,10 +37,12 @@ export function OperatorInstallStep({ onComplete }: Props) {
   React.useEffect(() => {
     if (phase === 'succeeded') {
       markComplete('operator');
-      // Re-detect ArgoCD
-      useArgoCDStore.getState().detect();
-      const timer = setTimeout(onComplete, 1500);
-      return () => clearTimeout(timer);
+      let cancelled = false;
+      (async () => {
+        await useArgoCDStore.getState().detect();
+        if (!cancelled) onComplete();
+      })();
+      return () => { cancelled = true; };
     }
   }, [phase]);
 

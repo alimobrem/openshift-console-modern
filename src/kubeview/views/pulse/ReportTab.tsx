@@ -259,7 +259,7 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
   });
 
   type PromResult = { metric: Record<string, string>; value: number };
-  const { data: firingAlerts = [] } = useQuery<PromResult[]>({
+  const { data: firingAlerts = [], isError: alertsError } = useQuery<PromResult[]>({
     queryKey: ['prom', 'firing-alerts'],
     queryFn: () => queryInstant('ALERTS{alertstate="firing"}').catch((): PromResult[] => []),
     staleTime: 30_000, refetchInterval: 60_000,
@@ -345,8 +345,8 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
   const certsExpiringSoon30 = useMemo(() => certInfos.filter(c => c.daysUntilExpiry !== null && c.daysUntilExpiry >= 7 && c.daysUntilExpiry < 30), [certInfos]);
   const urgentCerts = useMemo(() => [...certInfos].filter(c => (c.daysUntilExpiry ?? 999) < 30).sort((a, b) => (a.daysUntilExpiry ?? 9999) - (b.daysUntilExpiry ?? 9999)).slice(0, 5), [certInfos]);
 
-  const readyNodes = nodes.filter((n) => ((n as unknown as Node).status?.conditions || []).some((c) => c.type === 'Ready' && c.status === 'True'));
-  const runningPods = userPods.filter((p) => (p as unknown as Pod).status?.phase === 'Running');
+  const readyNodes = useMemo(() => nodes.filter((n) => ((n as unknown as Node).status?.conditions || []).some((c) => c.type === 'Ready' && c.status === 'True')), [nodes]);
+  const runningPods = useMemo(() => userPods.filter((p) => (p as unknown as Pod).status?.phase === 'Running'), [userPods]);
 
   // Nodes under pressure
   const pressuredNodes = useMemo(() => nodes.filter((n) => {
@@ -521,6 +521,7 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
 
   // Zen state: cluster is healthy, no issues
   const isZenState = riskScore <= 5
+    && !alertsError // don't show Zen if alerting is broken
     && (nodes.length > 0 || allPods.length > 0) // must have actual data loaded
     && attentionItems.length === 0
     && criticalAlerts.length === 0
@@ -552,6 +553,13 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
       {/* ═══════ ZONE 1: Heartbeat ═══════ */}
       <div className="space-y-3">
         <ZoneHeader number={1} title="Heartbeat" subtitle="If red, your day just changed" icon={<Activity className="w-4 h-4 text-red-400" />} />
+
+        {alertsError && (
+          <div className="flex items-center gap-2 text-xs text-yellow-400 bg-yellow-950/30 border border-yellow-800/50 rounded-lg px-3 py-2">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span>Metrics unavailable — risk score may be incomplete</span>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Risk score */}

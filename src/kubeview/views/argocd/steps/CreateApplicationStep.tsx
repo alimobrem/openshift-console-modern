@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Loader2, Code2, FileCode, ToggleLeft, ToggleRight, Layers, AppWindow } from 'lucide-react';
+import { Loader2, Code2, FileCode, ToggleLeft, ToggleRight, Layers, AppWindow, AlertTriangle, XCircle } from 'lucide-react';
 import { useGitOpsConfig } from '../../../hooks/useGitOpsConfig';
 import { useArgoCDStore } from '../../../store/argoCDStore';
 import { useGitOpsSetupStore } from '../../../store/gitopsSetupStore';
@@ -179,6 +179,8 @@ export function CreateApplicationStep({ onComplete }: Props) {
   const [createNamespace, setCreateNamespace] = useState(true);
   const [showYAML, setShowYAML] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [completed, setCompleted] = useState(false);
 
   React.useEffect(() => {
     if (config?.repoUrl && !repoURL) {
@@ -257,8 +259,9 @@ export function CreateApplicationStep({ onComplete }: Props) {
   }, [isAppOfApps, rootAppObj, childApps, applicationObj]);
 
   const handleCreate = async () => {
-    if (!formValid) return;
+    if (!formValid || completed) return;
     setCreating(true);
+    setError(null);
     try {
       if (isAppOfApps && rootAppObj) {
         if (!isConfigured || !config) {
@@ -332,9 +335,12 @@ export function CreateApplicationStep({ onComplete }: Props) {
       }
 
       await useArgoCDStore.getState().loadApplications();
+      setCompleted(true);
       markComplete('first-app');
       onComplete();
     } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create application';
+      setError(msg);
       showErrorToast(err, 'Failed to create application');
     }
     setCreating(false);
@@ -516,9 +522,24 @@ export function CreateApplicationStep({ onComplete }: Props) {
         )}
       </div>
 
+      {error && (
+        <div className="flex items-start gap-2 text-sm text-red-400 bg-red-950/30 border border-red-900 rounded-lg p-3">
+          <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <div>
+            <p>{error}</p>
+            <button
+              onClick={() => setError(null)}
+              className="text-blue-400 hover:text-blue-300 mt-2 text-xs"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
+
       <button
         onClick={handleCreate}
-        disabled={creating || !formValid}
+        disabled={creating || !formValid || completed}
         className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
       >
         {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : null}

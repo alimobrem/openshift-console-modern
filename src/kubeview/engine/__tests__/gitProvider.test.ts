@@ -149,7 +149,7 @@ describe('GitHubProvider', () => {
     mockFetch
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ object: { sha: 'ref-sha-1' } }) })
       .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ tree: { sha: 'base-tree-sha' } }) })
-      .mockResolvedValueOnce({ ok: false, status: 422 });
+      .mockResolvedValueOnce({ ok: false, status: 422, json: () => Promise.resolve({}) });
 
     await expect(
       provider.commitMultipleFiles('branch', [{ path: 'a.yaml', content: 'x' }], 'msg'),

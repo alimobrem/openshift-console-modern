@@ -2,7 +2,7 @@
  * ExportStep — drives the cluster-to-git export process with real-time progress.
  */
 
-import React, { useState, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   Loader2, CheckCircle2, AlertTriangle, Play, XCircle,
   ExternalLink, FileText, Circle,
@@ -46,6 +46,11 @@ export function ExportStep({ onComplete }: Props) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const fileLogRef = useRef<HTMLDivElement>(null);
+
+  // Abort export on unmount
+  useEffect(() => {
+    return () => { abortRef.current?.abort(); };
+  }, []);
 
   const categories = useMemo(
     () => RESOURCE_CATEGORIES.filter((c) => selectedCategories.includes(c.id)),

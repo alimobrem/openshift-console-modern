@@ -19,10 +19,10 @@ export default function PulseView() {
   const { data: nodes = [], isLoading: nodesLoading } = useK8sListWatch({ apiPath: '/api/v1/nodes' });
   const { data: pods = [], isLoading: podsLoading } = useK8sListWatch({ apiPath: '/api/v1/pods', namespace: nsFilter });
   const { data: deployments = [], isLoading: deploysLoading } = useK8sListWatch({ apiPath: '/apis/apps/v1/deployments', namespace: nsFilter });
-  const { data: pvcs = [] } = useK8sListWatch({ apiPath: '/api/v1/persistentvolumeclaims', namespace: nsFilter });
-  const { data: operators = [] } = useK8sListWatch({ apiPath: '/apis/config.openshift.io/v1/clusteroperators' });
+  const { data: pvcs = [], isLoading: pvcsLoading } = useK8sListWatch({ apiPath: '/api/v1/persistentvolumeclaims', namespace: nsFilter });
+  const { data: operators = [], isLoading: opsLoading } = useK8sListWatch({ apiPath: '/apis/config.openshift.io/v1/clusteroperators' });
 
-  const isLoading = nodesLoading || podsLoading || deploysLoading;
+  const isLoading = nodesLoading || podsLoading || deploysLoading || pvcsLoading || opsLoading;
 
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">

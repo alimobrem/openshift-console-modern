@@ -2,12 +2,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, cleanup } from '@testing-library/react';
 
-const blockerMock: Record<string, any> = { state: 'unblocked', proceed: vi.fn(), reset: vi.fn() };
 vi.mock('react-router-dom', () => ({
-  useBlocker: (condition: boolean) => {
-    blockerMock._condition = condition;
-    return blockerMock;
-  },
+  useNavigate: () => vi.fn(),
+  useLocation: () => ({ pathname: '/test', search: '' }),
 }));
 
 import { useUnsavedChanges } from '../useUnsavedChanges';
@@ -18,7 +15,6 @@ describe('useUnsavedChanges', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    blockerMock.state = 'unblocked';
     addEventSpy = vi.spyOn(window, 'addEventListener');
     removeEventSpy = vi.spyOn(window, 'removeEventListener');
   });
@@ -48,46 +44,30 @@ describe('useUnsavedChanges', () => {
     expect(removeCalls.length).toBe(1);
   });
 
-  it('shows confirm dialog when blocker is blocked', () => {
-    const { result, rerender } = renderHook(() => useUnsavedChanges(true));
-
-    expect(result.current.showConfirm).toBe(false);
-
-    // Simulate blocker activation
-    blockerMock.state = 'blocked';
-    rerender();
-
-    expect(result.current.showConfirm).toBe(true);
+  it('adds popstate listener when hasChanges is true', () => {
+    renderHook(() => useUnsavedChanges(true));
+    const popstateCalls = addEventSpy.mock.calls.filter(([type]) => type === 'popstate');
+    expect(popstateCalls.length).toBe(1);
   });
 
-  it('confirmNavigation calls blocker.proceed and hides dialog', () => {
-    blockerMock.state = 'blocked';
-    const { result } = renderHook(() => useUnsavedChanges(true));
+  it('does not add popstate listener when hasChanges is false', () => {
+    renderHook(() => useUnsavedChanges(false));
+    const popstateCalls = addEventSpy.mock.calls.filter(([type]) => type === 'popstate');
+    expect(popstateCalls.length).toBe(0);
+  });
 
-    // showConfirm is set via useEffect
-    expect(result.current.showConfirm).toBe(true);
+  it('confirmNavigation hides dialog', () => {
+    const { result } = renderHook(() => useUnsavedChanges(true));
+    expect(result.current.showConfirm).toBe(false);
 
     act(() => result.current.confirmNavigation());
-
-    expect(blockerMock.proceed).toHaveBeenCalled();
     expect(result.current.showConfirm).toBe(false);
   });
 
-  it('cancelNavigation calls blocker.reset and hides dialog', () => {
-    blockerMock.state = 'blocked';
+  it('cancelNavigation hides dialog', () => {
     const { result } = renderHook(() => useUnsavedChanges(true));
 
     act(() => result.current.cancelNavigation());
-
-    expect(blockerMock.reset).toHaveBeenCalled();
     expect(result.current.showConfirm).toBe(false);
-  });
-
-  it('passes hasChanges condition to useBlocker', () => {
-    renderHook(() => useUnsavedChanges(true));
-    expect(blockerMock._condition).toBe(true);
-
-    renderHook(() => useUnsavedChanges(false));
-    expect(blockerMock._condition).toBe(false);
   });
 });

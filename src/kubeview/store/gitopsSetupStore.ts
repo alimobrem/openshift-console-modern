@@ -107,9 +107,21 @@ export const useGitOpsSetupStore = create<GitOpsSetupState>()(
         try {
           await k8sGet('/api/v1/namespaces/openshiftpulse/secrets/openshiftpulse-gitops-config');
           completed.push('git-config');
-          resumeStep = 'first-app';
+          resumeStep = 'select-resources';
         } catch {
           // Not configured
+        }
+
+        // Check if resources were selected and export completed
+        const { exportSelections, exportSummary } = get();
+        if (exportSelections.categoryIds.length > 0 && exportSelections.clusterName) {
+          if (!completed.includes('select-resources')) completed.push('select-resources');
+          resumeStep = 'export';
+        }
+        if (exportSummary) {
+          if (!completed.includes('select-resources')) completed.push('select-resources');
+          if (!completed.includes('export')) completed.push('export');
+          resumeStep = 'first-app';
         }
 
         // Check if apps exist
@@ -118,7 +130,7 @@ export const useGitOpsSetupStore = create<GitOpsSetupState>()(
           resumeStep = 'done';
         }
 
-        set({ completedSteps: completed, currentStep: completed.length === 3 ? 'done' : resumeStep });
+        set({ completedSteps: completed, currentStep: completed.length >= 4 ? 'done' : resumeStep });
       },
     }),
     {
@@ -127,6 +139,7 @@ export const useGitOpsSetupStore = create<GitOpsSetupState>()(
         completedSteps: state.completedSteps,
         dismissed: state.dismissed,
         exportSelections: state.exportSelections,
+        exportSummary: state.exportSummary,
       }),
     },
   ),

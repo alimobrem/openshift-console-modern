@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { GitBranch, Eye, EyeOff, ExternalLink, ChevronDown, ChevronUp, Loader2 } from 'lucide-react';
+import { GitBranch, Eye, EyeOff, ExternalLink, ChevronDown, ChevronUp, Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { useGitOpsConfig } from '../../../hooks/useGitOpsConfig';
 import { useGitOpsSetupStore } from '../../../store/gitopsSetupStore';
 import { useUIStore } from '../../../store/uiStore';
@@ -48,7 +48,7 @@ const PROVIDER_GUIDANCE = {
 };
 
 export function GitProviderStep({ onComplete }: Props) {
-  const { config, save } = useGitOpsConfig();
+  const { config, save, testConnection } = useGitOpsConfig();
   const markComplete = useGitOpsSetupStore((s) => s.markStepComplete);
   const addToast = useUIStore((s) => s.addToast);
 
@@ -60,6 +60,8 @@ export function GitProviderStep({ onComplete }: Props) {
   const [showToken, setShowToken] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
 
   useEffect(() => {
     if (config) {
@@ -72,6 +74,18 @@ export function GitProviderStep({ onComplete }: Props) {
   }, [config]);
 
   const guide = PROVIDER_GUIDANCE[provider];
+
+  const handleTest = async () => {
+    if (!repoUrl || !token) {
+      setTestResult({ success: false, error: 'Repository URL and token are required' });
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    const result = await testConnection({ provider, repoUrl, baseBranch, token, pathPrefix });
+    setTestResult(result);
+    setTesting(false);
+  };
 
   const handleSave = async () => {
     if (!repoUrl || !token) {
@@ -201,14 +215,36 @@ export function GitProviderStep({ onComplete }: Props) {
         </div>
       </div>
 
-      <button
-        onClick={handleSave}
-        disabled={saving || !repoUrl || !token}
-        className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
-      >
-        {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitBranch className="w-4 h-4" />}
-        Save & Continue
-      </button>
+      {testResult && (
+        <div className={cn(
+          'flex items-center gap-2 text-sm rounded-lg p-3',
+          testResult.success
+            ? 'text-emerald-400 bg-emerald-950/30 border border-emerald-900'
+            : 'text-red-400 bg-red-950/30 border border-red-900',
+        )}>
+          {testResult.success ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <XCircle className="w-4 h-4 shrink-0" />}
+          {testResult.success ? 'Connection successful — repository is accessible' : testResult.error}
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <button
+          onClick={handleTest}
+          disabled={testing || !repoUrl || !token}
+          className="px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          Test Connection
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={saving || !repoUrl || !token}
+          className="px-6 py-3 bg-violet-600 hover:bg-violet-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center gap-2"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitBranch className="w-4 h-4" />}
+          Save & Continue
+        </button>
+      </div>
     </div>
   );
 }

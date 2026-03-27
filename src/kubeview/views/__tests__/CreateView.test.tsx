@@ -10,10 +10,9 @@ const navigateMock = vi.fn();
 const addTabMock = vi.fn();
 const addToastMock = vi.fn();
 
-const blockerMock = { state: 'unblocked' as string, proceed: vi.fn(), reset: vi.fn() };
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
-  return { ...actual, useNavigate: () => navigateMock, useBlocker: () => blockerMock };
+  return { ...actual, useNavigate: () => navigateMock };
 });
 
 vi.mock('../../store/uiStore', () => ({
@@ -440,29 +439,24 @@ describe('CreateView', () => {
 
   // ===== Unsaved changes warning =====
 
-  it('shows ConfirmDialog when blocker is activated during YAML editing', () => {
-    // Render with a specific GVR so it enters edit mode directly
+  it('registers beforeunload listener when YAML has changes', () => {
+    const addEventSpy = vi.spyOn(window, 'addEventListener');
     renderCreateView({ gvrKey: 'apps/v1/deployments' });
-
-    // Should be in edit mode with YAML editor visible
-    expect(screen.getByTestId('yaml-editor')).toBeDefined();
 
     // Modify YAML content to trigger hasYamlChanges
     const editor = screen.getByTestId('yaml-editor');
     fireEvent.change(editor, { target: { value: 'apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: changed' } });
 
-    // Simulate blocker activation
-    blockerMock.state = 'blocked';
-    // Re-render to pick up blocker state change
-    renderCreateView({ gvrKey: 'apps/v1/deployments' });
-
-    expect(screen.getByText('Unsaved changes')).toBeDefined();
-    expect(screen.getByText(/changes will be lost/)).toBeDefined();
+    const beforeunloadCalls = addEventSpy.mock.calls.filter(([type]) => type === 'beforeunload');
+    expect(beforeunloadCalls.length).toBeGreaterThanOrEqual(1);
+    addEventSpy.mockRestore();
   });
 
-  it('does not show ConfirmDialog when no YAML changes', () => {
-    blockerMock.state = 'unblocked';
+  it('does not register beforeunload when no YAML changes', () => {
+    const addEventSpy = vi.spyOn(window, 'addEventListener');
     renderCreateView({ gvrKey: 'v1/pods' });
-    expect(screen.queryByText('Unsaved changes')).toBeNull();
+    const beforeunloadCalls = addEventSpy.mock.calls.filter(([type]) => type === 'beforeunload');
+    expect(beforeunloadCalls.length).toBe(0);
+    addEventSpy.mockRestore();
   });
 });
