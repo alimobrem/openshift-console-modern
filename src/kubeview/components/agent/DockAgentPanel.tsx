@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { Send, StopCircle, Bot, Loader2, Wrench, Brain, AlertTriangle, Trash2 } from 'lucide-react';
+import { Send, StopCircle, Bot, Loader2, Wrench, Brain, AlertTriangle, Trash2, Shield } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
 import { useTrustStore, TRUST_LABELS } from '../../store/trustStore';
 import { useSmartPrompts } from '../../hooks/useSmartPrompts';
+import { useMonitor } from '../../hooks/useMonitor';
 import { MessageBubble } from './MessageBubble';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { AgentComponentRenderer } from './AgentComponentRenderer';
@@ -23,6 +24,7 @@ export function DockAgentPanel() {
 
   const trustLevel = useTrustStore((s) => s.trustLevel);
   const smartPrompts = useSmartPrompts();
+  const { connected: monitorConnected, findings: monitorFindings, criticalCount: monitorCritical } = useMonitor();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -62,6 +64,26 @@ export function DockAgentPanel() {
 
   return (
     <div className="flex flex-col h-full">
+      {/* Monitor status bar */}
+      <a
+        href="/monitor"
+        className={cn(
+          'flex items-center gap-1.5 px-3 py-1 text-xs border-b border-slate-800 transition-colors hover:bg-slate-800/50',
+          monitorConnected
+            ? monitorFindings.length > 0
+              ? monitorCritical > 0 ? 'text-red-400' : 'text-amber-400'
+              : 'text-green-400'
+            : 'text-slate-500',
+        )}
+      >
+        <Shield className="h-3 w-3 shrink-0" />
+        {monitorConnected
+          ? monitorFindings.length > 0
+            ? `Monitoring: ${monitorFindings.length} finding${monitorFindings.length !== 1 ? 's' : ''}`
+            : 'Monitoring: All clear'
+          : 'Monitoring: Disconnected'}
+      </a>
+
       {/* Messages area */}
       <div className="flex-1 overflow-auto px-3 py-2 space-y-3" role="log" aria-label="Agent messages">
         {messages.length === 0 && !streaming && (
