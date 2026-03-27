@@ -3,10 +3,37 @@ import { Loader2, Code2, FileCode, ToggleLeft, ToggleRight, Layers, AppWindow } 
 import { useGitOpsConfig } from '../../../hooks/useGitOpsConfig';
 import { useArgoCDStore } from '../../../store/argoCDStore';
 import { useGitOpsSetupStore } from '../../../store/gitopsSetupStore';
-import { k8sCreate } from '../../../engine/query';
+import { k8sCreate, k8sGet } from '../../../engine/query';
+import type { GitOpsConfig } from '../../../engine/gitProvider';
 import { createGitProvider, type FileCommit } from '../../../engine/gitProvider';
 import { showErrorToast } from '../../../engine/errorToast';
 import { cn } from '@/lib/utils';
+
+/** Ensure ArgoCD has a repository secret for the configured git repo (idempotent). */
+async function ensureArgoRepoSecret(argoNamespace: string, config: GitOpsConfig) {
+  const secretName = `repo-${config.repoUrl.replace(/[^a-z0-9]/gi, '-').toLowerCase().slice(0, 50)}`;
+  try {
+    await k8sGet(`/api/v1/namespaces/${argoNamespace}/secrets/${secretName}`);
+    // Already exists
+  } catch {
+    await k8sCreate(`/api/v1/namespaces/${argoNamespace}/secrets`, {
+      apiVersion: 'v1',
+      kind: 'Secret',
+      metadata: {
+        name: secretName,
+        namespace: argoNamespace,
+        labels: { 'argocd.argoproj.io/secret-type': 'repository' },
+      },
+      type: 'Opaque',
+      stringData: {
+        type: 'git',
+        url: config.repoUrl,
+        username: 'git',
+        password: config.token,
+      },
+    });
+  }
+}
 
 interface Props {
   onComplete: () => void;
@@ -258,6 +285,9 @@ export function CreateApplicationStep({ onComplete }: Props) {
           config.baseBranch,
         );
 
+        // Ensure ArgoCD has repo credentials (idempotent)
+        await ensureArgoRepoSecret(argoNamespace, config);
+
         await k8sCreate(
           `/apis/argoproj.io/v1alpha1/namespaces/${argoNamespace}/applications`,
           rootAppObj,
@@ -271,6 +301,10 @@ export function CreateApplicationStep({ onComplete }: Props) {
           clusterName,
         });
       } else if (applicationObj) {
+        // Ensure ArgoCD has repo credentials (idempotent)
+        if (isConfigured && config) {
+          await ensureArgoRepoSecret(argoNamespace, config);
+        }
         await k8sCreate(
           `/apis/argoproj.io/v1alpha1/namespaces/${argoNamespace}/applications`,
           applicationObj,
