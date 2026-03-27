@@ -1,22 +1,150 @@
 /**
- * Agent Notifications — background polling service that queries the agent
- * for predicted issues and pushes toast notifications.
+ * Agent Notifications — connects to /ws/monitor for real-time findings,
+ * falling back to 5-minute polling for v1 agents.
  */
 
 import { AgentClient } from './agentClient';
 import type { AgentEvent } from './agentClient';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
+import { emitMonitorEvent } from '../hooks/useMonitor';
+import type { Finding } from '../hooks/useMonitor';
 
 const DEFAULT_INTERVAL = 300_000; // 5 minutes
-const PROMPT = 'Briefly check for critical issues or anomalies. For each issue, name the affected resource and give a one-line fix. 3 sentences max. If nothing notable, respond with just "OK".';
+const PROMPT =
+  'Briefly check for critical issues or anomalies. For each issue, name the affected resource and give a one-line fix. 3 sentences max. If nothing notable, respond with just "OK".';
 
-let client: AgentClient | null = null;
-let intervalId: ReturnType<typeof setInterval> | null = null;
 let running = false;
-let polling = false; // guard against overlapping polls
 
+// --- v2 monitor state ---
+let monitorWs: WebSocket | null = null;
+let monitorReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let monitorReconnectAttempts = 0;
+const MONITOR_RECONNECT_MAX_DELAY = 30_000;
+
+// --- v1 fallback state ---
+let intervalId: ReturnType<typeof setInterval> | null = null;
+let polling = false; // guard against overlapping polls
+let client: AgentClient | null = null;
+
+const AGENT_BASE = '/api/agent';
 const QUERY_TIMEOUT = 30_000; // 30s max per query
+
+async function detectProtocol(): Promise<'2' | '1' | null> {
+  try {
+    const res = await fetch(`${AGENT_BASE}/version`);
+    if (!res.ok) return '1'; // old agent without proper /version
+    const data = await res.json();
+    return data.protocol === '2' ? '2' : '1';
+  } catch {
+    return null; // agent unavailable
+  }
+}
+
+// --- v2: Monitor WebSocket ---
+
+function connectMonitor() {
+  if (monitorWs) {
+    monitorWs.close();
+    monitorWs = null;
+  }
+
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const url = `${protocol}//${window.location.host}${AGENT_BASE}/ws/monitor`;
+
+  monitorWs = new WebSocket(url);
+
+  monitorWs.onopen = () => {
+    monitorReconnectAttempts = 0;
+    emitMonitorEvent({ type: 'status', connected: true });
+  };
+
+  monitorWs.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data) as Record<string, unknown>;
+      const eventType = data.type as string;
+
+      if (eventType === 'finding') {
+        const finding = data as unknown as Finding;
+        emitMonitorEvent({ type: 'finding', data: finding });
+
+        // Show toast for critical/warning findings
+        if (finding.severity === 'critical' || finding.severity === 'warning') {
+          const store = useUIStore.getState();
+          store.addToast({
+            type: finding.severity === 'critical' ? 'error' : 'warning',
+            title: `Monitor: ${finding.title}`,
+            detail: finding.summary,
+            duration: 15000,
+            action: {
+              label: 'Investigate',
+              onClick: () => {
+                store.openDock('agent');
+                const agentStore = useAgentStore.getState();
+                if (agentStore.connected) {
+                  agentStore.sendMessage(
+                    `The monitor detected this issue:\n\n"${finding.title}: ${finding.summary}"\n\nInvestigate this further. What is the root cause and what should I do to fix it?`,
+                  );
+                }
+              },
+            },
+          });
+        }
+      } else if (eventType === 'prediction') {
+        emitMonitorEvent({
+          type: 'prediction',
+          data: data as unknown as { id: string; category: string; title: string; detail: string; eta: string; confidence: number; resources: Array<{ kind: string; name: string; namespace?: string }>; recommendedAction?: string; timestamp: number },
+        });
+      } else if (eventType === 'action_report') {
+        emitMonitorEvent({
+          type: 'action_report',
+          data: data as unknown as { id: string; findingId: string; tool: string; status: 'proposed' | 'executing' | 'completed' | 'failed' | 'rolled_back'; timestamp: number },
+        });
+      }
+    } catch {
+      // Silently skip unparseable messages
+    }
+  };
+
+  monitorWs.onclose = () => {
+    monitorWs = null;
+    emitMonitorEvent({ type: 'status', connected: false });
+
+    if (!running) return;
+
+    // Reconnect with exponential backoff + jitter
+    const baseDelay = Math.min(
+      1000 * Math.pow(2, monitorReconnectAttempts),
+      MONITOR_RECONNECT_MAX_DELAY,
+    );
+    const jitter = Math.random() * 1000;
+    monitorReconnectAttempts++;
+
+    monitorReconnectTimer = setTimeout(() => {
+      monitorReconnectTimer = null;
+      if (running) connectMonitor();
+    }, baseDelay + jitter);
+  };
+
+  monitorWs.onerror = () => {
+    // onclose will fire after onerror — reconnect handled there
+  };
+}
+
+function disconnectMonitor() {
+  if (monitorReconnectTimer) {
+    clearTimeout(monitorReconnectTimer);
+    monitorReconnectTimer = null;
+  }
+  monitorReconnectAttempts = 0;
+  if (monitorWs) {
+    monitorWs.close();
+    monitorWs = null;
+  }
+  emitMonitorEvent({ type: 'status', connected: false });
+}
+
+// --- v1: Polling fallback ---
 
 function query(): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -88,7 +216,9 @@ async function poll() {
             // Send the insight to the agent so it continues the thread
             const agentStore = useAgentStore.getState();
             if (agentStore.connected) {
-              agentStore.sendMessage(`The background health check found this issue:\n\n"${trimmed}"\n\nInvestigate this further. What is the root cause and what should I do to fix it?`);
+              agentStore.sendMessage(
+                `The background health check found this issue:\n\n"${trimmed}"\n\nInvestigate this further. What is the root cause and what should I do to fix it?`,
+              );
             }
           },
         },
@@ -101,17 +231,27 @@ async function poll() {
   }
 }
 
-export function startAgentNotifications(intervalMs = DEFAULT_INTERVAL) {
+// --- Public API ---
+
+export async function startAgentNotifications(intervalMs = DEFAULT_INTERVAL) {
   if (running) return;
   running = true;
 
-  // Don't poll immediately — wait for the first interval
-  intervalId = setInterval(poll, intervalMs);
+  const protocol = await detectProtocol();
+
+  if (protocol === '2') {
+    connectMonitor();
+  } else if (protocol === '1') {
+    // Fall back to existing polling
+    intervalId = setInterval(poll, intervalMs);
+  }
+  // If null (no agent), do nothing — will retry on next call
 }
 
 export function stopAgentNotifications() {
   running = false;
-  polling = false;
+  disconnectMonitor();
+  // Also stop v1 polling
   if (intervalId) {
     clearInterval(intervalId);
     intervalId = null;
@@ -120,6 +260,7 @@ export function stopAgentNotifications() {
     client.disconnect();
     client = null;
   }
+  polling = false;
 }
 
 export function isAgentNotificationsRunning(): boolean {

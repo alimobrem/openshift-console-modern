@@ -25,7 +25,7 @@ export interface ToastData {
   suggestions?: string[];
 }
 
-export type DockPanel = 'logs' | 'terminal' | 'events' | 'agent' | null;
+export type DockPanel = 'logs' | 'terminal' | 'events' | 'agent' | 'monitor' | null;
 export type ConnectionStatus = 'connected' | 'reconnecting' | 'disconnected';
 
 interface UIState {

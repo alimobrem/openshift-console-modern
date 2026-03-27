@@ -253,3 +253,48 @@ The UI sends a `GET /version` request before connecting. If the agent's `protoco
 | v5.0.0–v5.7.0 | v1.0.0–v1.1.0 | 1 | Compatible |
 
 > Both repos should tag releases together when protocol changes occur. Minor UI/Agent releases within the same protocol version are always compatible.
+
+---
+
+## Protocol v2 Extensions
+
+Protocol v2 adds a dedicated monitoring channel alongside the existing chat channels.
+
+### New WebSocket Endpoint: `/ws/monitor`
+
+Persistent server-push channel for autonomous monitoring. The agent runs configurable scan loops and pushes findings, predictions, and action reports.
+
+#### Server → Client Events
+
+| Event | Fields | Description |
+|-------|--------|-------------|
+| `finding` | id, severity, category, title, summary, resources[], autoFixable, runbookId?, timestamp | Agent detected an issue |
+| `action_report` | id, findingId, tool, input, status, beforeState?, afterState?, error?, timestamp, reasoning?, durationMs? | Agent action status update |
+| `prediction` | id, category, title, detail, eta, confidence, resources[], recommendedAction?, timestamp | Predicted future issue |
+| `monitor_status` | activeWatches[], lastScan, findingsCount, nextScan | Heartbeat with scan status |
+
+#### Client → Server Messages
+
+| Message | Fields | Description |
+|---------|--------|-------------|
+| `subscribe_monitor` | trustLevel, autoFixCategories[] | Configure monitoring on connect |
+| `action_response` | actionId, approved | Approve/reject proposed action |
+| `get_fix_history` | filters?, page? | Request paginated fix history |
+
+### New REST Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/monitor/config` | Current monitoring configuration |
+| PUT | `/monitor/config` | Update scan intervals and categories |
+| GET | `/fix-history` | Paginated action history |
+| GET | `/fix-history/:id` | Single action detail with before/after state |
+| GET | `/predictions` | Active predictions |
+
+### Trust Level 4: Autonomous
+
+Level 4 allows the agent to auto-fix issues from known runbooks without user confirmation. All actions are logged and reversible. The UI sends `autoFixCategories` in `subscribe_monitor` to control which categories are allowed.
+
+### Backward Compatibility
+
+Protocol v2 agents MUST continue to support v1 chat channels (`/ws/sre`, `/ws/security`). The `/ws/monitor` channel is additive. UI clients detect the protocol version via `GET /version` and fall back to 5-minute polling if the agent is v1.

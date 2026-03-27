@@ -12,14 +12,18 @@ vi.mock('../../store/agentStore', () => ({
   useAgentStore: { getState: () => ({ connected: false, sendMessage: vi.fn() }) },
 }));
 
-let mockHandler: ((event: any) => void) | null = null;
+vi.mock('../../hooks/useMonitor', () => ({
+  emitMonitorEvent: vi.fn(),
+}));
+
+let mockHandler: ((event: Record<string, unknown>) => void) | null = null;
 const mockConnect = vi.fn();
 const mockDisconnect = vi.fn();
 const mockSend = vi.fn();
 
 vi.mock('../agentClient', () => ({
   AgentClient: class {
-    on(handler: (event: any) => void) {
+    on(handler: (event: Record<string, unknown>) => void) {
       mockHandler = handler;
       return () => {};
     }
@@ -29,12 +33,21 @@ vi.mock('../agentClient', () => ({
   },
 }));
 
+// Mock fetch to return protocol '1' (v1 fallback path)
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
+
 describe('agentNotifications', () => {
   beforeEach(() => {
     vi.useFakeTimers();
     vi.clearAllMocks();
     mockHandler = null;
     stopAgentNotifications();
+    // Default: return protocol '1' so v1 polling is used
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ protocol: '1', agent: '1.3.0' }),
+    });
   });
 
   afterEach(() => {
@@ -42,28 +55,36 @@ describe('agentNotifications', () => {
     vi.useRealTimers();
   });
 
-  it('starts and stops', () => {
-    startAgentNotifications(5000);
+  it('starts and stops', async () => {
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0); // flush detectProtocol
+    await p;
     expect(isAgentNotificationsRunning()).toBe(true);
 
     stopAgentNotifications();
     expect(isAgentNotificationsRunning()).toBe(false);
   });
 
-  it('does not poll immediately on start', () => {
-    startAgentNotifications(5000);
+  it('does not poll immediately on start', async () => {
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
     expect(mockConnect).not.toHaveBeenCalled();
   });
 
-  it('polls after interval', () => {
-    startAgentNotifications(5000);
-    vi.advanceTimersByTime(5000);
+  it('polls after interval', async () => {
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+    await vi.advanceTimersByTimeAsync(5000);
     expect(mockConnect).toHaveBeenCalledOnce();
   });
 
   it('shows toast when agent reports issues', async () => {
-    startAgentNotifications(5000);
-    vi.advanceTimersByTime(5000);
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+    await vi.advanceTimersByTimeAsync(5000);
 
     // Simulate connected -> send -> done with a warning
     mockHandler?.({ type: 'connected' });
@@ -82,8 +103,10 @@ describe('agentNotifications', () => {
   });
 
   it('does not show toast when agent says OK', async () => {
-    startAgentNotifications(5000);
-    vi.advanceTimersByTime(5000);
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+    await vi.advanceTimersByTimeAsync(5000);
 
     mockHandler?.({ type: 'connected' });
     mockHandler?.({ type: 'done', full_response: 'OK' });
@@ -94,8 +117,10 @@ describe('agentNotifications', () => {
   });
 
   it('silently skips on error', async () => {
-    startAgentNotifications(5000);
-    vi.advanceTimersByTime(5000);
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+    await vi.advanceTimersByTimeAsync(5000);
 
     mockHandler?.({ type: 'error', message: 'Connection failed' });
 
@@ -104,10 +129,42 @@ describe('agentNotifications', () => {
     expect(mockAddToast).not.toHaveBeenCalled();
   });
 
-  it('does not double-start', () => {
-    startAgentNotifications(5000);
-    startAgentNotifications(5000);
-    vi.advanceTimersByTime(5000);
+  it('does not double-start', async () => {
+    const p1 = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p1;
+    const p2 = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p2;
+    await vi.advanceTimersByTimeAsync(5000);
     expect(mockConnect).toHaveBeenCalledTimes(1);
+  });
+
+  it('detects protocol v2 and does not start polling', async () => {
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ protocol: '2', agent: '2.0.0' }),
+    });
+
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+
+    // v2 uses WebSocket monitor, not polling — so no AgentClient connect
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(mockConnect).not.toHaveBeenCalled();
+  });
+
+  it('handles agent unavailable gracefully', async () => {
+    mockFetch.mockRejectedValue(new Error('Network error'));
+
+    const p = startAgentNotifications(5000);
+    await vi.advanceTimersByTimeAsync(0);
+    await p;
+
+    // Should not start polling or crash
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(mockConnect).not.toHaveBeenCalled();
+    expect(isAgentNotificationsRunning()).toBe(true);
   });
 });
