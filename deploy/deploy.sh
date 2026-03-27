@@ -17,18 +17,35 @@ AGENT_REPO=""
 NAMESPACE="openshiftpulse"
 WS_TOKEN="${PULSE_AGENT_WS_TOKEN:-$(openssl rand -hex 16 2>/dev/null || echo pulse-agent-internal-token)}"
 AGENT_RELEASE="pulse-agent"
+GCP_KEY_FILE=""
 
 while [[ $# -gt 0 ]]; do
   case $1 in
     --agent-repo) AGENT_REPO="$2"; shift 2 ;;
     --namespace)  NAMESPACE="$2"; shift 2 ;;
     --ws-token)   WS_TOKEN="$2"; shift 2 ;;
+    --gcp-key)    GCP_KEY_FILE="$2"; shift 2 ;;
     --help|-h)
-      echo "Usage: $0 --agent-repo /path/to/pulse-agent [--namespace openshiftpulse]"
+      echo "Usage: $0 --agent-repo /path/to/pulse-agent [options]"
+      echo ""
+      echo "Options:"
+      echo "  --agent-repo PATH   Path to pulse-agent repo (required)"
+      echo "  --namespace NS      Target namespace (default: openshiftpulse)"
+      echo "  --gcp-key PATH      GCP service account JSON for Vertex AI"
+      echo "  --ws-token TOKEN    WebSocket auth token (auto-generated if unset)"
+      echo ""
+      echo "AI Backend (pick one):"
+      echo "  Option A — Vertex AI (recommended for GCP):"
+      echo "    ANTHROPIC_VERTEX_PROJECT_ID=proj CLOUD_ML_REGION=us-east5 \\"
+      echo "      $0 --agent-repo ../open --gcp-key ~/sa-key.json"
+      echo ""
+      echo "  Option B — Anthropic API directly:"
+      echo "    ANTHROPIC_API_KEY=sk-ant-... $0 --agent-repo ../open"
       echo ""
       echo "Environment variables:"
       echo "  ANTHROPIC_VERTEX_PROJECT_ID  GCP project for Vertex AI"
       echo "  CLOUD_ML_REGION             GCP region (e.g., us-east5)"
+      echo "  ANTHROPIC_API_KEY           Direct Anthropic API key (alternative to Vertex)"
       echo "  PULSE_AGENT_WS_TOKEN        WebSocket auth token (auto-generated if unset)"
       exit 0 ;;
     *) echo "ERROR: Unknown argument: $1. Use --help for usage."; exit 1 ;;
@@ -265,24 +282,76 @@ info "Agent image built"
 step "Configuring Agent"
 AGENT_DIGEST=$(oc get istag pulse-agent:latest -n "$NAMESPACE" -o jsonpath='{.image.dockerImageReference}')
 oc set image "deployment/$AGENT_DEPLOY" "sre-agent=$AGENT_DIGEST" -n "$NAMESPACE"
-oc set env "deployment/$AGENT_DEPLOY" \
-  PULSE_AGENT_WS_TOKEN="$WS_TOKEN" \
-  ANTHROPIC_VERTEX_PROJECT_ID="${ANTHROPIC_VERTEX_PROJECT_ID:-}" \
-  CLOUD_ML_REGION="${CLOUD_ML_REGION:-}" \
-  -n "$NAMESPACE"
 
-# Mount GCP credentials if available locally
-if [[ -f "$HOME/.config/gcloud/application_default_credentials.json" ]]; then
-  info "Mounting GCP credentials..."
-  oc get secret gcp-sa-key -n "$NAMESPACE" &>/dev/null || \
-    oc create secret generic gcp-sa-key \
-      --from-file=key.json="$HOME/.config/gcloud/application_default_credentials.json" \
-      -n "$NAMESPACE"
+# ─── AI Backend Configuration ────────────────────────────────────────────────
+# Supports two backends:
+#   A) Vertex AI: ANTHROPIC_VERTEX_PROJECT_ID + CLOUD_ML_REGION + GCP credentials
+#   B) Anthropic API: ANTHROPIC_API_KEY
+# If neither is configured, the agent starts but can't reach Claude.
+
+AI_BACKEND="none"
+
+if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+  # ── Option B: Direct Anthropic API key ──
+  AI_BACKEND="anthropic"
+  info "AI backend: Anthropic API (direct)"
+  oc set env "deployment/$AGENT_DEPLOY" \
+    PULSE_AGENT_WS_TOKEN="$WS_TOKEN" \
+    ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
+    -n "$NAMESPACE"
+
+elif [[ -n "${ANTHROPIC_VERTEX_PROJECT_ID:-}" ]]; then
+  # ── Option A: Vertex AI ──
+  AI_BACKEND="vertex"
+  info "AI backend: Vertex AI (project: ${ANTHROPIC_VERTEX_PROJECT_ID})"
+
+  # Resolve GCP key file: --gcp-key flag > gcloud default > error
+  if [[ -z "$GCP_KEY_FILE" ]]; then
+    GCP_KEY_FILE="$HOME/.config/gcloud/application_default_credentials.json"
+  fi
+
+  if [[ ! -f "$GCP_KEY_FILE" ]]; then
+    error "Vertex AI requires GCP credentials but none found."
+    error ""
+    error "  Option 1: Provide a service account key:"
+    error "    $0 --agent-repo $AGENT_REPO --gcp-key /path/to/sa-key.json"
+    error ""
+    error "  Option 2: Use gcloud Application Default Credentials:"
+    error "    gcloud auth application-default login"
+    error ""
+    error "  Option 3: Use Anthropic API key instead (no GCP needed):"
+    error "    ANTHROPIC_API_KEY=sk-ant-... $0 --agent-repo $AGENT_REPO"
+    exit 1
+  fi
+
+  info "GCP credentials: $GCP_KEY_FILE"
+
+  # Create or update the GCP credentials secret
+  oc delete secret gcp-sa-key -n "$NAMESPACE" 2>/dev/null || true
+  oc create secret generic gcp-sa-key \
+    --from-file=key.json="$GCP_KEY_FILE" \
+    -n "$NAMESPACE"
+
+  # Mount credentials and set env vars
   oc set volume "deployment/$AGENT_DEPLOY" --add --name=gcp-sa-key \
     --secret-name=gcp-sa-key --mount-path=/var/secrets/google --read-only \
-    -n "$NAMESPACE" 2>/dev/null || true
+    --overwrite -n "$NAMESPACE" 2>/dev/null || true
   oc set env "deployment/$AGENT_DEPLOY" \
+    PULSE_AGENT_WS_TOKEN="$WS_TOKEN" \
+    ANTHROPIC_VERTEX_PROJECT_ID="${ANTHROPIC_VERTEX_PROJECT_ID}" \
+    CLOUD_ML_REGION="${CLOUD_ML_REGION:-us-east5}" \
     GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/google/key.json \
+    -n "$NAMESPACE"
+
+else
+  # ── No AI backend configured ──
+  warn "No AI backend configured. The agent will start but cannot reach Claude."
+  warn ""
+  warn "  To fix, re-run with one of:"
+  warn "    ANTHROPIC_API_KEY=sk-ant-... $0 --agent-repo $AGENT_REPO"
+  warn "    ANTHROPIC_VERTEX_PROJECT_ID=proj CLOUD_ML_REGION=us-east5 $0 --agent-repo $AGENT_REPO --gcp-key ~/sa-key.json"
+  oc set env "deployment/$AGENT_DEPLOY" \
+    PULSE_AGENT_WS_TOKEN="$WS_TOKEN" \
     -n "$NAMESPACE"
 fi
 
@@ -315,12 +384,13 @@ else
   warn "Agent health check did not pass — it may still be starting"
 fi
 echo ""
-echo "  URL:     https://$ROUTE"
-echo "  Cluster: $CLUSTER_API"
-echo "  NS:      $NAMESPACE"
+echo "  URL:       https://$ROUTE"
+echo "  Cluster:   $CLUSTER_API"
+echo "  NS:        $NAMESPACE"
+echo "  AI:        $AI_BACKEND"
 VERSION=$(oc exec "deployment/$AGENT_DEPLOY" -n "$NAMESPACE" -- curl -sf http://localhost:8080/version 2>/dev/null || echo "")
 if [[ -n "$VERSION" ]]; then
-  echo "  Agent:   $VERSION"
+  echo "  Agent:     $VERSION"
 fi
 echo ""
 echo "  Run integration tests: ./deploy/integration-test.sh --namespace $NAMESPACE"
