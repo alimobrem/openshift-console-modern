@@ -29,5 +29,14 @@ export interface AgentEvalStatus {
 export async function fetchAgentEvalStatus(): Promise<AgentEvalStatus | null> {
   const res = await fetch('/api/agent/eval/status');
   if (!res.ok) return null;
-  return res.json();
+  const data = await res.json();
+  // Validate response shape before returning
+  if (
+    typeof data !== 'object' ||
+    data === null ||
+    typeof data.quality_gate_passed !== 'boolean'
+  ) {
+    return null;
+  }
+  return data as AgentEvalStatus;
 }

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Card } from '../../components/primitives/Card';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { useMonitorStore } from '../../store/monitorStore';
+import { useUIStore } from '../../store/uiStore';
 import { requestRollback } from '../../engine/fixHistory';
 import type { ActionReport } from '../../engine/monitorClient';
 
@@ -50,8 +51,12 @@ export function ActionsTab() {
     try {
       await requestRollback(actionId);
       loadFixHistory();
-    } catch (err) {
-      console.error('Rollback failed:', err);
+    } catch (err: unknown) {
+      useUIStore.getState().addToast({
+        type: 'error',
+        title: 'Rollback failed',
+        detail: err instanceof Error ? err.message : String(err),
+      });
     } finally {
       setRollingBackId(null);
     }

@@ -25,6 +25,11 @@ import type { AuditCheck, AuditItem } from '../components/audit/types';
 import { HealthAuditPanel } from '../components/audit/HealthAuditPanel';
 
 // ---------------------------------------------------------------------------
+// K8s resource with extra OpenShift-specific fields
+// ---------------------------------------------------------------------------
+type K8sResourceExt = K8sResource & Record<string, unknown>;
+
+// ---------------------------------------------------------------------------
 // Tab type
 // ---------------------------------------------------------------------------
 type TabId = 'users' | 'groups-sa' | 'rbac' | 'impersonation';
@@ -112,11 +117,11 @@ export default function IdentityView() {
   const q = search.toLowerCase();
   const filteredUsers = users.filter((u: K8sResource) => !q || u.metadata.name.toLowerCase().includes(q));
   const filteredGroups = groups.filter((g: K8sResource) => !q || g.metadata.name.toLowerCase().includes(q));
-  const filteredSAs = serviceAccounts.filter((sa: K8sResource) => {
+  const filteredSAs = serviceAccounts.filter((sa: K8sResourceExt) => {
     if (!q) return true;
     return sa.metadata.name.toLowerCase().includes(q) || sa.metadata.namespace?.toLowerCase().includes(q);
   });
-  const appSAs = filteredSAs.filter((sa: K8sResource) => {
+  const appSAs = filteredSAs.filter((sa: K8sResourceExt) => {
     const ns = sa.metadata.namespace || '';
     return !ns.startsWith('openshift-') && !ns.startsWith('kube-') && ns !== 'openshift' && sa.metadata.name !== 'default';
   });
@@ -284,7 +289,7 @@ export default function IdentityView() {
               <div className="divide-y divide-slate-800 max-h-[500px] overflow-auto">
                 {filteredUsers.length === 0 ? (
                   <EmptyState icon={<User className="w-8 h-8" />} title="No users found" description="No OpenShift users match your search." />
-                ) : filteredUsers.map((user: K8sResource) => {
+                ) : filteredUsers.map((user: K8sResourceExt) => {
                   const uRoles = userRoles.get(user.metadata.name) || [];
                   const isAdmin = uRoles.some((r) => r === 'cluster-admin');
                   const identities = user.identities || [];
@@ -358,7 +363,7 @@ export default function IdentityView() {
                 <div className="divide-y divide-slate-800 max-h-[500px] overflow-auto">
                   {filteredGroups.length === 0 ? (
                     <EmptyState icon={<Users className="w-8 h-8" />} title="No groups found" description="No OpenShift groups match your search." />
-                  ) : filteredGroups.map((group: K8sResource) => {
+                  ) : filteredGroups.map((group: K8sResourceExt) => {
                     const members = group.users || [];
                     const gRoles = userRoles.get(`group:${group.metadata.name}`) || [];
                     return (
@@ -400,7 +405,7 @@ export default function IdentityView() {
                 <div className="divide-y divide-slate-800 max-h-[500px] overflow-auto">
                   {appSAs.length === 0 ? (
                     <EmptyState icon={<Key className="w-8 h-8" />} title="No application service accounts" description="No non-system service accounts match your search." />
-                  ) : appSAs.slice(0, 50).map((sa: K8sResource) => {
+                  ) : appSAs.slice(0, 50).map((sa: K8sResourceExt) => {
                     const saName = `system:serviceaccount:${sa.metadata.namespace}:${sa.metadata.name}`;
                     const saRoles = userRoles.get(saName) || [];
                     return (
@@ -496,8 +501,8 @@ export default function IdentityView() {
                   <EmptyState icon={<Shield className="w-8 h-8" />} title="No cluster-admin bindings" description="No subjects have cluster-admin privileges." className="py-6" />
                 ) : (
                   <div className="space-y-1 max-h-64 overflow-auto">
-                    {broadPermissions.slice(0, 15).map((s, i) => (
-                      <div key={i} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-slate-800/50">
+                    {broadPermissions.slice(0, 15).map((s) => (
+                      <div key={`${s.kind}:${s.namespace || ''}:${s.name}:${s.binding}`} className="flex items-center justify-between py-1.5 px-2 rounded hover:bg-slate-800/50">
                         <div className="flex items-center gap-2">
                           {s.kind === 'ServiceAccount' ? <Key className="w-3.5 h-3.5 text-teal-400" /> :
                            s.kind === 'User' ? <Users className="w-3.5 h-3.5 text-violet-400" /> :
@@ -572,7 +577,7 @@ export default function IdentityView() {
               <div className="divide-y divide-slate-800 max-h-[400px] overflow-auto">
                 {filteredUsers.length === 0 ? (
                   <EmptyState icon={<User className="w-8 h-8" />} title="No users found" className="py-6" />
-                ) : filteredUsers.map((user: K8sResource) => (
+                ) : filteredUsers.map((user: K8sResourceExt) => (
                   <div key={user.metadata.uid} className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
                     <div className="flex items-center gap-3">
                       <User className="w-4 h-4 text-slate-400" />
@@ -602,7 +607,7 @@ export default function IdentityView() {
               <div className="divide-y divide-slate-800 max-h-[400px] overflow-auto">
                 {appSAs.length === 0 ? (
                   <EmptyState icon={<Key className="w-8 h-8" />} title="No application service accounts" className="py-6" />
-                ) : appSAs.slice(0, 50).map((sa: K8sResource) => {
+                ) : appSAs.slice(0, 50).map((sa: K8sResourceExt) => {
                   const saFullName = `system:serviceaccount:${sa.metadata.namespace}:${sa.metadata.name}`;
                   return (
                     <div key={sa.metadata.uid} className="px-4 py-2.5 flex items-center justify-between hover:bg-slate-800/30 transition-colors">
@@ -668,9 +673,9 @@ function RecentSessions({ accessTokens, go }: { accessTokens: K8sResource[]; go:
         <button onClick={() => go('/r/oauth.openshift.io~v1~oauthaccesstokens', 'OAuthAccessTokens')} className="text-xs text-violet-400 hover:text-violet-300">View all →</button>
       </div>
       <div className="divide-y divide-slate-800 max-h-80 overflow-auto">
-        {[...(accessTokens as K8sResource[])].sort((a: K8sResource, b: K8sResource) =>
+        {[...(accessTokens as K8sResource[])].sort((a: K8sResourceExt, b: K8sResourceExt) =>
           new Date(b.metadata.creationTimestamp || 0).getTime() - new Date(a.metadata.creationTimestamp || 0).getTime()
-        ).slice(0, 15).map((token: K8sResource) => {
+        ).slice(0, 15).map((token: K8sResourceExt) => {
           const userName = token.userName || 'unknown';
           const clientName = token.clientName || '';
           const redirectURI = token.redirectURI || '';
@@ -1328,14 +1333,14 @@ function RecentRBACChanges({ clusterRoleBindings, roleBindings, go }: {
         )}
       </div>
       <div className="divide-y divide-slate-800 max-h-80 overflow-auto">
-        {recentChanges.map((change, i) => {
+        {recentChanges.map((change) => {
           const age = formatChangeAge(change.when);
           const gvr = change.clusterScoped ? 'rbac.authorization.k8s.io~v1~clusterrolebindings' : 'rbac.authorization.k8s.io~v1~rolebindings';
           const path = change.namespace
             ? `/r/${gvr}/${change.namespace}/${change.name}`
             : `/r/${gvr}/_/${change.name}`;
           return (
-            <button key={i} onClick={() => go(path, change.name)}
+            <button key={`${change.name}:${change.namespace || ''}:${change.role}:${change.when.getTime()}`} onClick={() => go(path, change.name)}
               className="w-full px-4 py-3 text-left hover:bg-slate-800/30 transition-colors">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">

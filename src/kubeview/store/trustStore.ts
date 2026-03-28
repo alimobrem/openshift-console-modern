@@ -130,6 +130,18 @@ export const useTrustStore = create<TrustState>()(
         history: state.history.slice(-MAX_HISTORY),
         autoFixCategories: state.autoFixCategories,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (!state) return;
+        // Validate trustLevel is in valid range 0-4; reset to 0 if corrupted
+        if (
+          typeof state.trustLevel !== 'number' ||
+          state.trustLevel < 0 ||
+          state.trustLevel > 4 ||
+          !Number.isInteger(state.trustLevel)
+        ) {
+          state.trustLevel = 0 as TrustLevel;
+        }
+      },
     },
   ),
 );

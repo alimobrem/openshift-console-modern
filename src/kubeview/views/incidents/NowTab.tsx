@@ -26,7 +26,17 @@ interface Silence {
 }
 
 async function createQuickSilence(alertName: string, duration = '2h') {
-  const endsAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString();
+  // Parse duration string (e.g., '2h', '30m', '1d') into milliseconds
+  const durationMatch = duration.match(/^(\d+)(m|h|d)$/);
+  let durationMs = 2 * 60 * 60 * 1000; // default 2 hours
+  if (durationMatch) {
+    const value = parseInt(durationMatch[1], 10);
+    const unit = durationMatch[2];
+    if (unit === 'm') durationMs = value * 60 * 1000;
+    else if (unit === 'h') durationMs = value * 60 * 60 * 1000;
+    else if (unit === 'd') durationMs = value * 24 * 60 * 60 * 1000;
+  }
+  const endsAt = new Date(Date.now() + durationMs).toISOString();
   const res = await fetch('/api/alertmanager/api/v2/silences', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

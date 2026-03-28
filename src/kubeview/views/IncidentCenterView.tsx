@@ -212,12 +212,24 @@ export default function IncidentCenterView() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-slate-900 rounded-lg p-1" role="tablist" aria-label="Incident Center tabs">
+        <div
+          className="flex gap-1 bg-slate-900 rounded-lg p-1"
+          role="tablist"
+          aria-label="Incident Center tabs"
+          onKeyDown={(e) => {
+            const ids = TABS.map((t) => t.id);
+            const idx = ids.indexOf(activeTab);
+            if (e.key === 'ArrowRight') { e.preventDefault(); setActiveTab(ids[(idx + 1) % ids.length]); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); setActiveTab(ids[(idx - 1 + ids.length) % ids.length]); }
+          }}
+        >
           {TABS.map((tab) => (
             <button
               key={tab.id}
               role="tab"
               aria-selected={activeTab === tab.id}
+              aria-controls={`incident-panel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
                 'px-4 py-2 text-xs rounded-md transition-colors flex items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500',
@@ -236,12 +248,12 @@ export default function IncidentCenterView() {
         </div>
 
         {/* Tab content */}
-        {activeTab === 'now' && <NowTab />}
-        {activeTab === 'investigate' && <InvestigateTab />}
-        {activeTab === 'actions' && <ActionsTab />}
-        {activeTab === 'history' && <HistoryTab />}
+        {activeTab === 'now' && <div id="incident-panel-now" role="tabpanel"><NowTab /></div>}
+        {activeTab === 'investigate' && <div id="incident-panel-investigate" role="tabpanel"><InvestigateTab /></div>}
+        {activeTab === 'actions' && <div id="incident-panel-actions" role="tabpanel"><ActionsTab /></div>}
+        {activeTab === 'history' && <div id="incident-panel-history" role="tabpanel"><HistoryTab /></div>}
         {activeTab === 'config' && (
-          <div className="space-y-6">
+          <div id="incident-panel-config" role="tabpanel" className="space-y-6">
             <Card>
               <div className="px-4 py-4 flex items-center justify-between">
                 <div>
@@ -252,6 +264,7 @@ export default function IncidentCenterView() {
                   onClick={() => setMonitorEnabled(!monitorEnabled)}
                   role="switch"
                   aria-checked={monitorEnabled}
+                  aria-label="Toggle monitoring"
                   className={cn('relative w-11 h-6 rounded-full transition-colors', monitorEnabled ? 'bg-violet-600' : 'bg-slate-700')}
                 >
                   <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', monitorEnabled && 'translate-x-5')} />

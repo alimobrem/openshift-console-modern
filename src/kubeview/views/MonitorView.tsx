@@ -109,11 +109,21 @@ export default function MonitorView() {
     prevLastScan.current = lastScanTime;
   }, [lastScanTime, scanning, findings.length]);
 
+  const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Clear scan timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+    };
+  }, []);
+
   const handleScanNow = () => {
     setScanning(true);
     triggerScan();
     // Auto-reset after 30s in case monitor_status never arrives
-    setTimeout(() => setScanning(false), 30_000);
+    if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current);
+    scanTimeoutRef.current = setTimeout(() => setScanning(false), 30_000);
   };
 
   // Trust store
@@ -441,7 +451,18 @@ export default function MonitorView() {
                           />
                         </div>
                         {pred.recommendedAction && (
-                          <button className="w-full px-3 py-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded flex items-center justify-center gap-1.5 transition-colors">
+                          <button
+                            onClick={() => {
+                              useUIStore.getState().openDock('agent');
+                              const agentStore = useAgentStore.getState();
+                              if (agentStore.connected) {
+                                agentStore.sendMessage(
+                                  `A prediction was made:\n\n"${pred.title}: ${pred.detail}"\n\nRecommended action: ${pred.recommendedAction}\n\nInvestigate and help me prevent this.`,
+                                );
+                              }
+                            }}
+                            className="w-full px-3 py-1.5 text-xs bg-violet-600 hover:bg-violet-700 text-white rounded flex items-center justify-center gap-1.5 transition-colors"
+                          >
                             <Play className="w-3.5 h-3.5" />
                             Prevent
                           </button>

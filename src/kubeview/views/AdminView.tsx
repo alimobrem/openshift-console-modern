@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Settings, Puzzle, Shield, Database, GitBranch,
-  ArrowUpCircle, Clock, Loader2, GitCompare, AlertCircle,
+  ArrowUpCircle, GitCompare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sList, k8sGet } from '../engine/query';
@@ -11,10 +11,8 @@ import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import type { K8sResource } from '../engine/renderers';
 import type { ClusterVersion, ClusterOperator, Node, Condition } from '../engine/types';
 import { useNavigateTab } from '../hooks/useNavigateTab';
-import { useUIStore } from '../store/uiStore';
 import { useClusterStore } from '../store/clusterStore';
 import ClusterConfig from '../components/ClusterConfig';
-const TimelineViewLazy = React.lazy(() => import('./TimelineView'));
 import ProductionReadiness from '../components/ProductionReadiness';
 import { parseCpu, parseMem, parseResourceValue } from '../engine/formatting';
 import { QuotasTab } from './admin/QuotasTab';
@@ -25,8 +23,6 @@ import { UpdatesTab } from './admin/UpdatesTab';
 import { SnapshotsTab } from './admin/SnapshotsTab';
 import { loadSnapshots } from '../engine/snapshot';
 import { GitOpsConfig } from '../components/GitOpsConfig';
-import { ErrorsTab } from './admin/ErrorsTab';
-import { useErrorStore } from '../store/errorStore';
 import { SectionHeader } from '../components/primitives/SectionHeader';
 import { getAllFlags, setFeatureFlag } from '../engine/featureFlags';
 import type { FeatureFlag } from '../engine/featureFlags';
@@ -93,8 +89,6 @@ export default function AdminView() {
     if (tab === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', tab);
     window.history.replaceState(null, '', url.toString());
   };
-  const addToast = useUIStore((s) => s.addToast);
-  const errorCount = useErrorStore((s) => s.getUnresolvedCount());
 
   // --- Data fetching ---
 
@@ -461,9 +455,19 @@ export default function AdminView() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-slate-900 rounded-lg border border-slate-800 p-1 overflow-x-auto" role="tablist" aria-label="Administration tabs">
+        <div
+          className="flex gap-1 bg-slate-900 rounded-lg border border-slate-800 p-1 overflow-x-auto"
+          role="tablist"
+          aria-label="Administration tabs"
+          onKeyDown={(e) => {
+            const ids = tabs.map((t) => t.id);
+            const idx = ids.indexOf(activeTab);
+            if (e.key === 'ArrowRight') { e.preventDefault(); setActiveTab(ids[(idx + 1) % ids.length]); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); setActiveTab(ids[(idx - 1 + ids.length) % ids.length]); }
+          }}
+        >
           {tabs.map((t) => (
-            <button key={t.id} role="tab" aria-selected={activeTab === t.id} onClick={() => setActiveTab(t.id)} className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500', activeTab === t.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
+            <button key={t.id} role="tab" aria-selected={activeTab === t.id} aria-controls={`admin-panel-${t.id}`} tabIndex={activeTab === t.id ? 0 : -1} onClick={() => setActiveTab(t.id)} className={cn('flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500', activeTab === t.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200')}>
               {t.icon}{t.label}
             </button>
           ))}

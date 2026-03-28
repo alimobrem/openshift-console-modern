@@ -30,15 +30,38 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
   });
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
 
-  // Close on Escape
+  // Close on Escape and trap focus within the panel
   useEffect(() => {
     if (!open) return;
     function handleKey(e: KeyboardEvent) {
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+        return;
+      }
+      // Focus trap: cycle focus within the panel
+      if (e.key === 'Tab' && panelRef.current) {
+        const focusable = panelRef.current.querySelectorAll<HTMLElement>(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+        );
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
       }
     }
+    // Focus the panel on open
+    panelRef.current?.focus();
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [open, onClose]);
@@ -72,7 +95,8 @@ export function NotificationCenter({ open, onClose }: NotificationCenterProps) {
       {/* Drawer */}
       <div
         ref={panelRef}
-        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-700 bg-slate-900 shadow-2xl"
+        tabIndex={-1}
+        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col border-l border-slate-700 bg-slate-900 shadow-2xl outline-none"
         role="dialog"
         aria-modal="true"
         aria-label="Notification center"
