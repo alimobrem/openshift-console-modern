@@ -146,8 +146,11 @@ Platform: Admin (9 tabs), Onboarding (readiness wizard/checklist)
 
 ### Deploy to OpenShift
 ```bash
-# UI only
+# UI only (quick)
 npm run build && oc start-build openshiftpulse --from-dir=dist --follow -n openshiftpulse && oc rollout restart deployment/openshiftpulse -n openshiftpulse
+
+# Full verified deploy
+npm run verify && npm run build && oc start-build openshiftpulse --from-dir=dist --follow -n openshiftpulse && oc rollout restart deployment/openshiftpulse -n openshiftpulse
 
 # Full stack (UI + Agent)
 ./deploy/deploy.sh --agent-repo ../pulse-agent
