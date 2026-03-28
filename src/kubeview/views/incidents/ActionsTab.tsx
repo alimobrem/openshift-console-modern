@@ -1,13 +1,12 @@
 import { useState, useMemo } from 'react';
 import {
-  CheckCircle, XCircle, RotateCcw, Clock, Play, Search,
+  CheckCircle, XCircle, Clock, Play, Search,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '../../components/primitives/Card';
 import { EmptyState } from '../../components/primitives/EmptyState';
+import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { useMonitorStore } from '../../store/monitorStore';
-import { useUIStore } from '../../store/uiStore';
-import { requestRollback } from '../../engine/fixHistory';
 import type { ActionReport } from '../../engine/monitorClient';
 
 const STATUS_COLORS: Record<string, string> = {
@@ -31,10 +30,8 @@ export function ActionsTab() {
   const recentActions = useMonitorStore((s) => s.recentActions);
   const approveAction = useMonitorStore((s) => s.approveAction);
   const rejectAction = useMonitorStore((s) => s.rejectAction);
-  const loadFixHistory = useMonitorStore((s) => s.loadFixHistory);
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [rollingBackId, setRollingBackId] = useState<string | null>(null);
 
   const filteredRecent = useMemo(() => {
     if (!searchQuery) return recentActions;
@@ -45,22 +42,6 @@ export function ActionsTab() {
         (a.reasoning || '').toLowerCase().includes(q),
     );
   }, [recentActions, searchQuery]);
-
-  const handleRollback = async (actionId: string) => {
-    setRollingBackId(actionId);
-    try {
-      await requestRollback(actionId);
-      loadFixHistory();
-    } catch (err: unknown) {
-      useUIStore.getState().addToast({
-        type: 'error',
-        title: 'Rollback failed',
-        detail: err instanceof Error ? err.message : String(err),
-      });
-    } finally {
-      setRollingBackId(null);
-    }
-  };
 
   const hasPending = pendingActions.length > 0;
   const hasRecent = filteredRecent.length > 0;
@@ -114,7 +95,7 @@ export function ActionsTab() {
           <EmptyState
             icon={<Clock className="w-8 h-8" />}
             title="No recent actions"
-            description="Executed actions will appear here with rollback options."
+            description="Executed actions will appear here."
             className="py-8"
           />
         ) : (
@@ -122,8 +103,6 @@ export function ActionsTab() {
             <RecentActionCard
               key={action.id}
               action={action}
-              rollingBack={rollingBackId === action.id}
-              onRollback={() => handleRollback(action.id)}
             />
           ))
         )}
@@ -141,6 +120,13 @@ function PendingActionCard({
   onApprove: () => void;
   onReject: () => void;
 }) {
+  const [confirmApprove, setConfirmApprove] = useState(false);
+
+  // Derive resource from beforeState or tool name
+  const resource = action.beforeState
+    ? action.beforeState.split('\n')[0].slice(0, 60)
+    : action.tool;
+
   return (
     <Card>
       <div className="px-4 py-3 flex items-start gap-3">
@@ -164,7 +150,7 @@ function PendingActionCard({
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
-            onClick={onApprove}
+            onClick={() => setConfirmApprove(true)}
             className="px-3 py-1.5 text-xs bg-green-600 hover:bg-green-700 text-white rounded flex items-center gap-1.5 transition-colors"
           >
             <CheckCircle className="w-3.5 h-3.5" />
@@ -179,18 +165,28 @@ function PendingActionCard({
           </button>
         </div>
       </div>
+
+      {/* Approve Confirmation Dialog */}
+      <ConfirmDialog
+        open={confirmApprove}
+        onClose={() => setConfirmApprove(false)}
+        title="Approve Action"
+        description={`Approve this action? It will execute ${action.tool} on ${resource}.`}
+        confirmLabel="Approve"
+        variant="warning"
+        onConfirm={() => {
+          onApprove();
+          setConfirmApprove(false);
+        }}
+      />
     </Card>
   );
 }
 
 function RecentActionCard({
   action,
-  rollingBack,
-  onRollback,
 }: {
   action: ActionReport;
-  rollingBack: boolean;
-  onRollback: () => void;
 }) {
   return (
     <Card>
@@ -231,14 +227,12 @@ function RecentActionCard({
           <span className="text-xs text-slate-500">{formatRelativeTime(action.timestamp)}</span>
         </div>
         {action.status === 'completed' && (
-          <button
-            disabled={rollingBack}
-            onClick={onRollback}
-            className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded flex items-center gap-1.5 transition-colors flex-shrink-0"
+          <span
+            className="text-xs text-slate-500 flex-shrink-0 italic"
+            title="Auto-fix actions cannot be rolled back"
           >
-            <RotateCcw className={cn('w-3.5 h-3.5', rollingBack && 'animate-spin')} />
-            {rollingBack ? 'Rolling back...' : 'Rollback'}
-          </button>
+            No rollback
+          </span>
         )}
       </div>
     </Card>

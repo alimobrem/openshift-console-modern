@@ -58,13 +58,13 @@ describe('MonitorClient', () => {
   });
 
   it('sends subscribe_monitor on connect', async () => {
-    client.connect('supervised', ['memory', 'cpu']);
+    client.connect(2, ['memory', 'cpu']);
     await vi.advanceTimersByTimeAsync(10);
     const ws = (client as any).ws as MockWebSocket;
     expect(ws.sent).toHaveLength(1);
     const parsed = JSON.parse(ws.sent[0]);
     expect(parsed.type).toBe('subscribe_monitor');
-    expect(parsed.trustLevel).toBe('supervised');
+    expect(parsed.trustLevel).toBe(2);
     expect(parsed.autoFixCategories).toEqual(['memory', 'cpu']);
   });
 

@@ -164,8 +164,11 @@ export default function IncidentCenterView() {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800 bg-slate-900 text-xs text-slate-400">
-              <span className="text-slate-300">Quality Gate</span>
+            <div
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800 bg-slate-900 text-xs text-slate-400"
+              title="Eval score from static fixtures. Use 'pulse-eval replay' for live agent testing."
+            >
+              <span className="text-slate-300">Eval Score</span>
               <span className="text-slate-600">·</span>
               <span className={cn(
                 evalLoading
@@ -239,7 +242,7 @@ export default function IncidentCenterView() {
               <tab.icon className="w-3.5 h-3.5" />
               {tab.label}
               {tab.id === 'actions' && pendingCount > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[10px] bg-red-600 text-white rounded-full leading-none">
+                <span className="ml-1 px-1.5 py-0.5 text-xs bg-red-600 text-white rounded-full leading-none">
                   {pendingCount}
                 </span>
               )}
@@ -302,7 +305,7 @@ export default function IncidentCenterView() {
 
             {trustLevel >= 3 && (
               <div className="px-4 py-3 bg-yellow-900/20 border border-yellow-800/50 rounded-lg text-xs text-yellow-300">
-                Auto-fixes are executed automatically and recorded in Fix History. All actions can be rolled back.
+                Auto-fixes are executed automatically and recorded in Fix History. Auto-fix actions (pod deletion, rolling restart) cannot be rolled back.
               </div>
             )}
 

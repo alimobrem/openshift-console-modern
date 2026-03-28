@@ -402,9 +402,9 @@ export default function AdminView() {
         <div className="rounded-lg border border-slate-800 bg-slate-900/60 p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h3 className="text-sm font-semibold text-slate-200">Agent Quality Gate</h3>
+              <h3 className="text-sm font-semibold text-slate-200">Agent Eval Score</h3>
               <p className="text-xs text-slate-500 mt-1">
-                Release and outcomes gates from the connected Pulse Agent.
+                Eval score from static fixtures. Use &apos;pulse-eval replay&apos; for live agent testing.
               </p>
             </div>
             <span

@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Shield, ShieldCheck, ShieldAlert, Clock, Activity, Settings, Search,
-  ChevronDown, ChevronRight, RotateCcw, Play, CheckCircle, AlertTriangle,
+  ChevronDown, ChevronRight, Play, CheckCircle, AlertTriangle,
   XCircle, X, Eye, Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -11,7 +11,7 @@ import { useMonitorStore } from '../store/monitorStore';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
 import { useTrustStore, TRUST_LABELS, type TrustLevel } from '../store/trustStore';
-import { requestRollback, type ActionRecord } from '../engine/fixHistory';
+import type { ActionRecord } from '../engine/fixHistory';
 
 type MonitorTab = 'status' | 'history' | 'config';
 
@@ -24,12 +24,9 @@ const TRUST_LEVELS = [
 ] as const;
 
 const AUTO_FIX_CATEGORIES = [
-  { id: 'crashloop', label: 'CrashLoopBackOff', description: 'Restart pods stuck in crash loops' },
-  { id: 'resource_limits', label: 'Resource Limits', description: 'Adjust CPU/memory requests and limits' },
-  { id: 'cert_expiry', label: 'Certificate Expiry', description: 'Renew expiring TLS certificates' },
-  { id: 'scaling', label: 'Scaling', description: 'Scale replicas based on load patterns' },
-  { id: 'cleanup', label: 'Cleanup', description: 'Remove completed jobs, evicted pods' },
-  { id: 'network', label: 'Network', description: 'Fix service/ingress misconfigurations' },
+  { id: 'crashloop', label: 'CrashLoopBackOff', description: 'Delete crashlooping pods (controller recreates)' },
+  { id: 'workloads', label: 'Degraded Deployments', description: 'Rolling restart for degraded deployments' },
+  { id: 'image_pull', label: 'ImagePullBackOff', description: 'Restart deployment to clear image pull errors' },
 ] as const;
 
 const STATUS_COLORS: Record<ActionRecord['status'], string> = {
@@ -167,7 +164,6 @@ export default function MonitorView() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const [expandedAction, setExpandedAction] = useState<string | null>(null);
   const [historyPage, setHistoryPage] = useState(0);
-  const [rollingBackId, setRollingBackId] = useState<string | null>(null);
   const PAGE_SIZE = 20;
 
   // Load fix history when history tab is opened
@@ -595,25 +591,13 @@ export default function MonitorView() {
                               </pre>
                             </div>
                           )}
-                          {action.rollbackAvailable && action.status === 'completed' && (
-                            <button
-                              disabled={rollingBackId === action.id}
-                              onClick={async () => {
-                                setRollingBackId(action.id);
-                                try {
-                                  await requestRollback(action.id);
-                                  loadFixHistory();
-                                } catch (err) {
-                                  console.error('Rollback failed:', err);
-                                } finally {
-                                  setRollingBackId(null);
-                                }
-                              }}
-                              className="px-3 py-1.5 text-xs bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded flex items-center gap-1.5 transition-colors"
+                          {action.status === 'completed' && (
+                            <span
+                              className="text-xs text-slate-500 italic"
+                              title="Auto-fix actions cannot be rolled back"
                             >
-                              <RotateCcw className={cn('w-3.5 h-3.5', rollingBackId === action.id && 'animate-spin')} />
-                              {rollingBackId === action.id ? 'Rolling back...' : 'Rollback'}
-                            </button>
+                              No rollback
+                            </span>
                           )}
                         </div>
                       )}
@@ -720,7 +704,7 @@ export default function MonitorView() {
             {/* Auto-fix note for trust levels 3 and 4 */}
             {trustLevel >= 3 && (
               <div className="px-4 py-3 bg-yellow-900/20 border border-yellow-800/50 rounded-lg text-xs text-yellow-300">
-                Note: Auto-fixes are executed automatically and recorded in Fix History. All actions can be rolled back.
+                Note: Auto-fixes are executed automatically and recorded in Fix History. Auto-fix actions (pod deletion, rolling restart) cannot be rolled back.
               </div>
             )}
 

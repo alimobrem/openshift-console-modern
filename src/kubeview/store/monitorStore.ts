@@ -240,7 +240,7 @@ export const useMonitorStore = create<MonitorState>()(
         // H11: read autoFixCategories from trustStore (single source of truth)
         const { trustLevel, autoFixCategories } = useTrustStore.getState();
         client.connect(
-          String(trustLevel),
+          trustLevel,
           autoFixCategories,
         );
       },
