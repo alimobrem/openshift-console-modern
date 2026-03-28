@@ -1,6 +1,6 @@
 # Pulse API Contract
 
-**Protocol Version: 1**
+**Protocol Version: 2**
 
 Defines the WebSocket protocol between the Pulse UI and Pulse Agent. Both repos must implement the same protocol version for compatibility.
 
@@ -16,15 +16,17 @@ Defines the WebSocket protocol between the Pulse UI and Pulse Agent. Both repos 
 |--------|------|-------------|
 | `GET` | `/healthz` | Agent health check. Returns `{"status": "ok"}` |
 | `GET` | `/version` | Protocol version + capabilities. UI checks this on connect. |
+| `GET` | `/monitor/capabilities` | Monitor trust cap and supported auto-fix categories. |
+| `GET` | `/eval/status` | Cached quality gate snapshot for UI surfaces. |
 
 #### `/version` Response
 
 ```json
 {
-  "protocol": "1",
-  "agent": "1.3.0",
+  "protocol": "2",
+  "agent": "1.4.0",
   "tools": 68,
-  "features": ["component_specs", "ws_token_auth", "rate_limiting"]
+  "features": ["component_specs", "ws_token_auth", "rate_limiting", "monitor", "fix_history", "predictions"]
 }
 ```
 
@@ -34,6 +36,7 @@ Defines the WebSocket protocol between the Pulse UI and Pulse Agent. Both repos 
 |------|-------------|
 | `ws://.../ws/sre` | SRE agent mode |
 | `ws://.../ws/security` | Security agent mode |
+| `ws://.../ws/monitor` | Autonomous cluster monitoring (Protocol v2) |
 
 ---
 
@@ -94,6 +97,68 @@ Messages sent by the UI to the agent over WebSocket.
   "type": "clear"
 }
 ```
+
+### `/ws/monitor` Client-to-Server Messages
+
+#### `subscribe_monitor` — Subscribe to cluster monitoring
+
+Sent as the first message after connecting to `/ws/monitor`. Configures the monitoring session.
+
+```json
+{
+  "type": "subscribe_monitor",
+  "trustLevel": 1,
+  "autoFixCategories": ["crash_loop", "resource_pressure"]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | `"subscribe_monitor"` | yes | |
+| `trustLevel` | `integer` | no | Autonomous action trust level (0–3). Clamped to server-configured max. Default: `1` |
+| `autoFixCategories` | `string[]` | no | Categories the agent may auto-fix without prompting |
+
+#### `trigger_scan` — Trigger an immediate cluster scan
+
+```json
+{
+  "type": "trigger_scan"
+}
+```
+
+Triggers an immediate cluster scan. Results are pushed as `finding` and `monitor_status` events.
+
+#### `action_response` — Respond to an autonomous action proposal
+
+```json
+{
+  "type": "action_response",
+  "actionId": "abc123",
+  "approved": true
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | `"action_response"` | yes | |
+| `actionId` | `string` | yes | ID of the proposed action |
+| `approved` | `boolean` | yes | Whether the user approved the action |
+
+#### `get_fix_history` — Request fix history
+
+```json
+{
+  "type": "get_fix_history",
+  "page": 1,
+  "filters": {"status": "applied", "category": "crash_loop"}
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | `"get_fix_history"` | yes | |
+| `page` | `integer` | no | Page number (default: `1`) |
+| `filters` | `object` | no | Optional filters (`status`, `category`, `since`, `search`) |
 
 ---
 
@@ -193,6 +258,131 @@ See [Component Specs](#component-specs) for all `spec.kind` values.
 }
 ```
 
+### `/ws/monitor` Server-to-Client Events
+
+#### `finding` — Cluster issue detected
+
+```json
+{
+  "type": "finding",
+  "id": "f-abc123",
+  "severity": "warning",
+  "category": "crash_loop",
+  "resource": {"kind": "Pod", "name": "api-server-xyz", "namespace": "production"},
+  "summary": "Pod crash-looping: CrashLoopBackOff (5 restarts in 10m)",
+  "details": "...",
+  "timestamp": 1711540800
+}
+```
+
+#### `prediction` — Predicted future issue
+
+```json
+{
+  "type": "prediction",
+  "id": "p-abc123",
+  "category": "resource_pressure",
+  "resource": {"kind": "Node", "name": "worker-03"},
+  "summary": "Node memory predicted to exceed 90% within 2 hours",
+  "confidence": 0.87,
+  "horizon": "2h",
+  "timestamp": 1711540800
+}
+```
+
+#### `action_report` — Result of an autonomous or approved action
+
+```json
+{
+  "type": "action_report",
+  "actionId": "a-abc123",
+  "findingId": "f-abc123",
+  "action": "restart_pod",
+  "status": "applied",
+  "summary": "Restarted pod api-server-xyz",
+  "before": {},
+  "after": {},
+  "timestamp": 1711540800
+}
+```
+
+`action_report` may include optional verification fields once post-fix verification completes:
+- `verificationStatus`: `"verified"` | `"still_failing"`
+- `verificationEvidence`: `string`
+- `verificationTimestamp`: `number`
+
+#### `monitor_status` — Scan cycle status update
+
+```json
+{
+  "type": "monitor_status",
+  "scanning": false,
+  "lastScan": 1711540800,
+  "findingsCount": 3,
+  "predictionsCount": 1
+}
+```
+
+#### `investigation_report` — Proactive root-cause analysis for critical findings
+
+```json
+{
+  "type": "investigation_report",
+  "id": "i-abc123",
+  "findingId": "f-abc123",
+  "category": "crashloop",
+  "status": "completed",
+  "summary": "Crashloop due to missing ConfigMap key",
+  "suspectedCause": "ConfigMap key removed in recent rollout",
+  "recommendedFix": "Restore key and restart deployment",
+  "confidence": 0.82,
+  "timestamp": 1711540800
+}
+```
+
+#### `verification_report` — Next-scan validation after a fix action
+
+```json
+{
+  "type": "verification_report",
+  "id": "v-abc123",
+  "actionId": "a-abc123",
+  "findingId": "f-abc123",
+  "status": "verified",
+  "evidence": "No active crashloop findings for affected resources",
+  "timestamp": 1711540800
+}
+```
+
+#### `findings_snapshot` — Active findings reconciliation
+
+Sent after each scan cycle. Contains the IDs of all currently active findings. The UI removes any locally-held findings whose IDs are not in `activeIds`, preventing stale entries from accumulating after issues are resolved.
+
+```json
+{
+  "type": "findings_snapshot",
+  "activeIds": ["f-abc123", "f-def456"],
+  "timestamp": 1711540800
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `activeIds` | `string[]` | IDs of all findings that are still active |
+| `timestamp` | `number` | Unix timestamp of the snapshot |
+
+#### `fix_history` — Response to `get_fix_history`
+
+```json
+{
+  "type": "fix_history",
+  "items": [],
+  "total": 0,
+  "page": 1,
+  "pageSize": 20
+}
+```
+
 ---
 
 ## Component Specs
@@ -241,60 +431,17 @@ The UI sends a `GET /version` request before connecting. If the agent's `protoco
 
 | Version | Changes | UI Version | Agent Version |
 |---------|---------|------------|---------------|
+| `2` | `/ws/monitor` endpoint for autonomous cluster scanning, `trigger_scan` / `subscribe_monitor` / `action_response` / `get_fix_history` client messages, `finding` / `prediction` / `action_report` / `monitor_status` server events, fix history REST endpoints, predictions REST endpoint | v5.12.0+ | v1.4.0+ |
 | `1` | Initial protocol: text/thinking streaming, tool use, components, confirmations | v5.0.0+ | v1.0.0+ |
 
 ### Release Compatibility Matrix
 
 | UI Version | Agent Version | Protocol | Status |
 |------------|--------------|----------|--------|
-| v5.11.0 | v1.3.0 | 1 | Current |
+| v5.12.0 | v1.4.0 | 2 | Current |
+| v5.11.0 | v1.3.0 | 1 | Compatible |
 | v5.10.0 | v1.3.0 | 1 | Compatible |
 | v5.8.0 | v1.2.0 | 1 | Compatible |
 | v5.0.0–v5.7.0 | v1.0.0–v1.1.0 | 1 | Compatible |
 
 > Both repos should tag releases together when protocol changes occur. Minor UI/Agent releases within the same protocol version are always compatible.
-
----
-
-## Protocol v2 Extensions
-
-Protocol v2 adds a dedicated monitoring channel alongside the existing chat channels.
-
-### New WebSocket Endpoint: `/ws/monitor`
-
-Persistent server-push channel for autonomous monitoring. The agent runs configurable scan loops and pushes findings, predictions, and action reports.
-
-#### Server → Client Events
-
-| Event | Fields | Description |
-|-------|--------|-------------|
-| `finding` | id, severity, category, title, summary, resources[], autoFixable, runbookId?, timestamp | Agent detected an issue |
-| `action_report` | id, findingId, tool, input, status, beforeState?, afterState?, error?, timestamp, reasoning?, durationMs? | Agent action status update |
-| `prediction` | id, category, title, detail, eta, confidence, resources[], recommendedAction?, timestamp | Predicted future issue |
-| `monitor_status` | activeWatches[], lastScan, findingsCount, nextScan | Heartbeat with scan status |
-
-#### Client → Server Messages
-
-| Message | Fields | Description |
-|---------|--------|-------------|
-| `subscribe_monitor` | trustLevel, autoFixCategories[] | Configure monitoring on connect |
-| `action_response` | actionId, approved | Approve/reject proposed action |
-| `get_fix_history` | filters?, page? | Request paginated fix history |
-
-### New REST Endpoints
-
-| Method | Path | Description |
-|--------|------|-------------|
-| GET | `/monitor/config` | Current monitoring configuration |
-| PUT | `/monitor/config` | Update scan intervals and categories |
-| GET | `/fix-history` | Paginated action history |
-| GET | `/fix-history/:id` | Single action detail with before/after state |
-| GET | `/predictions` | Active predictions |
-
-### Trust Level 4: Autonomous
-
-Level 4 allows the agent to auto-fix issues from known runbooks without user confirmation. All actions are logged and reversible. The UI sends `autoFixCategories` in `subscribe_monitor` to control which categories are allowed.
-
-### Backward Compatibility
-
-Protocol v2 agents MUST continue to support v1 chat channels (`/ws/sre`, `/ws/security`). The `/ws/monitor` channel is additive. UI clients detect the protocol version via `GET /version` and fall back to 5-minute polling if the agent is v1.
