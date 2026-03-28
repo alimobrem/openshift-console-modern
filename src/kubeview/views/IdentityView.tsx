@@ -27,7 +27,8 @@ import { HealthAuditPanel } from '../components/audit/HealthAuditPanel';
 // ---------------------------------------------------------------------------
 // K8s resource with extra OpenShift-specific fields
 // ---------------------------------------------------------------------------
-type K8sResourceExt = K8sResource & Record<string, unknown>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type K8sResourceExt = K8sResource & Record<string, any>;
 
 // ---------------------------------------------------------------------------
 // Tab type

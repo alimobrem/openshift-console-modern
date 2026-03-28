@@ -12,7 +12,7 @@ import { useMonitorStore } from '../../store/monitorStore';
 import { useUIStore } from '../../store/uiStore';
 import { useNavigateTab } from '../../hooks/useNavigateTab';
 import { resourceDetailUrl } from '../../engine/gvr';
-import type { TimelineEntry, TimelineCategory } from '../../engine/types/timeline';
+import type { TimelineEntry, TimelineCategory, TimelineSeverity } from '../../engine/types/timeline';
 
 const TIME_RANGES: TimeRange[] = ['15m', '1h', '6h', '24h', '3d', '7d'];
 
@@ -68,11 +68,11 @@ export function HistoryTab() {
     for (const action of fixHistory) {
       all.push({
         id: action.id,
-        timestamp: action.timestamp,
+        timestamp: new Date(action.timestamp).toISOString(),
         category: 'event' as TimelineCategory,
-        severity: action.status === 'failed' ? 'warning' : 'normal',
+        severity: (action.status === 'failed' ? 'warning' : 'normal') as TimelineSeverity,
         title: `Fix: ${action.tool || action.category} — ${action.status}`,
-        detail: action.reasoning || action.afterState || undefined,
+        detail: action.reasoning || action.afterState || '',
         namespace: action.resources?.[0]?.namespace,
         resource: action.resources?.[0]
           ? {
@@ -82,11 +82,12 @@ export function HistoryTab() {
               apiVersion: 'v1',
             }
           : undefined,
+        source: { type: 'k8s-event' as const },
       });
     }
 
     // Sort merged entries by timestamp descending
-    all.sort((a, b) => b.timestamp - a.timestamp);
+    all.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
 
     // Filter by search
     if (searchQuery) {
