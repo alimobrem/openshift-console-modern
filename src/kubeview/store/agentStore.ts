@@ -30,6 +30,8 @@ interface AgentState {
   streamingComponents: ComponentSpec[];
   pendingConfirm: ConfirmRequest | null;
   error: string | null;
+  /** Brief toast shown when agent acknowledges feedback */
+  feedbackToast: string | null;
   /** True when background health polling found an unread insight */
   hasUnreadInsight: boolean;
 
@@ -105,6 +107,7 @@ export const useAgentStore = create<AgentState>()(
       streamingComponents: [],
       pendingConfirm: null,
       error: null,
+      feedbackToast: null,
       hasUnreadInsight: false,
 
       setUnreadInsight: (value) => set({ hasUnreadInsight: value }),
@@ -226,6 +229,14 @@ export const useAgentStore = create<AgentState>()(
                 streamingComponents: [],
               });
               break;
+            case 'feedback_ack': {
+              const toast = event.runbookExtracted
+                ? `Feedback recorded (score: ${event.score.toFixed(2)}) — runbook extracted!`
+                : `Feedback recorded (score: ${event.score.toFixed(2)})`;
+              set({ feedbackToast: toast });
+              setTimeout(() => set({ feedbackToast: null }), 4000);
+              break;
+            }
             case 'cleared':
               set({ messages: [], streamingText: '', thinkingText: '', activeTools: [], streamingComponents: [] });
               break;

@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 export function DockAgentPanel() {
   const {
     connected, mode, messages, streaming, streamingText, thinkingText,
-    activeTools, streamingComponents, pendingConfirm, error,
+    activeTools, streamingComponents, pendingConfirm, error, feedbackToast,
     connect, sendMessage, confirmAction, cancelQuery, clearChat,
   } = useAgentStore();
 
@@ -156,6 +156,13 @@ export function DockAgentPanel() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Feedback toast */}
+      {feedbackToast && (
+        <div className="mx-3 mb-1 px-3 py-1.5 text-xs text-emerald-300 bg-emerald-950/40 border border-emerald-800/50 rounded animate-in fade-in">
+          {feedbackToast}
+        </div>
+      )}
 
       {/* Input */}
       <div className="border-t border-slate-700 px-3 py-2 flex items-end gap-2">

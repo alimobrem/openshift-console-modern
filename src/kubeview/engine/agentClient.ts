@@ -43,6 +43,7 @@ export type AgentEvent =
   | { type: 'confirm_request'; tool: string; input: Record<string, unknown>; nonce: string }
   | { type: 'done'; full_response: string }
   | { type: 'error'; message: string }
+  | { type: 'feedback_ack'; resolved: boolean; score: number; runbookExtracted: boolean }
   | { type: 'cleared' }
   | { type: 'connected' }
   | { type: 'disconnected' }
