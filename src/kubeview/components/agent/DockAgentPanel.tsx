@@ -67,7 +67,7 @@ export function DockAgentPanel() {
     <div className="flex flex-col h-full">
       {/* Monitor status bar */}
       <a
-        href="/monitor"
+        href="/incidents"
         className={cn(
           'flex items-center gap-1.5 px-3 py-1 text-xs border-b border-slate-800 transition-colors hover:bg-slate-800/50',
           monitorConnected

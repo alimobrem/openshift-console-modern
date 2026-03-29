@@ -1,4 +1,4 @@
-import { Route, useParams } from 'react-router-dom';
+import { Navigate, Route, useParams } from 'react-router-dom';
 import React, { Suspense, lazy } from 'react';
 import { isFeatureEnabled } from '../engine/featureFlags';
 
@@ -22,7 +22,6 @@ const FleetResourceView = lazy(() => import('../views/fleet/FleetResourceView'))
 const FleetWorkloadsView = lazy(() => import('../views/fleet/FleetWorkloadsView'));
 const FleetAlertsView = lazy(() => import('../views/fleet/FleetAlertsView'));
 const DriftDetectorView = lazy(() => import('../views/fleet/DriftDetectorView').then(m => ({ default: m.DriftDetectorView })));
-const MonitorView = lazy(() => import('../views/MonitorView'));
 const DynamicView = lazy(() => import('../views/DynamicView').then(m => ({ default: m.DynamicView })));
 const IncidentCenterView = lazy(() => import('../views/IncidentCenterView'));
 const OnboardingView = lazy(() => import('../views/OnboardingView'));
@@ -84,7 +83,7 @@ export function domainRoutes() {
       <Route path="fleet/alerts" element={<Lazy><FleetAlertsView /></Lazy>} />
       <Route path="fleet/r/:gvr" element={<Lazy><FleetResourceRoute /></Lazy>} />
       <Route path="fleet/drift" element={<Lazy><DriftDetectorView /></Lazy>} />
-      <Route path="monitor" element={<Lazy><MonitorView /></Lazy>} />
+      <Route path="monitor" element={<Navigate to="/incidents" replace />} />
       <Route path="dynamic/:id" element={<Lazy><DynamicViewRoute /></Lazy>} />
       <Route path="incidents" element={<Lazy>{isFeatureEnabled('incidentCenter') ? <IncidentCenterView /> : <CatchFallback />}</Lazy>} />
       <Route path="onboarding" element={<Lazy>{isFeatureEnabled('onboarding') ? <OnboardingView /> : <CatchFallback />}</Lazy>} />
