@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchBriefing, type BriefingResponse } from '../engine/fixHistory';
 import { useUIStore } from '../store/uiStore';
 import { MetricGrid } from '../components/primitives/MetricGrid';
 import { useNavigateTab } from '../hooks/useNavigateTab';
@@ -59,6 +60,13 @@ export default function WelcomeView() {
   });
   const topIssuesCount = firingAlerts.length;
 
+  const { data: briefing } = useQuery<BriefingResponse>({
+    queryKey: ['briefing'],
+    queryFn: () => fetchBriefing(12),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
   return (
     <div className="h-full overflow-auto bg-slate-950">
       <div className="max-w-5xl mx-auto px-6 py-10 space-y-10">
@@ -97,6 +105,39 @@ export default function WelcomeView() {
             </div>
           </div>
         </div>
+
+        {/* ── Briefing Card ── */}
+        {briefing && (
+          <div className="rounded-xl border border-slate-800 bg-slate-900/60 px-6 py-4">
+            <div className="flex items-center gap-3 mb-2">
+              <HeartPulse className="w-5 h-5 text-blue-400" />
+              <h2 className="text-lg font-semibold text-slate-100">{briefing.greeting}</h2>
+            </div>
+            <p className="text-sm text-slate-400 mb-3">{briefing.summary}</p>
+            {(briefing.actions.completed > 0 || briefing.investigations > 0) && (
+              <div className="flex gap-4 text-xs">
+                {briefing.actions.completed > 0 && (
+                  <span className="flex items-center gap-1 text-emerald-400">
+                    <CheckCircle className="w-3.5 h-3.5" />
+                    {briefing.actions.completed} fixed
+                  </span>
+                )}
+                {briefing.actions.failed > 0 && (
+                  <span className="flex items-center gap-1 text-red-400">
+                    <XCircle className="w-3.5 h-3.5" />
+                    {briefing.actions.failed} failed
+                  </span>
+                )}
+                {briefing.investigations > 0 && (
+                  <span className="flex items-center gap-1 text-blue-400">
+                    <Search className="w-3.5 h-3.5" />
+                    {briefing.investigations} investigated
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── Launchpad: Cluster State Summary ── */}
         {launchpad && (

@@ -41,6 +41,7 @@ function formatRelativeTime(timestamp: number): string {
 export function FindingCard({ finding, onInvestigate, onDismiss, onAutoFix, compact }: FindingCardProps) {
   const badge = SEVERITY_BADGE[finding.severity];
   const Icon = SEVERITY_ICON[finding.severity];
+  const isNoisy = (finding.noiseScore ?? 0) >= 0.5;
   const maxResources = 3;
   const visibleResources = finding.resources.slice(0, maxResources);
   const remaining = finding.resources.length - maxResources;
@@ -50,6 +51,7 @@ export function FindingCard({ finding, onInvestigate, onDismiss, onAutoFix, comp
       className={cn(
         'rounded-lg border border-slate-700 border-l-4 bg-slate-800',
         SEVERITY_BORDER[finding.severity],
+        isNoisy && 'opacity-50',
         compact ? 'px-3 py-2' : 'p-4',
       )}
       data-testid={`finding-card-${finding.id}`}
@@ -63,6 +65,14 @@ export function FindingCard({ finding, onInvestigate, onDismiss, onAutoFix, comp
               {badge.label}
             </span>
             <span className="text-xs text-slate-500">{finding.category}</span>
+            {finding.confidence != null && (
+              <span className={cn(
+                'text-xs font-mono',
+                finding.confidence >= 0.85 ? 'text-slate-400' : finding.confidence >= 0.7 ? 'text-amber-400' : 'text-slate-500',
+              )}>
+                {Math.round(finding.confidence * 100)}%
+              </span>
+            )}
             <span className="ml-auto flex items-center gap-1 text-xs text-slate-500 shrink-0">
               <Clock className="h-3 w-3" aria-hidden="true" />
               {formatRelativeTime(finding.timestamp)}

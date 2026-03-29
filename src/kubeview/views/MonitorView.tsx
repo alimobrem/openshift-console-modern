@@ -79,8 +79,6 @@ export default function MonitorView() {
   const fixHistory = useMonitorStore((s) => s.fixHistory);
   const fixHistoryLoading = useMonitorStore((s) => s.fixHistoryLoading);
   const loadFixHistory = useMonitorStore((s) => s.loadFixHistory);
-  const storeAutoFixCategories = useMonitorStore((s) => s.autoFixCategories);
-  const setStoreAutoFixCategories = useMonitorStore((s) => s.setAutoFixCategories);
   const triggerScan = useMonitorStore((s) => s.triggerScan);
   const lastScanTime = useMonitorStore((s) => s.lastScanTime);
   const nextScanTime = useMonitorStore((s) => s.nextScanTime);
@@ -173,10 +171,9 @@ export default function MonitorView() {
     }
   }, [activeTab, loadFixHistory]);
 
-  // Derive auto-fix categories set from both stores
   const autoFixCategories = useMemo(
-    () => new Set([...storeAutoFixCategories, ...trustAutoFixCategories]),
-    [storeAutoFixCategories, trustAutoFixCategories],
+    () => new Set(trustAutoFixCategories),
+    [trustAutoFixCategories],
   );
 
   // Derived counts
@@ -214,9 +211,7 @@ export default function MonitorView() {
     const next = new Set(autoFixCategories);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    const arr = Array.from(next);
-    setStoreAutoFixCategories(arr);
-    setTrustAutoFixCategories(arr);
+    setTrustAutoFixCategories(Array.from(next));
   };
 
   return (

@@ -14,6 +14,7 @@ import {
   type Prediction,
   type InvestigationReport,
   type VerificationReport,
+  type Resolution,
 } from '../engine/monitorClient';
 import {
   fetchFixHistory,
@@ -27,6 +28,7 @@ const MAX_PREDICTIONS = 50;
 const MAX_INVESTIGATIONS = 100;
 const MAX_VERIFICATIONS = 200;
 const MAX_RECENT_ACTIONS = 50;
+const MAX_RESOLUTIONS = 50;
 
 interface MonitorState {
   // Connection
@@ -43,6 +45,7 @@ interface MonitorState {
   verifications: VerificationReport[];
   pendingActions: ActionReport[];
   recentActions: ActionReport[];
+  resolutions: Resolution[];
 
   // Fix history (REST-loaded)
   fixHistory: ActionRecord[];
@@ -52,7 +55,6 @@ interface MonitorState {
 
   // Preferences
   monitorEnabled: boolean;
-  autoFixCategories: string[];
 
   // UI
   unreadCount: number;
@@ -66,7 +68,6 @@ interface MonitorState {
   approveAction: (actionId: string) => void;
   rejectAction: (actionId: string) => void;
   setMonitorEnabled: (enabled: boolean) => void;
-  setAutoFixCategories: (categories: string[]) => void;
   loadFixHistory: (page?: number, filters?: FixHistoryFilters) => void;
   markAllRead: () => void;
   toggleNotificationCenter: () => void;
@@ -98,6 +99,7 @@ export const useMonitorStore = create<MonitorState>()(
       verifications: [],
       pendingActions: [],
       recentActions: [],
+      resolutions: [],
 
       // Fix history
       fixHistory: [],
@@ -107,10 +109,6 @@ export const useMonitorStore = create<MonitorState>()(
 
       // Preferences
       monitorEnabled: true,
-      // H11: autoFixCategories reads from trustStore on connect/set; this field
-      // is kept for backward compat but trustStore is the source of truth.
-      autoFixCategories: useTrustStore.getState().autoFixCategories,
-
       // UI
       unreadCount: 0,
       notificationCenterOpen: false,
@@ -214,6 +212,16 @@ export const useMonitorStore = create<MonitorState>()(
               break;
             }
 
+            case 'resolution': {
+              const { type: _, ...resolution } = event;
+              set((s) => ({
+                resolutions: capArray([...s.resolutions, resolution], MAX_RESOLUTIONS),
+                findings: s.findings.filter((f) => f.id !== resolution.findingId),
+                unreadCount: s.unreadCount + 1,
+              }));
+              break;
+            }
+
             case 'findings_snapshot': {
               const activeIds = new Set(event.activeIds);
               set((s) => ({
@@ -291,12 +299,6 @@ export const useMonitorStore = create<MonitorState>()(
         }
       },
 
-      setAutoFixCategories: (categories) => {
-        // H11: delegate to trustStore (single source of truth) and sync local copy
-        useTrustStore.getState().setAutoFixCategories(categories);
-        set({ autoFixCategories: categories });
-      },
-
       loadFixHistory: async (page = 1, filters?) => {
         // H10: track request ID to discard stale responses
         const requestId = ++_fixHistoryRequestId;
@@ -340,6 +342,7 @@ export const useMonitorStore = create<MonitorState>()(
         investigations: state.investigations.slice(-MAX_INVESTIGATIONS),
         verifications: state.verifications.slice(-MAX_VERIFICATIONS),
         recentActions: state.recentActions.slice(-MAX_RECENT_ACTIONS),
+        resolutions: state.resolutions.slice(-MAX_RESOLUTIONS),
       }),
     },
   ),

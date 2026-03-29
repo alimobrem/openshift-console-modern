@@ -73,6 +73,24 @@ export async function fetchActionDetail(id: string): Promise<ActionRecord> {
   return res.json();
 }
 
+/** Fetch cluster activity briefing. */
+export interface BriefingResponse {
+  greeting: string;
+  summary: string;
+  hours: number;
+  actions: { total: number; completed: number; failed: number };
+  investigations: number;
+  categoriesFixed: string[];
+}
+
+export async function fetchBriefing(hours = 12): Promise<BriefingResponse> {
+  const res = await fetch(`${AGENT_BASE}/briefing?hours=${hours}`);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch briefing: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
 /** Request a rollback for a completed action. */
 export async function requestRollback(actionId: string): Promise<void> {
   const res = await fetch(

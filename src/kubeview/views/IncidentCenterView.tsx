@@ -46,8 +46,6 @@ export default function IncidentCenterView() {
   const setMonitorEnabled = useMonitorStore((s) => s.setMonitorEnabled);
   const triggerScan = useMonitorStore((s) => s.triggerScan);
   const lastScanTime = useMonitorStore((s) => s.lastScanTime);
-  const storeAutoFixCategories = useMonitorStore((s) => s.autoFixCategories);
-  const setStoreAutoFixCategories = useMonitorStore((s) => s.setAutoFixCategories);
   const findings = useMonitorStore((s) => s.findings);
   const trustLevel = useTrustStore((s) => s.trustLevel);
   const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
@@ -55,17 +53,15 @@ export default function IncidentCenterView() {
   const setTrustAutoFixCategories = useTrustStore((s) => s.setAutoFixCategories);
 
   const autoFixCategories = useMemo(
-    () => new Set([...storeAutoFixCategories, ...trustAutoFixCategories]),
-    [storeAutoFixCategories, trustAutoFixCategories],
+    () => new Set(trustAutoFixCategories),
+    [trustAutoFixCategories],
   );
 
   const toggleAutoFixCategory = (id: string) => {
     const next = new Set(autoFixCategories);
     if (next.has(id)) next.delete(id);
     else next.add(id);
-    const arr = Array.from(next);
-    setStoreAutoFixCategories(arr);
-    setTrustAutoFixCategories(arr);
+    setTrustAutoFixCategories(Array.from(next));
   };
 
   const { data: agentInfo } = useQuery<{ protocol: string; agent: string; tools: number }>({
@@ -145,10 +141,9 @@ export default function IncidentCenterView() {
   useEffect(() => {
     const filtered = Array.from(autoFixCategories).filter((category) => supportedCategories.has(category));
     if (filtered.length !== autoFixCategories.size) {
-      setStoreAutoFixCategories(filtered);
       setTrustAutoFixCategories(filtered);
     }
-  }, [autoFixCategories, setStoreAutoFixCategories, setTrustAutoFixCategories, supportedCategories]);
+  }, [autoFixCategories, setTrustAutoFixCategories, supportedCategories]);
 
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">

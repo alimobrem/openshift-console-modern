@@ -371,8 +371,6 @@ export default function AdminView() {
     return spots.sort((a, b) => b.pct - a.pct).slice(0, 5);
   }, [quotas]);
 
-  const opDegradedCount = operators.filter((o) => (o as unknown as ClusterOperator).status?.conditions?.find((c: Condition) => c.type === 'Degraded' && c.status === 'True')).length;
-
   const go = useNavigateTab();
   const savedSnapshots = loadSnapshots();
 
@@ -381,7 +379,7 @@ export default function AdminView() {
   const tabs: Array<{ id: Tab; label: string; icon: React.ReactNode }> = [
     { id: 'overview', label: 'Overview', icon: <Settings className="w-3.5 h-3.5" /> },
     { id: 'readiness', label: 'Readiness', icon: <Shield className="w-3.5 h-3.5" /> },
-    { id: 'operators', label: `Operators (${operators.length})${opDegradedCount > 0 ? ` \u00b7 ${opDegradedCount} degraded` : ''}`, icon: <Puzzle className="w-3.5 h-3.5" /> },
+    { id: 'operators', label: `Operators (${operators.length})${opDegraded > 0 ? ` \u00b7 ${opDegraded} degraded` : ''}`, icon: <Puzzle className="w-3.5 h-3.5" /> },
     { id: 'config', label: 'Cluster Config', icon: <Database className="w-3.5 h-3.5" /> },
     { id: 'updates', label: `Updates${availableUpdates.length > 0 ? ` (${availableUpdates.length})` : ''}`, icon: <ArrowUpCircle className="w-3.5 h-3.5" /> },
     { id: 'snapshots', label: `Snapshots (${savedSnapshots.length})`, icon: <GitCompare className="w-3.5 h-3.5" /> },

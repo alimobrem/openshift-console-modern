@@ -24,6 +24,8 @@ export interface Finding {
   resources: ResourceRef[];
   autoFixable: boolean;
   runbookId?: string;
+  confidence?: number;
+  noiseScore?: number;
   timestamp: number;
 }
 
@@ -39,6 +41,7 @@ export interface ActionReport {
   timestamp: number;
   reasoning?: string;
   durationMs?: number;
+  confidence?: number;
   rollbackAvailable?: boolean;
   verificationStatus?: 'verified' | 'still_failing';
   verificationEvidence?: string;
@@ -73,6 +76,8 @@ export interface InvestigationReport {
   suspectedCause?: string;
   recommendedFix?: string;
   confidence?: number;
+  evidence?: string[];
+  alternativesConsidered?: string[];
   error?: string;
   timestamp: number;
 }
@@ -86,12 +91,21 @@ export interface VerificationReport {
   timestamp: number;
 }
 
+export interface Resolution {
+  findingId: string;
+  category: string;
+  title: string;
+  resolvedBy: 'auto-fix' | 'self-healed';
+  timestamp: number;
+}
+
 export type MonitorEvent =
   | ({ type: 'finding' } & Finding)
   | ({ type: 'action_report' } & ActionReport)
   | ({ type: 'prediction' } & Prediction)
   | ({ type: 'investigation_report' } & InvestigationReport)
   | ({ type: 'verification_report' } & VerificationReport)
+  | ({ type: 'resolution' } & Resolution)
   | ({ type: 'monitor_status' } & MonitorStatus)
   | { type: 'findings_snapshot'; activeIds: string[]; timestamp: number }
   | { type: 'connected' }

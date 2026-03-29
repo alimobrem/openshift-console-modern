@@ -112,6 +112,29 @@ export function ActionsTab() {
   );
 }
 
+function ActionCardHeader({ action, statusOverride }: { action: ActionReport; statusOverride?: string }) {
+  const status = statusOverride || action.status;
+  return (
+    <div className="flex items-center gap-2 mb-1 flex-wrap">
+      <span className="text-sm font-medium text-slate-200 font-mono">{action.tool}</span>
+      <span className={cn('text-xs px-1.5 py-0.5 rounded', STATUS_COLORS[status])}>
+        {status}
+      </span>
+      {action.confidence != null && (
+        <span className={cn(
+          'text-xs font-mono',
+          action.confidence >= 0.8 ? 'text-green-400' : action.confidence >= 0.5 ? 'text-amber-400' : 'text-red-400',
+        )}>
+          {Math.round(action.confidence * 100)}%
+        </span>
+      )}
+      {action.durationMs != null && (
+        <span className="text-xs text-slate-500">{action.durationMs}ms</span>
+      )}
+    </div>
+  );
+}
+
 function PendingActionCard({
   action,
   onApprove,
@@ -133,12 +156,7 @@ function PendingActionCard({
       <div className="px-4 py-3 flex items-start gap-3">
         <Clock className="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-sm font-medium text-slate-200 font-mono">{action.tool}</span>
-            <span className={cn('text-xs px-1.5 py-0.5 rounded', STATUS_COLORS[action.status])}>
-              {action.status}
-            </span>
-          </div>
+          <ActionCardHeader action={action} />
           {action.reasoning && (
             <p className="text-xs text-slate-400 mb-2">{action.reasoning}</p>
           )}
@@ -219,15 +237,7 @@ function RecentActionCard({
           <Clock className="w-5 h-5 text-slate-400 flex-shrink-0 mt-0.5" />
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
-            <span className="text-sm font-medium text-slate-200 font-mono">{action.tool}</span>
-            <span className={cn('text-xs px-1.5 py-0.5 rounded', STATUS_COLORS[rolledBack ? 'rolled_back' : action.status])}>
-              {rolledBack ? 'rolled_back' : action.status}
-            </span>
-            {action.durationMs != null && (
-              <span className="text-xs text-slate-500">{action.durationMs}ms</span>
-            )}
-          </div>
+          <ActionCardHeader action={action} statusOverride={rolledBack ? 'rolled_back' : undefined} />
           {action.reasoning && (
             <p className="text-xs text-slate-400 mb-1">{action.reasoning}</p>
           )}
