@@ -90,12 +90,16 @@ Platform: Admin (9 tabs), Onboarding (readiness wizard/checklist)
 - **`components/onboarding/types.ts`** — re-exports from engine + `CategoryView`, `buildCategoryViews()` bridge
 
 ### Agent Integration
+- **Default agent mode**: `auto` — uses `/ws/agent` endpoint which auto-routes between SRE and Security based on query intent
+- **Agent endpoint**: `/ws/agent?token=...` — auto-routing orchestrated agent (classifies intent per message)
+- **Legacy endpoints**: `/ws/sre` and `/ws/security` still available for explicit mode selection
 - **Monitor WebSocket**: `engine/monitorClient.ts` → `store/monitorStore.ts` — single connection via `agentNotifications.ts`
 - **Trust level**: sent as integer (0-4) to backend, NOT as label string
 - **Agent Chat**: `engine/agentClient.ts` → `store/agentStore.ts`
 - **Confirmation flow**: `confirm_request` with nonce → UI shows dialog → `confirm_response` with nonce echoed back
 - **Degraded mode**: `engine/degradedMode.ts` — 5 failure reasons, displayed via `DegradedBanner`
 - **Auto-fix**: at trust level 3/4, monitor fixes crashloop (pod delete) and workloads (deployment restart) WITHOUT confirmation gate. Has safety guardrails: max 3/scan, 5min cooldown, no bare pods.
+- **Agent version**: v1.5.0 (Protocol v2, 109 tools, 11 scanners)
 
 ### Incident Center (`/incidents`) — 5 tabs
 - **Now**: unified feed from `useIncidentFeed` hook (findings + alerts + errors), silence management
