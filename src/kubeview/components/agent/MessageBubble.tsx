@@ -158,7 +158,7 @@ export const MessageBubble = memo(function MessageBubble({ message, mode }: { me
             {!isUser && (
               <>
                 <button
-                  onClick={() => { sendFeedback(true); setFeedbackGiven('up'); }}
+                  onClick={() => { sendFeedback(true, message.id); setFeedbackGiven('up'); }}
                   disabled={feedbackGiven !== null}
                   className={cn(
                     'p-1 rounded transition-colors',
@@ -171,7 +171,7 @@ export const MessageBubble = memo(function MessageBubble({ message, mode }: { me
                   <ThumbsUp className="h-3.5 w-3.5" />
                 </button>
                 <button
-                  onClick={() => { sendFeedback(false); setFeedbackGiven('down'); }}
+                  onClick={() => { sendFeedback(false, message.id); setFeedbackGiven('down'); }}
                   disabled={feedbackGiven !== null}
                   className={cn(
                     'p-1 rounded transition-colors',

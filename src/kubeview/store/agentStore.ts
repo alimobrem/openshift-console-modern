@@ -44,7 +44,7 @@ interface AgentState {
   switchMode: (mode: AgentMode) => void;
   clearChat: () => void;
   confirmAction: (approved: boolean) => void;
-  sendFeedback: (resolved: boolean) => void;
+  sendFeedback: (resolved: boolean, messageId?: string) => void;
   cancelQuery: () => void;
   editLastMessage: () => string;
   setUnreadInsight: (value: boolean) => void;
@@ -299,8 +299,8 @@ export const useAgentStore = create<AgentState>()(
         if (client) client.confirm(approved, nonce);
       },
 
-      sendFeedback: (resolved: boolean) => {
-        if (client) client.sendFeedback(resolved);
+      sendFeedback: (resolved: boolean, messageId?: string) => {
+        if (client) client.sendFeedback(resolved, messageId);
       },
 
       cancelQuery: () => {

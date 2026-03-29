@@ -5,6 +5,7 @@ import {
   BellOff, Volume2, Clock, ChevronDown, ChevronUp, Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '../../engine/formatters';
 import { Card } from '../../components/primitives/Card';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
@@ -62,13 +63,6 @@ const SEVERITY_COLORS: Record<IncidentSeverity, string> = {
   info: 'bg-blue-900/50 text-blue-300',
 };
 
-function formatRelativeTime(timestamp: number): string {
-  const ms = Date.now() - timestamp;
-  if (ms < 60_000) return 'just now';
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
-  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h ago`;
-  return `${Math.floor(ms / 86_400_000)}d ago`;
-}
 
 export function NowTab() {
   const dismissFinding = useMonitorStore((s) => s.dismissFinding);

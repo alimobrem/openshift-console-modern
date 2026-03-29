@@ -5,6 +5,7 @@ import {
   XCircle, X, Eye, Info,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '../engine/formatters';
 import { Card } from '../components/primitives/Card';
 import { EmptyState } from '../components/primitives/EmptyState';
 import { useMonitorStore } from '../store/monitorStore';
@@ -52,13 +53,6 @@ interface AgentInfo {
   features: string[];
 }
 
-function formatRelativeTime(timestamp: number): string {
-  const ms = Date.now() - timestamp;
-  if (ms < 60_000) return 'just now';
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
-  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h ago`;
-  return `${Math.floor(ms / 86_400_000)}d ago`;
-}
 
 function formatDuration(ms: number): string {
   if (ms < 1000) return `${ms}ms`;

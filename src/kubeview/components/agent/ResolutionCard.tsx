@@ -1,5 +1,6 @@
 import { CheckCircle, Wrench, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '../../engine/formatters';
 import type { Resolution } from '../../engine/monitorClient';
 
 export type { Resolution };
@@ -14,13 +15,6 @@ const RESOLVED_BY_CONFIG: Record<string, { icon: typeof CheckCircle; label: stri
   'self-healed': { icon: Heart, label: 'Self-healed', color: 'text-blue-400' },
 };
 
-function formatRelativeTime(timestamp: number): string {
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
-  return `${Math.floor(seconds / 86400)}d ago`;
-}
 
 export function ResolutionCard({ resolution, compact }: ResolutionCardProps) {
   const config = RESOLVED_BY_CONFIG[resolution.resolvedBy] || RESOLVED_BY_CONFIG['self-healed'];

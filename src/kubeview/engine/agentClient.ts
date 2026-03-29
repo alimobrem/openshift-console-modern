@@ -202,10 +202,12 @@ export class AgentClient {
     this.ws.send(JSON.stringify({ type: 'clear' }));
   }
 
-  /** Send feedback on the last response (thumbs up/down). Triggers memory learning. */
-  sendFeedback(resolved: boolean) {
+  /** Send feedback on a response (thumbs up/down). Triggers memory learning. */
+  sendFeedback(resolved: boolean, messageId?: string) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
-    this.ws.send(JSON.stringify({ type: 'feedback', resolved }));
+    const payload: Record<string, unknown> = { type: 'feedback', resolved };
+    if (messageId) payload.messageId = messageId;
+    this.ws.send(JSON.stringify(payload));
   }
 
   /** Switch agent mode (reconnects). */

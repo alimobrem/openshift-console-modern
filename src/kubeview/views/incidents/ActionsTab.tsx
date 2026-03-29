@@ -3,6 +3,7 @@ import {
   CheckCircle, XCircle, Clock, Play, Search, RotateCcw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { formatRelativeTime } from '../../engine/formatters';
 import { Card } from '../../components/primitives/Card';
 import { EmptyState } from '../../components/primitives/EmptyState';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
@@ -18,13 +19,6 @@ const STATUS_COLORS: Record<string, string> = {
   rolled_back: 'bg-slate-700 text-slate-300',
 };
 
-function formatRelativeTime(timestamp: number): string {
-  const ms = Date.now() - timestamp;
-  if (ms < 60_000) return 'just now';
-  if (ms < 3_600_000) return `${Math.floor(ms / 60_000)}m ago`;
-  if (ms < 86_400_000) return `${Math.floor(ms / 3_600_000)}h ago`;
-  return `${Math.floor(ms / 86_400_000)}d ago`;
-}
 
 export function ActionsTab() {
   const pendingActions = useMonitorStore((s) => s.pendingActions);
