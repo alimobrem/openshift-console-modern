@@ -96,41 +96,53 @@ file_hash() {
   fi
 }
 
-# ─── Prerequisite Checks ────────────────────────────────────────────────────
+# ─── Phase 0: Preflight Checks (fail fast) ────────────────────────────────
 
-step "Checking prerequisites"
+step "Preflight checks"
 
 # Required tools
 for cmd in oc helm npm; do
-  if ! command -v "$cmd" &>/dev/null; then
-    error "'$cmd' not found. Install it and try again."
-    exit 1
-  fi
+  command -v "$cmd" &>/dev/null || { error "'$cmd' not found. Install it and try again."; exit 1; }
 done
+oc whoami &>/dev/null || { error "Not logged in to OpenShift. Run 'oc login' first."; exit 1; }
 info "Tools: oc, helm, npm — OK"
 
-# Cluster connectivity
-if ! oc whoami &>/dev/null; then
-  error "Not logged in to OpenShift. Run 'oc login' first."
-  exit 1
-fi
 CLUSTER_API=$(oc whoami --show-server)
 info "Cluster: $CLUSTER_API"
 
-# Agent repo
+# Credentials — require an AI backend when deploying the agent
 if [[ -z "$AGENT_REPO" ]]; then
   NO_AGENT=true
   warn "No --agent-repo provided — deploying UI only (use --agent-repo to include the agent)"
 fi
 if [[ "$NO_AGENT" == "false" ]]; then
+  if [[ -z "${ANTHROPIC_API_KEY:-}" && -z "${ANTHROPIC_VERTEX_PROJECT_ID:-}" ]]; then
+    error "No AI backend configured"
+    error "  Set ANTHROPIC_API_KEY=sk-ant-... or ANTHROPIC_VERTEX_PROJECT_ID=..."
+    exit 1
+  fi
+fi
+
+# GCP key for Vertex AI
+GCP_KEY=""
+if [[ -n "${ANTHROPIC_VERTEX_PROJECT_ID:-}" ]]; then
+  if [[ -z "$GCP_KEY_FILE" ]]; then
+    GCP_KEY_FILE="$HOME/.config/gcloud/application_default_credentials.json"
+  fi
+  [[ -f "$GCP_KEY_FILE" ]] || { error "GCP key not found: $GCP_KEY_FILE"; exit 1; }
+  GCP_KEY="$GCP_KEY_FILE"
+  info "GCP credentials: $GCP_KEY"
+fi
+
+# Agent repo validation
+if [[ "$NO_AGENT" == "false" ]]; then
   if [[ ! -d "$AGENT_REPO" ]]; then
     error "Agent repo not found: $AGENT_REPO"
     exit 1
   fi
-  if [[ ! -f "$AGENT_REPO/chart/Chart.yaml" ]]; then
-    error "Agent repo missing chart/Chart.yaml: $AGENT_REPO"
-    exit 1
-  fi
+  [[ -d "$AGENT_REPO/chart" ]] || { error "Agent repo missing chart/: $AGENT_REPO"; exit 1; }
+  [[ -f "$AGENT_REPO/chart/Chart.yaml" ]] || { error "Agent repo missing chart/Chart.yaml: $AGENT_REPO"; exit 1; }
+  helm lint "$AGENT_REPO/chart/" --set vertexAI.projectId=x --set vertexAI.region=y >/dev/null 2>&1 || { error "Helm lint failed for agent chart"; exit 1; }
   AGENT_REPO="$(cd "$AGENT_REPO" && pwd)"
   info "Agent repo: $AGENT_REPO"
 else
@@ -140,6 +152,18 @@ fi
 # ─── Detect Cluster Configuration ───────────────────────────────────────────
 
 step "Detecting cluster configuration"
+
+# Ensure namespace exists
+oc get namespace "$NAMESPACE" &>/dev/null || oc create namespace "$NAMESPACE"
+
+# Quota check
+QUOTA_CPU=$(oc get resourcequota -n "$NAMESPACE" -o jsonpath='{.items[0].status.hard.limits\.cpu}' 2>/dev/null || echo "")
+if [[ -n "$QUOTA_CPU" ]]; then
+  CPU_NUM=$(echo "$QUOTA_CPU" | sed 's/[^0-9]//g')
+  if [[ "$CPU_NUM" -lt 3 ]]; then
+    warn "CPU quota is only ${QUOTA_CPU} — may be insufficient. Recommended: 4+ cores"
+  fi
+fi
 
 # OAuth proxy image — use the cluster's own oauth-proxy ImageStream
 OAUTH_TAG=$(oc get imagestream oauth-proxy -n openshift -o jsonpath='{.status.tags[0].tag}' 2>/dev/null || echo "")
@@ -191,7 +215,9 @@ else
   info "WS token: auto-generated (new install)"
 fi
 
-# ─── Deploy Pulse UI ────────────────────────────────────────────────────────
+info "All preflight checks passed"
+
+# ─── Phase 1: Build & Deploy UI ──────────────────────────────────────────────
 
 step "Building Pulse UI"
 cd "$PROJECT_DIR"
@@ -199,11 +225,10 @@ npm run build --silent
 info "Build complete"
 
 step "Helm install/upgrade Pulse UI"
-HELM_CMD="upgrade --install"
 AGENT_ENABLED="false"
 [[ "$NO_AGENT" == "false" ]] && AGENT_ENABLED="true"
 
-helm $HELM_CMD openshiftpulse deploy/helm/openshiftpulse/ \
+helm upgrade --install openshiftpulse deploy/helm/openshiftpulse/ \
   -n "$NAMESPACE" --create-namespace \
   --set oauthProxy.image="$OAUTH_IMAGE" \
   --set route.clusterDomain="$CLUSTER_DOMAIN" \
@@ -231,19 +256,44 @@ oc start-build openshiftpulse --from-dir=dist --follow -n "$NAMESPACE"
 info "UI image built"
 
 if [[ "$NO_AGENT" == "false" ]]; then
-# ─── Deploy Pulse Agent ─────────────────────────────────────────────────────
+# ─── Phase 2: Deploy Agent ───────────────────────────────────────────────────
 
-step "Helm install/upgrade Agent"
+step "Creating Agent secrets"
 cd "$AGENT_REPO"
-HELM_AGENT_ARGS="--set rbac.allowWriteOperations=true --set rbac.allowSecretAccess=true"
-if [[ -n "${ANTHROPIC_VERTEX_PROJECT_ID:-}" ]]; then
-  HELM_AGENT_ARGS="$HELM_AGENT_ARGS --set vertexAI.projectId=${ANTHROPIC_VERTEX_PROJECT_ID} --set vertexAI.region=${CLOUD_ML_REGION:-us-east5}"
-elif [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-  # Create API key secret and reference it
+
+# Clean up old build pods to free quota
+oc delete pod -n "$NAMESPACE" -l openshift.io/build.name --field-selector=status.phase!=Running 2>/dev/null || true
+
+# Create GCP secret BEFORE Helm install
+if [[ -n "$GCP_KEY" ]]; then
+  oc delete secret gcp-sa-key -n "$NAMESPACE" 2>/dev/null || true
+  oc create secret generic gcp-sa-key --from-file=key.json="$GCP_KEY" -n "$NAMESPACE"
+  info "GCP secret: created"
+fi
+
+# Create Anthropic API key secret BEFORE Helm install
+if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
   oc delete secret anthropic-api-key -n "$NAMESPACE" 2>/dev/null || true
   oc create secret generic anthropic-api-key --from-literal=api-key="${ANTHROPIC_API_KEY}" -n "$NAMESPACE"
-  HELM_AGENT_ARGS="$HELM_AGENT_ARGS --set anthropicApiKey.existingSecret=anthropic-api-key"
+  info "Anthropic API key secret: created"
 fi
+
+step "Helm install/upgrade Agent"
+
+# Build Helm args with ALL credentials — no post-deploy patching needed
+HELM_AGENT_ARGS="--set rbac.allowWriteOperations=true --set rbac.allowSecretAccess=true"
+if [[ -n "${ANTHROPIC_VERTEX_PROJECT_ID:-}" ]]; then
+  HELM_AGENT_ARGS="$HELM_AGENT_ARGS --set vertexAI.projectId=${ANTHROPIC_VERTEX_PROJECT_ID}"
+  HELM_AGENT_ARGS="$HELM_AGENT_ARGS --set vertexAI.region=${CLOUD_ML_REGION:-us-east5}"
+  HELM_AGENT_ARGS="$HELM_AGENT_ARGS --set vertexAI.existingSecret=gcp-sa-key"
+  AI_BACKEND="vertex"
+  info "AI backend: Vertex AI (project: ${ANTHROPIC_VERTEX_PROJECT_ID})"
+elif [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
+  HELM_AGENT_ARGS="$HELM_AGENT_ARGS --set anthropicApiKey.existingSecret=anthropic-api-key"
+  AI_BACKEND="anthropic"
+  info "AI backend: Anthropic API (direct)"
+fi
+
 helm upgrade --install "$AGENT_RELEASE" chart/ \
   -n "$NAMESPACE" \
   $HELM_AGENT_ARGS \
@@ -256,16 +306,24 @@ step "Building Agent image"
 INTERNAL_REGISTRY="image-registry.openshift-image-registry.svc:5000"
 BASE_IMAGE="${INTERNAL_REGISTRY}/${NAMESPACE}/pulse-agent-deps:latest"
 
-# Ensure deps base image exists and is up-to-date
-DEPS_HASH=$(file_hash "$AGENT_REPO/pyproject.toml")
-CURRENT_HASH=$(oc get istag pulse-agent-deps:latest -n "$NAMESPACE" \
-  -o jsonpath='{.image.dockerImageMetadata.Config.Labels.deps-hash}' 2>/dev/null || echo "none")
+# Check if deps image exists — if not, use Dockerfile.full directly
+DEPS_EXISTS=true
+if ! oc get istag pulse-agent-deps:latest -n "$NAMESPACE" &>/dev/null; then
+  DEPS_EXISTS=false
+  info "No deps image found — will use Dockerfile.full"
+fi
 
-if [[ "$DEPS_HASH" != "$CURRENT_HASH" ]]; then
-  info "Deps image needs rebuild (pyproject.toml changed)..."
-  oc create imagestream pulse-agent-deps -n "$NAMESPACE" 2>/dev/null || true
-  if ! oc get bc pulse-agent-deps -n "$NAMESPACE" &>/dev/null; then
-    cat <<EOF | oc apply -f - -n "$NAMESPACE"
+if [[ "$DEPS_EXISTS" == "true" ]]; then
+  # Ensure deps base image is up-to-date
+  DEPS_HASH=$(file_hash "$AGENT_REPO/pyproject.toml")
+  CURRENT_HASH=$(oc get istag pulse-agent-deps:latest -n "$NAMESPACE" \
+    -o jsonpath='{.image.dockerImageMetadata.Config.Labels.deps-hash}' 2>/dev/null || echo "none")
+
+  if [[ "$DEPS_HASH" != "$CURRENT_HASH" ]]; then
+    info "Deps image needs rebuild (pyproject.toml changed)..."
+    oc create imagestream pulse-agent-deps -n "$NAMESPACE" 2>/dev/null || true
+    if ! oc get bc pulse-agent-deps -n "$NAMESPACE" &>/dev/null; then
+      cat <<EOF | oc apply -f - -n "$NAMESPACE"
 apiVersion: build.openshift.io/v1
 kind: BuildConfig
 metadata:
@@ -283,25 +341,36 @@ spec:
     dockerStrategy:
       dockerfilePath: Dockerfile.deps
 EOF
+    fi
+    oc start-build pulse-agent-deps --from-dir=. --build-arg="DEPS_HASH=$DEPS_HASH" --follow -n "$NAMESPACE"
+    info "Deps image rebuilt"
+  else
+    info "Deps image up-to-date (hash: ${DEPS_HASH:0:12}...)"
   fi
-  oc start-build pulse-agent-deps --from-dir=. --build-arg="DEPS_HASH=$DEPS_HASH" --follow -n "$NAMESPACE"
-  info "Deps image rebuilt"
-else
-  info "Deps image up-to-date (hash: ${DEPS_HASH:0:12}...)"
 fi
 
-# Ensure code BC exists and uses deps as base
+# Ensure code BC exists
 oc get bc pulse-agent -n "$NAMESPACE" &>/dev/null || \
   oc new-build --binary --name=pulse-agent --to=pulse-agent:latest -n "$NAMESPACE"
-oc patch bc pulse-agent -n "$NAMESPACE" --type=json \
-  -p="[{\"op\":\"replace\",\"path\":\"/spec/strategy/dockerStrategy\",\"value\":{\"from\":{\"kind\":\"ImageStreamTag\",\"name\":\"pulse-agent-deps:latest\"},\"buildArgs\":[{\"name\":\"BASE_IMAGE\",\"value\":\"$BASE_IMAGE\"}]}}]" \
-  2>/dev/null || true
 
-# Code-only build
+if [[ "$DEPS_EXISTS" == "true" ]]; then
+  # Use deps as base
+  oc patch bc pulse-agent -n "$NAMESPACE" --type=json \
+    -p="[{\"op\":\"replace\",\"path\":\"/spec/strategy/dockerStrategy\",\"value\":{\"from\":{\"kind\":\"ImageStreamTag\",\"name\":\"pulse-agent-deps:latest\"},\"buildArgs\":[{\"name\":\"BASE_IMAGE\",\"value\":\"$BASE_IMAGE\"}]}}]" \
+    2>/dev/null || true
+else
+  # Use Dockerfile.full for first deploy
+  oc patch bc pulse-agent -n "$NAMESPACE" --type=json \
+    -p='[{"op":"replace","path":"/spec/strategy/dockerStrategy","value":{"dockerfilePath":"Dockerfile.full"}}]' \
+    2>/dev/null || true
+fi
+
+# Build code image with timeout
 info "Building code image..."
 if ! oc start-build pulse-agent --from-dir=. --follow -n "$NAMESPACE"; then
-  if ! oc get istag pulse-agent-deps:latest -n "$NAMESPACE" &>/dev/null; then
-    warn "Deps image missing — falling back to full single-stage build..."
+  if [[ "$DEPS_EXISTS" == "true" ]]; then
+    # Deps image exists but build failed — try full build as fallback
+    warn "Code build failed — falling back to full single-stage build..."
     oc patch bc pulse-agent -n "$NAMESPACE" --type=json \
       -p='[{"op":"replace","path":"/spec/strategy/dockerStrategy","value":{"dockerfilePath":"Dockerfile.full"}}]'
     oc start-build pulse-agent --from-dir=. --follow -n "$NAMESPACE"
@@ -309,89 +378,16 @@ if ! oc start-build pulse-agent --from-dir=. --follow -n "$NAMESPACE"; then
     oc patch bc pulse-agent -n "$NAMESPACE" --type=json \
       -p="[{\"op\":\"replace\",\"path\":\"/spec/strategy/dockerStrategy\",\"value\":{\"from\":{\"kind\":\"ImageStreamTag\",\"name\":\"pulse-agent-deps:latest\"}}}]"
   else
-    error "Code build failed but deps image exists. Check build logs:"
+    error "Full build failed. Check build logs:"
     error "  oc logs bc/pulse-agent -n $NAMESPACE"
     exit 1
   fi
 fi
 info "Agent image built"
 
-# Configure agent deployment
-step "Configuring Agent"
+# Pin image digest
 AGENT_DIGEST=$(oc get istag pulse-agent:latest -n "$NAMESPACE" -o jsonpath='{.image.dockerImageReference}')
 oc set image "deployment/$AGENT_DEPLOY" "sre-agent=$AGENT_DIGEST" -n "$NAMESPACE"
-
-# ─── AI Backend Configuration ────────────────────────────────────────────────
-# Supports two backends:
-#   A) Vertex AI: ANTHROPIC_VERTEX_PROJECT_ID + CLOUD_ML_REGION + GCP credentials
-#   B) Anthropic API: ANTHROPIC_API_KEY
-# If neither is configured, the agent starts but can't reach Claude.
-
-AI_BACKEND="none"
-
-if [[ -n "${ANTHROPIC_API_KEY:-}" ]]; then
-  # ── Option B: Direct Anthropic API key ──
-  AI_BACKEND="anthropic"
-  info "AI backend: Anthropic API (direct)"
-  oc set env "deployment/$AGENT_DEPLOY" \
-    PULSE_AGENT_WS_TOKEN="$WS_TOKEN" \
-    ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY}" \
-    -n "$NAMESPACE"
-
-elif [[ -n "${ANTHROPIC_VERTEX_PROJECT_ID:-}" ]]; then
-  # ── Option A: Vertex AI ──
-  AI_BACKEND="vertex"
-  info "AI backend: Vertex AI (project: ${ANTHROPIC_VERTEX_PROJECT_ID})"
-
-  # Resolve GCP key file: --gcp-key flag > gcloud default > error
-  if [[ -z "$GCP_KEY_FILE" ]]; then
-    GCP_KEY_FILE="$HOME/.config/gcloud/application_default_credentials.json"
-  fi
-
-  if [[ ! -f "$GCP_KEY_FILE" ]]; then
-    error "Vertex AI requires GCP credentials but none found."
-    error ""
-    error "  Option 1: Provide a service account key:"
-    error "    $0 --agent-repo $AGENT_REPO --gcp-key /path/to/sa-key.json"
-    error ""
-    error "  Option 2: Use gcloud Application Default Credentials:"
-    error "    gcloud auth application-default login"
-    error ""
-    error "  Option 3: Use Anthropic API key instead (no GCP needed):"
-    error "    ANTHROPIC_API_KEY=sk-ant-... $0 --agent-repo $AGENT_REPO"
-    exit 1
-  fi
-
-  info "GCP credentials: $GCP_KEY_FILE"
-
-  # Create or update the GCP credentials secret
-  oc delete secret gcp-sa-key -n "$NAMESPACE" 2>/dev/null || true
-  oc create secret generic gcp-sa-key \
-    --from-file=key.json="$GCP_KEY_FILE" \
-    -n "$NAMESPACE"
-
-  # Mount credentials and set env vars
-  oc set volume "deployment/$AGENT_DEPLOY" --add --name=gcp-sa-key \
-    --secret-name=gcp-sa-key --mount-path=/var/secrets/google --read-only \
-    --overwrite -n "$NAMESPACE" 2>/dev/null || true
-  oc set env "deployment/$AGENT_DEPLOY" \
-    PULSE_AGENT_WS_TOKEN="$WS_TOKEN" \
-    ANTHROPIC_VERTEX_PROJECT_ID="${ANTHROPIC_VERTEX_PROJECT_ID}" \
-    CLOUD_ML_REGION="${CLOUD_ML_REGION:-us-east5}" \
-    GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/google/key.json \
-    -n "$NAMESPACE"
-
-else
-  # ── No AI backend configured ──
-  warn "No AI backend configured. The agent will start but cannot reach Claude."
-  warn ""
-  warn "  To fix, re-run with one of:"
-  warn "    ANTHROPIC_API_KEY=sk-ant-... $0 --agent-repo $AGENT_REPO"
-  warn "    ANTHROPIC_VERTEX_PROJECT_ID=proj CLOUD_ML_REGION=us-east5 $0 --agent-repo $AGENT_REPO --gcp-key ~/sa-key.json"
-  oc set env "deployment/$AGENT_DEPLOY" \
-    PULSE_AGENT_WS_TOKEN="$WS_TOKEN" \
-    -n "$NAMESPACE"
-fi
 
 fi # end NO_AGENT check
 
@@ -401,24 +397,54 @@ step "Restarting deployments"
 oc rollout restart "deployment/openshiftpulse" -n "$NAMESPACE"
 wait_for_rollout "openshiftpulse" "$NAMESPACE" 120
 
-HEALTHY="n/a"
-AI_BACKEND="${AI_BACKEND:-none}"
 if [[ "$NO_AGENT" == "false" ]]; then
   oc rollout restart "deployment/$AGENT_DEPLOY" -n "$NAMESPACE"
   wait_for_rollout "$AGENT_DEPLOY" "$NAMESPACE" 120
+fi
 
-  # Health check with retry
-  info "Verifying agent health..."
+# ─── Phase 3: Health Verification ────────────────────────────────────────────
+
+HEALTHY="n/a"
+AI_BACKEND="${AI_BACKEND:-none}"
+
+if [[ "$NO_AGENT" == "false" ]]; then
+  step "Health verification"
+
+  # Wait for agent health
   HEALTHY=false
-  for i in 1 2 3 4 5; do
-    sleep 5
+  for i in $(seq 1 12); do
+    sleep 10
     HEALTH=$(oc exec "deployment/$AGENT_DEPLOY" -n "$NAMESPACE" -- curl -sf http://localhost:8080/healthz 2>/dev/null || echo "")
     if [[ "$HEALTH" == *"ok"* ]]; then
       HEALTHY=true
+      info "Agent healthy!"
+      VERSION=$(oc exec "deployment/$AGENT_DEPLOY" -n "$NAMESPACE" -- curl -sf http://localhost:8080/version 2>/dev/null || echo "")
+      if [[ -n "$VERSION" ]]; then
+        info "Agent: $VERSION"
+      fi
       break
     fi
+    [[ $i -eq 12 ]] && warn "Agent health check failed after 120s"
   done
+
+  # Verify WS connectivity
+  WS_TOKEN_AGENT=$(oc exec "deployment/$AGENT_DEPLOY" -n "$NAMESPACE" -- env 2>/dev/null | grep PULSE_AGENT_WS_TOKEN | cut -d= -f2 || echo "")
+  WS_TOKEN_NGINX=$(oc get configmap openshiftpulse-nginx -n "$NAMESPACE" -o jsonpath='{.data.nginx\.conf}' 2>/dev/null | grep -o 'token=[a-f0-9]*' | head -1 | cut -d= -f2 || echo "")
+  if [[ -n "$WS_TOKEN_AGENT" && -n "$WS_TOKEN_NGINX" ]]; then
+    if [[ "$WS_TOKEN_AGENT" == "$WS_TOKEN_NGINX" ]]; then
+      info "WS token: synced"
+    else
+      warn "WS token mismatch! Agent=$WS_TOKEN_AGENT Nginx=$WS_TOKEN_NGINX"
+    fi
+  fi
 fi
+
+# ─── Phase 4: Cleanup ────────────────────────────────────────────────────────
+
+# Clean up completed/failed build pods
+oc delete pod -n "$NAMESPACE" -l openshift.io/build.name --field-selector=status.phase!=Running 2>/dev/null || true
+
+# ─── Summary ─────────────────────────────────────────────────────────────────
 
 echo ""
 echo "════════════════════════════════════════════"
