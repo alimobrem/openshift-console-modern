@@ -161,27 +161,27 @@ export const MessageBubble = memo(function MessageBubble({ message, mode }: { me
                   onClick={() => { sendFeedback(true); setFeedbackGiven('up'); }}
                   disabled={feedbackGiven !== null}
                   className={cn(
-                    'p-0.5 transition-opacity',
-                    feedbackGiven === 'up' ? 'text-green-400 opacity-100' : 'text-slate-500 hover:text-green-400 opacity-0 group-hover:opacity-100',
+                    'p-1 rounded transition-colors',
+                    feedbackGiven === 'up' ? 'text-green-400 bg-green-950/40' : 'text-slate-500 hover:text-green-400 hover:bg-green-950/30',
                     feedbackGiven === 'down' && 'hidden',
                   )}
                   aria-label="This helped"
                   title="This helped — agent will learn from this"
                 >
-                  <ThumbsUp className="h-3 w-3" />
+                  <ThumbsUp className="h-3.5 w-3.5" />
                 </button>
                 <button
                   onClick={() => { sendFeedback(false); setFeedbackGiven('down'); }}
                   disabled={feedbackGiven !== null}
                   className={cn(
-                    'p-0.5 transition-opacity',
-                    feedbackGiven === 'down' ? 'text-red-400 opacity-100' : 'text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100',
+                    'p-1 rounded transition-colors',
+                    feedbackGiven === 'down' ? 'text-red-400 bg-red-950/40' : 'text-slate-500 hover:text-red-400 hover:bg-red-950/30',
                     feedbackGiven === 'up' && 'hidden',
                   )}
                   aria-label="This didn't help"
                   title="This didn't help — agent will adjust"
                 >
-                  <ThumbsDown className="h-3 w-3" />
+                  <ThumbsDown className="h-3.5 w-3.5" />
                 </button>
               </>
             )}
