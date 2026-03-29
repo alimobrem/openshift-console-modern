@@ -30,6 +30,9 @@ export const TRUST_DESCRIPTIONS: Record<TrustLevel, string> = {
   4: 'Agent auto-fixes known issues from runbooks. All actions are logged and reversible.',
 };
 
+export type CommunicationStyle = 'brief' | 'detailed' | 'technical';
+export type MinSeverity = 'critical' | 'warning' | 'info';
+
 export interface ConfirmationRecord {
   id: string;
   tool: string;
@@ -46,9 +49,15 @@ interface TrustState {
   history: ConfirmationRecord[];
   autoFixCategories: string[];
 
+  // Preferences
+  communicationStyle: CommunicationStyle;
+  minSeverity: MinSeverity;
+
   recordConfirmation: (record: Omit<ConfirmationRecord, 'id'>) => void;
   setTrustLevel: (level: TrustLevel) => void;
   setAutoFixCategories: (categories: string[]) => void;
+  setCommunicationStyle: (style: CommunicationStyle) => void;
+  setMinSeverity: (severity: MinSeverity) => void;
   shouldAutoApprove: (tool: string, riskLevel: string) => boolean;
   getUpgradeEligibility: () => {
     eligible: boolean;
@@ -75,6 +84,8 @@ export const useTrustStore = create<TrustState>()(
       trustLevel: 1 as TrustLevel,
       history: [],
       autoFixCategories: [],
+      communicationStyle: 'detailed' as CommunicationStyle,
+      minSeverity: 'warning' as MinSeverity,
 
       recordConfirmation: (record) => {
         const entry: ConfirmationRecord = {
@@ -93,6 +104,9 @@ export const useTrustStore = create<TrustState>()(
       setAutoFixCategories: (categories) => {
         set({ autoFixCategories: categories });
       },
+
+      setCommunicationStyle: (style) => set({ communicationStyle: style }),
+      setMinSeverity: (severity) => set({ minSeverity: severity }),
 
       shouldAutoApprove: (_tool: string, riskLevel: string) => {
         const { trustLevel } = get();
@@ -129,6 +143,8 @@ export const useTrustStore = create<TrustState>()(
         trustLevel: state.trustLevel,
         history: state.history.slice(-MAX_HISTORY),
         autoFixCategories: state.autoFixCategories,
+        communicationStyle: state.communicationStyle,
+        minSeverity: state.minSeverity,
       }),
       onRehydrateStorage: () => (state) => {
         if (!state) return;

@@ -176,7 +176,7 @@ export class AgentClient {
   }
 
   /** Send a chat message to the agent. */
-  send(content: string, context?: ResourceContext, fleetMode?: boolean) {
+  send(content: string, context?: ResourceContext, fleetMode?: boolean, preferences?: { communicationStyle?: string }) {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
       this.emit({ type: 'error', message: 'Not connected to agent' });
       return;
@@ -184,6 +184,7 @@ export class AgentClient {
     const payload: Record<string, unknown> = { type: 'message', content };
     if (context) payload.context = context;
     if (fleetMode) payload.fleet = true;
+    if (preferences) payload.preferences = preferences;
     this.ws.send(JSON.stringify(payload));
   }
 

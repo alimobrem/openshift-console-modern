@@ -10,6 +10,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchBriefing, fetchMemoryStats, type BriefingResponse, type MemoryStats } from '../engine/fixHistory';
+import { PreferencesPanel } from '../components/agent/PreferencesPanel';
 import { useUIStore } from '../store/uiStore';
 import { MetricGrid } from '../components/primitives/MetricGrid';
 import { useNavigateTab } from '../hooks/useNavigateTab';
@@ -59,6 +60,7 @@ export default function WelcomeView() {
     enabled: launchpad,
   });
   const topIssuesCount = firingAlerts.length;
+  const [showPrefs, setShowPrefs] = useState(false);
 
   const { data: memoryStats } = useQuery<MemoryStats>({
     queryKey: ['memory-stats'],
@@ -194,6 +196,25 @@ export default function WelcomeView() {
             )}
           </div>
         )}
+
+        {/* ── Preferences ── */}
+        <div className="rounded-xl border border-slate-800 bg-slate-900 overflow-hidden">
+          <button
+            onClick={() => setShowPrefs(!showPrefs)}
+            className="w-full flex items-center justify-between px-6 py-3 text-left hover:bg-slate-800/50 transition-colors"
+          >
+            <div className="flex items-center gap-3">
+              <Settings className="w-5 h-5 text-slate-400" />
+              <span className="text-sm font-semibold text-slate-200">Agent Preferences</span>
+            </div>
+            <ChevronDown className={cn('w-4 h-4 text-slate-500 transition-transform', showPrefs && 'rotate-180')} />
+          </button>
+          {showPrefs && (
+            <div className="px-6 pb-5 pt-2 border-t border-slate-800">
+              <PreferencesPanel />
+            </div>
+          )}
+        </div>
 
         {/* ── Launchpad: Cluster State Summary ── */}
         {launchpad && (

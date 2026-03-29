@@ -6,6 +6,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { useTrustStore } from './trustStore';
 import {
   AgentClient,
   type AgentMode,
@@ -275,7 +276,8 @@ export const useAgentStore = create<AgentState>()(
           error: null,
         }));
 
-        client.send(content, context, fleetMode);
+        const { communicationStyle } = useTrustStore.getState();
+        client.send(content, context, fleetMode, { communicationStyle });
       },
 
       switchMode: (mode) => {
