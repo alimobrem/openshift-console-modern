@@ -2,7 +2,7 @@ import { useState, useRef, useEffect, lazy, Suspense } from 'react';
 import { X, Maximize2, Minimize2 } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
-import { AIIconStatic, AIBadge, aiActiveClass } from './agent/AIBranding';
+import { AIIconStatic, aiActiveClass } from './agent/AIBranding';
 import { DegradedBanner } from './primitives/DegradedBanner';
 import { cn } from '@/lib/utils';
 
@@ -114,8 +114,7 @@ export function Dock() {
             )}
           >
             <AIIconStatic size={13} className={dockPanel === 'agent' ? '' : 'text-slate-400'} />
-            Agent
-            <AIBadge className="ml-0.5" />
+            AI
             {hasUnreadInsight && (
               <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-amber-400" />
             )}
