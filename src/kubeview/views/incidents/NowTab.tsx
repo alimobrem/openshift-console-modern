@@ -66,6 +66,7 @@ const SEVERITY_COLORS: Record<IncidentSeverity, string> = {
 
 export function NowTab() {
   const dismissFinding = useMonitorStore((s) => s.dismissFinding);
+  const resolutions = useMonitorStore((s) => s.resolutions);
   const queryClient = useQueryClient();
   const { incidents, counts, isLoading } = useIncidentFeed();
   const [silencesExpanded, setSilencesExpanded] = useState(false);
@@ -235,6 +236,35 @@ export function NowTab() {
         variant="danger"
         onConfirm={() => confirmExpireId && handleExpire(confirmExpireId)}
       />
+
+      {/* Recent Resolutions */}
+      {resolutions.length > 0 && (
+        <Card>
+          <div className="px-4 py-3 border-b border-slate-800">
+            <h2 className="text-sm font-semibold text-emerald-400 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4" />
+              Recently Resolved ({resolutions.length})
+            </h2>
+          </div>
+          <div className="divide-y divide-slate-800">
+            {resolutions.slice(-5).reverse().map((r, i) => (
+              <div key={i} className="px-4 py-2 flex items-center gap-3">
+                <CheckCircle className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <span className="text-xs text-slate-200">{r.title}</span>
+                  <span className={cn(
+                    'ml-2 text-xs px-1.5 py-0.5 rounded',
+                    r.resolvedBy === 'auto-fix' ? 'bg-emerald-900/50 text-emerald-300' : 'bg-blue-900/50 text-blue-300',
+                  )}>
+                    {r.resolvedBy === 'auto-fix' ? 'Auto-fixed' : 'Self-healed'}
+                  </span>
+                </div>
+                <span className="text-xs text-slate-600 shrink-0">{formatRelativeTime(r.timestamp)}</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
     </div>
   );
 }

@@ -4,6 +4,7 @@ import { Shell } from './components/Shell';
 import PulseView from './views/PulseView';
 import WelcomeView from './views/WelcomeView';
 import CustomView from './views/CustomView';
+import MemoryView from './views/MemoryView';
 import { resourceRoutes, domainRoutes, redirectRoutes } from './routes';
 import './styles/index.css';
 
@@ -31,8 +32,9 @@ export default function OpenshiftPulseApp() {
             {/* Resource routes (list, detail, yaml, logs, metrics, create, deps, investigate) */}
             {resourceRoutes()}
 
-            {/* Custom views (AI-generated dashboards) */}
+            {/* Custom views and memory */}
             <Route path="custom/:viewId" element={<CustomView />} />
+            <Route path="memory" element={<MemoryView />} />
 
             {/* Domain views (workloads, networking, compute, storage, etc.) */}
             {domainRoutes()}

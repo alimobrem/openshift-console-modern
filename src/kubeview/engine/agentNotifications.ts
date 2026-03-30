@@ -85,7 +85,7 @@ function subscribeToMonitorToasts() {
     for (const finding of findings) {
       if (!prevIds.has(finding.id) && !toastedIds.has(finding.id)) {
         toastedIds.add(finding.id);
-        if (finding.severity === 'critical' || finding.severity === 'warning') {
+        if (finding.severity === 'critical') {
           showFindingToast(finding);
         }
       }

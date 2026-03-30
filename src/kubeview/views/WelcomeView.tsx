@@ -172,10 +172,14 @@ export default function WelcomeView() {
 
         {/* ── Memory: What I've Learned ── */}
         {memoryStats && memoryStats.enabled && (memoryStats.incidents > 0 || memoryStats.runbooks > 0) && (
-          <div className="rounded-xl border border-slate-800 bg-slate-900 px-6 py-4">
+          <button
+            onClick={() => go('/memory', 'What I\'ve Learned')}
+            className="w-full rounded-xl border border-slate-800 bg-slate-900 px-6 py-4 text-left hover:bg-slate-800/50 transition-colors group"
+          >
             <div className="flex items-center gap-3 mb-2">
               <History className="w-5 h-5 text-violet-400" />
               <h2 className="text-lg font-semibold text-slate-100">What I've Learned</h2>
+              <ArrowRight className="w-4 h-4 text-slate-600 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
             </div>
             <div className="flex gap-6 text-sm">
               <div className="text-center">
@@ -196,7 +200,7 @@ export default function WelcomeView() {
                 The agent uses these to diagnose similar issues faster. Give thumbs up on helpful responses to teach it more.
               </p>
             )}
-          </div>
+          </button>
         )}
 
         {/* ── Preferences ── */}
@@ -335,6 +339,7 @@ export default function WelcomeView() {
             <ViewTile icon={<Rocket className="w-4 h-4 text-violet-400" />}   title="Onboarding"   onClick={() => go('/onboarding', 'Onboarding')} />
             <ViewTile icon={<Hammer className="w-4 h-4 text-amber-500" />}    title="Builds"       onClick={() => go('/builds', 'Builds')} path="/builds" />
             <ViewTile icon={<Puzzle className="w-4 h-4 text-violet-400" />}   title="CRDs"         onClick={() => go('/crds', 'CRDs')} />
+            <ViewTile icon={<History className="w-4 h-4 text-violet-400" />}  title="Memory"       onClick={() => go('/memory', "What I've Learned")} />
           </div>
         </section>
 

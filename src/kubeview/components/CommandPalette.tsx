@@ -356,6 +356,7 @@ function getCommandItems(
       { type: 'nav', id: 'fleet', title: 'Fleet', subtitle: 'Multi-cluster dashboard, health scores, cluster switching, comparison', icon: 'Globe', path: '/fleet' },
       { type: 'nav', id: 'admin', title: 'Administration', subtitle: 'Operators, config, updates, snapshots, quotas, certificates', icon: 'Settings', path: '/admin' },
       { type: 'nav', id: 'onboarding', title: 'Production Readiness', subtitle: 'Readiness wizard — security, reliability, observability gates', icon: 'Shield', path: '/onboarding' },
+      { type: 'nav', id: 'memory', title: "What I've Learned", subtitle: 'Learned runbooks, detected patterns, incident history', icon: 'Brain', path: '/memory' },
     ];
 
     const matchingPages = builtinViews.filter((page) =>
