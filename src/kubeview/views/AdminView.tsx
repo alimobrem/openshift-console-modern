@@ -564,6 +564,7 @@ const FLAG_LABELS: Record<FeatureFlag, { label: string; description: string }> =
   identityView: { label: 'Identity & Access', description: 'Unified identity management at /identity' },
   welcomeLaunchpad: { label: 'Welcome Launchpad', description: 'Enhanced welcome page with cluster state, onboarding CTA, and top issues' },
   onboarding: { label: 'Onboarding Wizard', description: 'Guided cluster onboarding at /onboarding' },
+  enhancedPulse: { label: 'Enhanced Pulse', description: 'AI morning briefing and insights on Pulse page' },
 };
 
 function FeatureFlagsSection() {
