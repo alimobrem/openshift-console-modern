@@ -286,6 +286,33 @@ export default function WorkloadsView() {
             unit=" /hr"
             color={CHART_COLORS.cyan}
           />
+          <MetricCard
+            title="OOMKilled"
+            query={nsFilter
+              ? `count(kube_pod_container_status_last_terminated_reason{namespace="${safeNs}",reason="OOMKilled"}) or vector(0)`
+              : 'count(kube_pod_container_status_last_terminated_reason{reason="OOMKilled"}) or vector(0)'}
+            unit=""
+            color={CHART_COLORS.red}
+            thresholds={{ warning: 1, critical: 5 }}
+          />
+          <MetricCard
+            title="CrashLoopBackOff"
+            query={nsFilter
+              ? `count(kube_pod_container_status_waiting_reason{namespace="${safeNs}",reason="CrashLoopBackOff"}) or vector(0)`
+              : 'count(kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff"}) or vector(0)'}
+            unit=""
+            color={CHART_COLORS.red}
+            thresholds={{ warning: 1, critical: 3 }}
+          />
+          <MetricCard
+            title="Pending Pods"
+            query={nsFilter
+              ? `count(kube_pod_status_phase{namespace="${safeNs}",phase="Pending"}) or vector(0)`
+              : 'count(kube_pod_status_phase{phase="Pending"}) or vector(0)'}
+            unit=""
+            color={CHART_COLORS.amber}
+            thresholds={{ warning: 3, critical: 10 }}
+          />
         </MetricGrid>
 
         {/* Workload Health Audit */}

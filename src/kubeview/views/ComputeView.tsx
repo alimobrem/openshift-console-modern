@@ -251,6 +251,20 @@ export default function ComputeView() {
             color={CHART_COLORS.cyan}
             thresholds={{ warning: 80, critical: 95 }}
           />
+          <MetricCard
+            title="CPU Throttling"
+            query="sum(rate(container_cpu_cfs_throttled_periods_total[5m])) / sum(rate(container_cpu_cfs_periods_total[5m])) * 100"
+            unit="%"
+            color={CHART_COLORS.red}
+            thresholds={{ warning: 25, critical: 50 }}
+          />
+          <MetricCard
+            title="Nodes Not Ready"
+            query='count(kube_node_status_condition{condition="Ready",status="false"}) or vector(0)'
+            unit=""
+            color={CHART_COLORS.red}
+            thresholds={{ warning: 1, critical: 2 }}
+          />
         </MetricGrid>
 
         {/* Cluster overview cards */}

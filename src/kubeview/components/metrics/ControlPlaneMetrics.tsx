@@ -37,6 +37,19 @@ export function ControlPlaneMetrics() {
         color={CHART_COLORS.amber}
         thresholds={{ warning: 0.01, critical: 0.1 }}
       />
+      <MetricCard
+        title="API Request Rate"
+        query='sum(rate(apiserver_request_total[5m]))'
+        unit="/s"
+        color={CHART_COLORS.cyan}
+      />
+      <MetricCard
+        title="etcd DB Size"
+        query="max(etcd_mvcc_db_total_size_in_bytes) / 1024 / 1024"
+        unit=" MB"
+        color={CHART_COLORS.violet}
+        thresholds={{ warning: 4096, critical: 6144 }}
+      />
     </div>
   );
 }
