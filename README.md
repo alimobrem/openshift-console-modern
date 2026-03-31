@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.16.2"><img src="https://img.shields.io/badge/release-v5.16.2-2563eb?style=for-the-badge" alt="Version"></a>
+  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.17.0"><img src="https://img.shields.io/badge/release-v5.17.0-2563eb?style=for-the-badge" alt="Version"></a>
   <img src="https://img.shields.io/badge/tests-1882%20passed-10b981?style=for-the-badge" alt="Tests">
   <img src="https://img.shields.io/badge/health%20checks-77-f59e0b?style=for-the-badge" alt="Health Checks">
   <img src="https://img.shields.io/badge/CVEs-0-10b981?style=for-the-badge" alt="CVEs">
@@ -194,57 +194,38 @@ ANTHROPIC_API_KEY=sk-ant-... ./deploy/deploy.sh --agent-repo ../pulse-agent
 ./deploy/integration-test.sh
 ```
 
-**How it works**: Builds images locally with Podman, pushes to Quay.io (`quay.io/amobrem/openshiftpulse` + `quay.io/amobrem/pulse-agent`), deploys via Helm. Never uses S2I or on-cluster builds. Auto-detects cluster domain, OAuth proxy image, monitoring stack.
+**How it works**: Uses an **umbrella Helm chart** (`deploy/helm/pulse/`) that deploys both UI and agent as subcharts in a single `helm upgrade --install`. Builds images locally with Podman, pushes to Quay.io, deploys atomically. Never uses S2I or on-cluster builds.
 
-**Deploy order**: Agent deploys first (its Helm chart auto-generates a WS token secret), then the script reads that token and passes it to the UI Helm install. This guarantees both components always share the same WebSocket auth token — no manual coordination needed. Post-deploy verification auto-fixes any token drift.
+**WS token**: The umbrella chart owns a shared WS token secret. Both the agent (via `secretKeyRef`) and the UI nginx proxy (via Helm `lookup()`) reference the same secret. No manual token management, no post-deploy sync verification.
+
+**Other features**: `--dry-run` to preview, `--uninstall` to clean up, `--skip-build` to redeploy with existing images. Images tagged with git SHA for rollback safety.
 
 **Prerequisites**: `oc` (logged in), `helm`, `npm`, `podman` (logged in to `quay.io`).
 
-### Helm (UI only)
+### Helm Charts
 
-```bash
-npm run build
-podman build --platform linux/amd64 -t quay.io/amobrem/openshiftpulse:latest .
-podman push quay.io/amobrem/openshiftpulse:latest
-helm install openshiftpulse deploy/helm/openshiftpulse/ -n openshiftpulse --create-namespace
-```
-
-Auto-generates OAuth secrets. See [`values.yaml`](deploy/helm/openshiftpulse/values.yaml) for customization.
+| Chart | Path | Description |
+|-------|------|-------------|
+| **pulse** (umbrella) | `deploy/helm/pulse/` | Single install for UI + Agent |
+| openshiftpulse | `deploy/helm/openshiftpulse/` | UI only (standalone) |
+| openshift-sre-agent | `pulse-agent/chart/` | Agent only (standalone) |
 
 ### Quick Redeploy
 
 ```bash
-# UI only
-npm run build && podman build --platform linux/amd64 -t quay.io/amobrem/openshiftpulse:latest . && podman push quay.io/amobrem/openshiftpulse:latest && oc rollout restart deployment/openshiftpulse -n openshiftpulse
+# UI only (skip agent rebuild)
+npm run build && podman build --platform linux/amd64 -t quay.io/amobrem/openshiftpulse:latest . \
+  && podman push quay.io/amobrem/openshiftpulse:latest \
+  && oc rollout restart deployment/openshiftpulse -n openshiftpulse
 
-# Agent only (from pulse-agent repo)
-podman build --platform linux/amd64 -t quay.io/amobrem/pulse-agent:latest -f Dockerfile.full . && podman push quay.io/amobrem/pulse-agent:latest && oc rollout restart deployment/pulse-agent-openshift-sre-agent -n openshiftpulse
+# Config-only change (no rebuild)
+./deploy/deploy.sh --skip-build --agent-repo ../pulse-agent
 ```
-
-### CI/CD
-
-| Workflow | Trigger | What it does |
-|----------|---------|-------------|
-| `ci.yml` | PR, push to main | Type check + lint + test + build + npm audit |
-| `build-push.yml` | `v*` tag push, manual | Builds image, pushes to `quay.io/amobrem/openshiftpulse` |
-
-**To release:**
-```bash
-git tag v5.14.0 && git push origin v5.14.0
-# GitHub Actions builds and pushes to Quay.io
-```
-
-**Required GitHub Secrets:** `QUAY_USERNAME`, `QUAY_PASSWORD` (robot account `amobrem+cibot`)
 
 ### Uninstall
 
 ```bash
-# Helm
-helm uninstall openshiftpulse -n openshiftpulse
-oc delete namespace openshiftpulse
-oc delete clusterrole openshiftpulse-reader
-oc delete clusterrolebinding openshiftpulse-reader
-oc delete oauthclient openshiftpulse
+./deploy/deploy.sh --uninstall
 ```
 
 ### Security
