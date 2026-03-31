@@ -349,7 +349,7 @@ if [[ "$NO_AGENT" == "false" ]]; then
   [[ -n "${ANTHROPIC_API_KEY:-}" ]] && ensure_secret anthropic-api-key "$NAMESPACE" --from-literal=api-key="${ANTHROPIC_API_KEY}"
 fi
 
-# Resolve WS token: read existing or generate new (fallback for fresh installs)
+# Resolve WS token: read existing or generate new
 WS_TOKEN=""
 if [[ -n "$_WS_TOKEN_OVERRIDE" ]]; then
   WS_TOKEN="$_WS_TOKEN_OVERRIDE"
@@ -359,6 +359,23 @@ elif EXISTING=$(oc get secret "$WS_SECRET" -n "$NAMESPACE" -o jsonpath='{.data.t
 else
   WS_TOKEN=$(openssl rand -hex 16)
   info "WS token: generated (fresh install)"
+fi
+
+# Pre-create the WS token secret so Helm lookup() finds it during template rendering.
+# Without this, fresh installs get a token mismatch: nginx uses the literal fallback
+# while the agent reads a different auto-generated token from ws-token.yaml.
+if [[ "$NO_AGENT" == "false" ]]; then
+  if ! oc get secret "$WS_SECRET" -n "$NAMESPACE" &>/dev/null; then
+    oc create secret generic "$WS_SECRET" \
+      --from-literal=token="$WS_TOKEN" \
+      -n "$NAMESPACE"
+    oc label secret "$WS_SECRET" -n "$NAMESPACE" \
+      app.kubernetes.io/part-of=pulse \
+      app.kubernetes.io/managed-by=Helm
+    oc annotate secret "$WS_SECRET" -n "$NAMESPACE" \
+      "helm.sh/resource-policy=keep"
+    info "WS token secret: pre-created for Helm"
+  fi
 fi
 
 # Label namespace for Helm ownership
