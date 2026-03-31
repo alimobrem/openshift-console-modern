@@ -226,7 +226,9 @@ export default function ComputeView() {
         <MetricGrid>
           <MetricCard
             title="Cluster CPU"
-            query="sum(rate(node_cpu_seconds_total{mode!='idle'}[5m])) / sum(machine_cpu_cores) * 100"
+            query={isHyperShift
+              ? "sum(rate(node_cpu_seconds_total{mode!='idle'}[5m])) / count(count by (cpu) (node_cpu_seconds_total)) * 100"
+              : "sum(rate(node_cpu_seconds_total{mode!='idle'}[5m])) / sum(machine_cpu_cores) * 100"}
             unit="%"
             color={CHART_COLORS.blue}
             thresholds={{ warning: 70, critical: 90 }}

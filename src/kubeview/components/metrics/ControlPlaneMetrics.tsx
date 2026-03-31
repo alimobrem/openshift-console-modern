@@ -1,13 +1,11 @@
-/**
- * Control Plane Metrics — API server latency and etcd health sparklines.
- * Used in the Admin Overview to surface real-time control plane performance.
- */
-
 import React from 'react';
 import { MetricCard } from './Sparkline';
 import { CHART_COLORS } from '../../engine/colors';
+import { useClusterStore } from '../../store/clusterStore';
 
 export function ControlPlaneMetrics() {
+  const isHyperShift = useClusterStore((s) => s.isHyperShift);
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <MetricCard
@@ -25,31 +23,43 @@ export function ControlPlaneMetrics() {
         thresholds={{ warning: 1, critical: 5 }}
       />
       <MetricCard
-        title="etcd Leader"
-        query="max(etcd_server_has_leader)"
-        unit=""
-        color={CHART_COLORS.emerald}
-      />
-      <MetricCard
-        title="etcd WAL Fsync"
-        query="histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (le))"
-        unit="s"
-        color={CHART_COLORS.amber}
-        thresholds={{ warning: 0.01, critical: 0.1 }}
-      />
-      <MetricCard
         title="API Request Rate"
         query='sum(rate(apiserver_request_total[5m]))'
         unit="/s"
         color={CHART_COLORS.cyan}
       />
-      <MetricCard
-        title="etcd DB Size"
-        query="max(etcd_mvcc_db_total_size_in_bytes) / 1024 / 1024"
-        unit=" MB"
-        color={CHART_COLORS.violet}
-        thresholds={{ warning: 4096, critical: 6144 }}
-      />
+      {!isHyperShift && (
+        <>
+          <MetricCard
+            title="etcd Leader"
+            query="max(etcd_server_has_leader)"
+            unit=""
+            color={CHART_COLORS.emerald}
+          />
+          <MetricCard
+            title="etcd WAL Fsync"
+            query="histogram_quantile(0.99, sum(rate(etcd_disk_wal_fsync_duration_seconds_bucket[5m])) by (le))"
+            unit="s"
+            color={CHART_COLORS.amber}
+            thresholds={{ warning: 0.01, critical: 0.1 }}
+          />
+          <MetricCard
+            title="etcd DB Size"
+            query="max(etcd_mvcc_db_total_size_in_bytes) / 1024 / 1024"
+            unit=" MB"
+            color={CHART_COLORS.violet}
+            thresholds={{ warning: 4096, critical: 6144 }}
+          />
+        </>
+      )}
+      {isHyperShift && (
+        <MetricCard
+          title="Hosted CP Requests"
+          query='sum(rate(apiserver_request_total{verb!~"WATCH|CONNECT"}[5m]))'
+          unit="/s"
+          color={CHART_COLORS.emerald}
+        />
+      )}
     </div>
   );
 }
