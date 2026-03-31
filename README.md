@@ -196,7 +196,7 @@ ANTHROPIC_API_KEY=sk-ant-... ./deploy/deploy.sh --agent-repo ../pulse-agent
 
 **How it works**: Builds images locally with Podman, pushes to Quay.io (`quay.io/amobrem/openshiftpulse` + `quay.io/amobrem/pulse-agent`), deploys via Helm. Never uses S2I or on-cluster builds. Auto-detects cluster domain, OAuth proxy image, monitoring stack.
 
-**WS token auto-sync**: Generates a single WS token and passes it to both Helm installs. On re-deploys, reads the existing token from the agent's Kubernetes Secret. Verifies sync post-deploy and auto-fixes mismatches.
+**Deploy order**: Agent deploys first (its Helm chart auto-generates a WS token secret), then the script reads that token and passes it to the UI Helm install. This guarantees both components always share the same WebSocket auth token — no manual coordination needed. Post-deploy verification auto-fixes any token drift.
 
 **Prerequisites**: `oc` (logged in), `helm`, `npm`, `podman` (logged in to `quay.io`).
 
