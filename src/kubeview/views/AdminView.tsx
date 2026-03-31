@@ -564,6 +564,12 @@ const FLAG_LABELS: Record<FeatureFlag, { label: string; description: string }> =
   identityView: { label: 'Identity & Access', description: 'Unified identity management at /identity' },
   welcomeLaunchpad: { label: 'Welcome Launchpad', description: 'Enhanced welcome page with cluster state, onboarding CTA, and top issues' },
   onboarding: { label: 'Onboarding Wizard', description: 'Guided cluster onboarding at /onboarding' },
+  intentEngine: { label: 'Intent Engine', description: 'Natural language intent-driven execution plans at /intents' },
+  reviewQueue: { label: 'Review Queue', description: 'Centralized review queue for pending changes' },
+  enhancedPulse: { label: 'Enhanced Pulse', description: 'Extended Pulse view with additional insights' },
+  askPulse: { label: 'Ask Pulse', description: 'Conversational query interface on the Pulse page' },
+  marketplace: { label: 'Marketplace', description: 'Community marketplace for shared configurations' },
+  simulationSandbox: { label: 'Simulation Sandbox', description: 'Interactive sandbox for testing changes before applying' },
 };
 
 function FeatureFlagsSection() {

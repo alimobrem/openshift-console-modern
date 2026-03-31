@@ -9,7 +9,13 @@ export type FeatureFlag =
   | 'incidentCenter'
   | 'identityView'
   | 'welcomeLaunchpad'
-  | 'onboarding';
+  | 'onboarding'
+  | 'intentEngine'
+  | 'reviewQueue'
+  | 'enhancedPulse'
+  | 'askPulse'
+  | 'marketplace'
+  | 'simulationSandbox';
 
 const STORAGE_KEY = 'openshiftpulse-feature-flags';
 
@@ -18,6 +24,12 @@ const ALL_FLAGS: readonly FeatureFlag[] = [
   'identityView',
   'welcomeLaunchpad',
   'onboarding',
+  'intentEngine',
+  'reviewQueue',
+  'enhancedPulse',
+  'askPulse',
+  'marketplace',
+  'simulationSandbox',
 ] as const;
 
 function loadFlags(): Record<FeatureFlag, boolean> {
@@ -26,6 +38,12 @@ function loadFlags(): Record<FeatureFlag, boolean> {
     identityView: true,
     welcomeLaunchpad: true,
     onboarding: true,
+    intentEngine: true,
+    reviewQueue: true,
+    enhancedPulse: true,
+    askPulse: true,
+    marketplace: true,
+    simulationSandbox: true,
   };
 
   try {

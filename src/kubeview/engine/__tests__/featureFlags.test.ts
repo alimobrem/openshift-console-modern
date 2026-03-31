@@ -58,6 +58,12 @@ describe('featureFlags', () => {
         identityView: true,
         welcomeLaunchpad: true,
         onboarding: true,
+        intentEngine: true,
+        reviewQueue: true,
+        enhancedPulse: true,
+        askPulse: true,
+        marketplace: true,
+        simulationSandbox: true,
       });
     });
 
@@ -70,6 +76,12 @@ describe('featureFlags', () => {
         identityView: true,
         welcomeLaunchpad: true,
         onboarding: true,
+        intentEngine: true,
+        reviewQueue: true,
+        enhancedPulse: true,
+        askPulse: true,
+        marketplace: true,
+        simulationSandbox: true,
       });
     });
 
