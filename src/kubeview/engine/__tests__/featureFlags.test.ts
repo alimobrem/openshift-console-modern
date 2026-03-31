@@ -60,6 +60,7 @@ describe('featureFlags', () => {
         onboarding: true,
         reviewQueue: true,
         enhancedPulse: true,
+        askPulse: true,
       });
     });
 
@@ -74,6 +75,7 @@ describe('featureFlags', () => {
         onboarding: true,
         reviewQueue: true,
         enhancedPulse: true,
+        askPulse: true,
       });
     });
 

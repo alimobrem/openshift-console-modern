@@ -566,6 +566,7 @@ const FLAG_LABELS: Record<FeatureFlag, { label: string; description: string }> =
   onboarding: { label: 'Onboarding Wizard', description: 'Guided cluster onboarding at /onboarding' },
   reviewQueue: { label: 'Review Queue', description: 'AI-proposed infrastructure changes at /reviews' },
   enhancedPulse: { label: 'Enhanced Pulse', description: 'AI morning briefing and insights on Pulse page' },
+  askPulse: { label: 'Ask Pulse', description: 'Natural language queries in Cmd+K search palette' },
 };
 
 function FeatureFlagsSection() {
