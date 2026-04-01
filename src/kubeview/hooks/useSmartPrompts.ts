@@ -1,14 +1,14 @@
 /**
  * useSmartPrompts — reads live cluster state and generates context-aware
- * AI prompt suggestions. Uses data already loaded by useClusterHealthData
- * and useClusterStore — no additional API calls.
+ * AI prompt suggestions. Uses useK8sListWatch (shared TanStack Query cache)
+ * and useClusterStore.
  *
  * Consumed by: CommandPalette (? mode), DockAgentPanel, EmptyState
  */
 
 import { useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
-import { useClusterHealthData } from './useClusterHealthData';
+import { useK8sListWatch } from './useK8sListWatch';
 import { useClusterStore } from '../store/clusterStore';
 import { useUIStore } from '../store/uiStore';
 import { generateSmartPrompts, type SmartPrompt } from '../engine/smartPrompts';
@@ -115,7 +115,10 @@ function countWarningEvents(events: K8sResource[]): number {
 }
 
 export function useSmartPrompts(): SmartPromptItem[] {
-  const { pods, pvcs, deployments, events, nodes, isLoading } = useClusterHealthData();
+  const { data: pods = [], isLoading } = useK8sListWatch({ apiPath: '/api/v1/pods' });
+  const { data: deployments = [] } = useK8sListWatch({ apiPath: '/apis/apps/v1/deployments' });
+  const { data: events = [] } = useK8sListWatch({ apiPath: '/api/v1/events' });
+  const { data: pvcs = [] } = useK8sListWatch({ apiPath: '/api/v1/persistentvolumeclaims' });
   const clusterVersion = useClusterStore((s) => s.clusterVersion);
   const selectedNamespace = useUIStore((s) => s.selectedNamespace);
   const location = useLocation();
@@ -259,5 +262,5 @@ export function useSmartPrompts(): SmartPromptItem[] {
 
     // Sort by priority descending
     return items.sort((a, b) => b.priority - a.priority);
-  }, [pods, pvcs, deployments, events, nodes, isLoading, location.pathname, selectedNamespace]);
+  }, [pods, pvcs, deployments, events, isLoading, location.pathname, selectedNamespace]);
 }

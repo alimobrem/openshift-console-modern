@@ -19,7 +19,7 @@ import { usePrefetchOnHover } from '../hooks/usePrefetchOnHover';
 import { useAskPulse } from '../hooks/useAskPulse';
 import { AskPulsePanel } from './AskPulsePanel';
 import { isFeatureEnabled } from '../engine/featureFlags';
-import { getRecentQueries } from '../engine/mockData/askPulseMocks';
+import { getRecentQueries } from '../engine/askPulseUtils';
 
 /** Capitalize first letter of each word: "deployments" → "Deployments", "poddisruptionbudgets" → "Poddisruptionbudgets" */
 function titleCase(s: string): string {

@@ -128,7 +128,7 @@ export function QuickDeployTab() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(route),
-          }).catch(() => {});
+          }).catch(() => { /* best-effort — route creation is optional */ });
         }
       }
 

@@ -12,6 +12,18 @@ export default defineConfig({
   },
   test: {
     css: false,
-    exclude: ['**/node_modules/**', '**/.claude/worktrees/**'],
+    exclude: ['**/node_modules/**', '**/.claude/worktrees/**', '**/e2e/**'],
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'text-summary'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/__tests__/**', 'src/**/*.test.*', 'src/**/*.d.ts'],
+      thresholds: {
+        statements: 40,
+        branches: 30,
+        functions: 35,
+        lines: 40,
+      },
+    },
   },
 });

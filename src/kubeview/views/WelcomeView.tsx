@@ -339,7 +339,7 @@ function MoreViews({ go, memoryStats, customViews }: {
     { icon: <Settings className="w-4 h-4 text-slate-400" />, title: 'Admin', onClick: () => go('/admin', 'Administration') },
     { icon: <Hammer className="w-4 h-4 text-amber-500" />, title: 'Builds', onClick: () => go('/workloads?tab=builds', 'Workloads') },
     { icon: <Puzzle className="w-4 h-4 text-violet-400" />, title: 'CRDs', onClick: () => go('/admin?tab=crds', 'Administration') },
-    { icon: <Package className="w-4 h-4 text-blue-400" />, title: 'Software', onClick: () => go('/software', 'Software') },
+    { icon: <Package className="w-4 h-4 text-blue-400" />, title: 'Create', onClick: () => go('/create', 'Create Resources') },
     { icon: <History className="w-4 h-4 text-violet-400" />, title: 'Memory', onClick: () => go('/memory', "What I've Learned") },
   ];
 

@@ -27,8 +27,16 @@ import { HealthAuditPanel } from '../components/audit/HealthAuditPanel';
 // ---------------------------------------------------------------------------
 // K8s resource with extra OpenShift-specific fields
 // ---------------------------------------------------------------------------
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type K8sResourceExt = K8sResource & Record<string, any>;
+type K8sResourceExt = K8sResource & {
+  identities?: string[];
+  users?: string[];
+  userName?: string;
+  clientName?: string;
+  redirectURI?: string;
+  scopes?: string[];
+  expiresIn?: number;
+  secrets?: { name: string }[];
+};
 
 // ---------------------------------------------------------------------------
 // Tab type
@@ -888,7 +896,7 @@ roleRef:
     });
 
     // 5. Inactive users
-    const activeUsers = new Set(accessTokens.map((t) => (t as any).userName));
+    const activeUsers = new Set(accessTokens.map((t) => (t as K8sResourceExt).userName));
     const inactiveUsers = users.filter((u) => !activeUsers.has(u.metadata.name) && u.metadata.name !== 'kube:admin');
     allChecks.push({
       id: 'inactive-users',
@@ -1335,7 +1343,7 @@ function RecentRBACChanges({ clusterRoleBindings, roleBindings, go }: {
       </div>
       <div className="divide-y divide-slate-800 max-h-80 overflow-auto">
         {recentChanges.map((change) => {
-          const age = formatChangeAge(change.when);
+          const age = formatAge(change.when);
           const gvr = change.clusterScoped ? 'rbac.authorization.k8s.io~v1~clusterrolebindings' : 'rbac.authorization.k8s.io~v1~rolebindings';
           const path = change.namespace
             ? `/r/${gvr}/${change.namespace}/${change.name}`
@@ -1377,11 +1385,3 @@ function RecentRBACChanges({ clusterRoleBindings, roleBindings, go }: {
   );
 }
 
-function formatChangeAge(date: Date): string {
-  const ms = Date.now() - date.getTime();
-  const hours = Math.floor(ms / 3600000);
-  if (hours < 1) return `${Math.floor(ms / 60000)}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}

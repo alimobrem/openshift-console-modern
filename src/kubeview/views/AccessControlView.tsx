@@ -8,6 +8,7 @@ import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { Panel } from '../components/primitives/Panel';
 import { Card } from '../components/primitives/Card';
+import { formatAge } from '../engine/dateUtils';
 
 export default function AccessControlView() {
   const selectedNamespace = useUIStore((s) => s.selectedNamespace);
@@ -264,7 +265,7 @@ function RecentRBACChanges({ clusterRoleBindings, roleBindings, go }: {
       </div>
       <div className="divide-y divide-slate-800 max-h-80 overflow-auto">
         {recentChanges.map((change, i) => {
-          const age = formatChangeAge(change.when);
+          const age = formatAge(change.when);
           const gvr = change.clusterScoped ? 'rbac.authorization.k8s.io~v1~clusterrolebindings' : 'rbac.authorization.k8s.io~v1~rolebindings';
           const path = change.namespace
             ? `/r/${gvr}/${change.namespace}/${change.name}`
@@ -307,14 +308,6 @@ function RecentRBACChanges({ clusterRoleBindings, roleBindings, go }: {
   );
 }
 
-function formatChangeAge(date: Date): string {
-  const ms = Date.now() - date.getTime();
-  const hours = Math.floor(ms / 3600000);
-  if (hours < 1) return `${Math.floor(ms / 60000)}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
-}
 
 
 // ===== RBAC Health Audit =====

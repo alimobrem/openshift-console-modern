@@ -59,13 +59,6 @@ import { useArgoSyncInfo } from '../hooks/useArgoCD';
 import { useCanI } from '../hooks/useCanI';
 import { LabelsSection, AnnotationsSection, DetailSection } from './detail/MetadataSections';
 
-const SafeDetailSection = DetailSection as unknown as React.ComponentType<{
-  title: string;
-  children: React.ReactNode;
-  collapsible?: boolean;
-}>;
-const MetadataSectionAny = SafeDetailSection as React.ComponentType<any>;
-const CardAny = Card as React.ComponentType<any>;
 
 interface DetailViewProps {
   gvrKey: string;
@@ -148,7 +141,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
       : `/api/v1/events?fieldSelector=${encodeURIComponent(fieldSelector)}`;
   }, [resource, name, namespace, isWorkload]);
 
-  const { data: rawEvents = [] } = useK8sListWatch<K8sResource>({
+  const { data: rawEvents = [] } = useK8sListWatch<Event>({
     apiPath: eventsApiPath,
     enabled: !!resource && !!eventsApiPath,
   });
@@ -157,8 +150,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
   const sortedEvents = React.useMemo(() => {
     const managedPodNames = new Set(managedPods.map(p => p.metadata.name));
     const filtered = isWorkload
-      ? rawEvents.filter((e) => {
-          const ev = e as unknown as Event;
+      ? rawEvents.filter((ev) => {
           const objName = ev.involvedObject?.name || '';
           const objKind = ev.involvedObject?.kind || '';
           // Direct events on this resource
@@ -171,8 +163,8 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         })
       : rawEvents;
     return filtered.sort((a, b) => {
-      const aTime = (a as unknown as Event).lastTimestamp || (a as unknown as Event).firstTimestamp || '';
-      const bTime = (b as unknown as Event).lastTimestamp || (b as unknown as Event).firstTimestamp || '';
+      const aTime = a.lastTimestamp || a.firstTimestamp || '';
+      const bTime = b.lastTimestamp || b.firstTimestamp || '';
       return new Date(bTime).getTime() - new Date(aTime).getTime();
     });
   }, [rawEvents, name, isWorkload, managedPods]);
@@ -602,7 +594,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
         {detailTab === 'conditions' && (() => {
           const conditions = (status.conditions || []) as Array<{ type: string; status: string; reason?: string; message?: string; lastTransitionTime?: string; lastHeartbeatTime?: string }>;
           return (
-            <CardAny>
+            <Card>
               {conditions.length === 0 ? (
                 <div className="px-4 py-8 text-center text-slate-500 text-sm">No conditions reported for this resource</div>
               ) : (
@@ -646,7 +638,7 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                   </table>
                 </div>
               )}
-            </CardAny>
+            </Card>
           );
         })()}
 
@@ -664,17 +656,16 @@ export default function DetailView({ gvrKey, namespace, name }: DetailViewProps)
                 <div className="px-4 py-8 text-center text-slate-500 text-xs">No events found</div>
               ) : (
                 sortedEvents.map((event, idx) => {
-                  const eventTyped = event as unknown as Event;
-                  const timestamp = eventTyped.lastTimestamp || eventTyped.firstTimestamp || '';
-                  const type = eventTyped.type || 'Normal';
+                  const timestamp = event.lastTimestamp || event.firstTimestamp || '';
+                  const type = event.type || 'Normal';
                   return (
                     <div key={idx} className="px-4 py-3">
                       <div className="flex items-start gap-2">
                         {type === 'Warning' ? <AlertCircle className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0 mt-0.5" /> : <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0 mt-0.5" />}
                         <div className="flex-1">
                           <div className="text-xs text-slate-500 mb-0.5">{timestamp ? new Date(timestamp).toLocaleString() : ''}</div>
-                          <div className="text-xs font-medium text-slate-200">{eventTyped.reason}</div>
-                          <div className="text-xs text-slate-400 mt-0.5">{eventTyped.message}</div>
+                          <div className="text-xs font-medium text-slate-200">{event.reason}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">{event.message}</div>
                         </div>
                       </div>
                     </div>

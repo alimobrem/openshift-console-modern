@@ -22,7 +22,10 @@
     "test:coverage": "vitest --run --coverage",
     "test:ui": "vitest --ui",
     "verify": "npm run type-check && npm run type-check:strict && npm run lint && npm run test && npm run build",
-    "clean": "rm -rf dist .rspack_cache node_modules/.cache"
+    "clean": "rm -rf dist .rspack_cache node_modules/.cache",
+    "e2e": "npx playwright test --config e2e/playwright.config.ts",
+    "e2e:headed": "npx playwright test --config e2e/playwright.config.ts --headed",
+    "e2e:ui": "npx playwright test --config e2e/playwright.config.ts --ui"
   },
   "dependencies": {
     "@codemirror/lang-json": "^6.0.2",
