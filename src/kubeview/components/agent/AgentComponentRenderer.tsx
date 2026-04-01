@@ -2,9 +2,9 @@
  * Renders agent ComponentSpec objects as interactive UI primitives.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle, AlertTriangle, XCircle, Clock, HelpCircle, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, Clock, HelpCircle, ChevronDown, ChevronUp, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Eye, EyeOff, Filter } from 'lucide-react';
 import {
   LineChart, BarChart, AreaChart,
   Line, Bar, Area,
@@ -64,11 +64,78 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView }: Props) 
 
 /** Compact data table for inline chat rendering */
 function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToView?: (spec: ComponentSpec) => void }) {
+  const [sortCol, setSortCol] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
+  const [hiddenCols, setHiddenCols] = useState<Set<string>>(new Set());
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [showSettings, setShowSettings] = useState(false);
+
+  const handleSort = useCallback((colId: string) => {
+    if (sortCol === colId) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortCol(colId);
+      setSortDir('asc');
+    }
+  }, [sortCol]);
+
+  const toggleCol = useCallback((colId: string) => {
+    setHiddenCols((prev) => {
+      const next = new Set(prev);
+      if (next.has(colId)) next.delete(colId);
+      else next.add(colId);
+      return next;
+    });
+  }, []);
+
+  const visibleColumns = useMemo(
+    () => spec.columns.filter((c) => !hiddenCols.has(c.id)),
+    [spec.columns, hiddenCols],
+  );
+
+  const processedRows = useMemo(() => {
+    let rows = [...spec.rows];
+    // Apply filters
+    for (const [colId, filterVal] of Object.entries(filters)) {
+      if (!filterVal) continue;
+      const lower = filterVal.toLowerCase();
+      rows = rows.filter((row) => String(row[colId] ?? '').toLowerCase().includes(lower));
+    }
+    // Apply sort
+    if (sortCol) {
+      rows.sort((a, b) => {
+        const av = a[sortCol] ?? '';
+        const bv = b[sortCol] ?? '';
+        const cmp = typeof av === 'number' && typeof bv === 'number'
+          ? av - bv
+          : String(av).localeCompare(String(bv), undefined, { numeric: true });
+        return sortDir === 'asc' ? cmp : -cmp;
+      });
+    }
+    return rows;
+  }, [spec.rows, filters, sortCol, sortDir]);
+
   return (
     <div className="my-2 border border-slate-700 rounded-lg overflow-hidden">
-      {spec.title && (
-        <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700 text-xs font-medium text-slate-300 flex items-center justify-between">
-          <span className="truncate">{spec.title}</span>
+      {/* Header */}
+      <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700 text-xs font-medium text-slate-300 flex items-center justify-between">
+        <div className="truncate">
+          <span>{spec.title || 'Table'}</span>
+          {spec.description && <span className="text-[10px] text-slate-500 ml-2">{spec.description}</span>}
+          {Object.values(filters).some(Boolean) && (
+            <span className="text-[10px] text-violet-400 ml-2">
+              ({processedRows.length}/{spec.rows.length} filtered)
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={cn('p-0.5 rounded transition-colors', showSettings ? 'text-violet-400 bg-slate-700' : 'text-slate-500 hover:text-slate-300')}
+            title="Table settings"
+          >
+            <Settings2 className="w-3.5 h-3.5" />
+          </button>
           {onAddToView && (
             <button
               onClick={() => onAddToView(spec)}
@@ -79,26 +146,74 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
             </button>
           )}
         </div>
+      </div>
+
+      {/* Settings panel — column visibility + filters */}
+      {showSettings && (
+        <div className="px-3 py-2 bg-slate-800/80 border-b border-slate-700 space-y-2">
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider">Columns</div>
+          <div className="flex flex-wrap gap-1">
+            {spec.columns.map((col) => (
+              <button
+                key={col.id}
+                onClick={() => toggleCol(col.id)}
+                className={cn(
+                  'flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors',
+                  hiddenCols.has(col.id)
+                    ? 'bg-slate-900 text-slate-600'
+                    : 'bg-slate-700 text-slate-300',
+                )}
+              >
+                {hiddenCols.has(col.id) ? <EyeOff className="w-2.5 h-2.5" /> : <Eye className="w-2.5 h-2.5" />}
+                {col.header}
+              </button>
+            ))}
+          </div>
+          <div className="text-[10px] text-slate-500 uppercase tracking-wider mt-1">Filters</div>
+          <div className="flex flex-wrap gap-2">
+            {visibleColumns.slice(0, 5).map((col) => (
+              <div key={col.id} className="flex items-center gap-1">
+                <Filter className="w-2.5 h-2.5 text-slate-600" />
+                <input
+                  placeholder={col.header}
+                  value={filters[col.id] || ''}
+                  onChange={(e) => setFilters((f) => ({ ...f, [col.id]: e.target.value }))}
+                  className="w-24 px-1.5 py-0.5 text-[10px] bg-slate-900 border border-slate-700 rounded text-slate-300 placeholder-slate-600 outline-none focus:border-violet-500"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       )}
+
+      {/* Table */}
       <div className="overflow-x-auto max-h-64">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-slate-800/30">
-              {spec.columns.map((col) => (
+              {visibleColumns.map((col) => (
                 <th
                   key={col.id}
-                  className="px-3 py-1.5 text-left text-slate-400 font-medium whitespace-nowrap"
+                  className="px-3 py-1.5 text-left text-slate-400 font-medium whitespace-nowrap cursor-pointer hover:text-slate-200 select-none"
                   style={col.width ? { width: col.width } : undefined}
+                  onClick={() => handleSort(col.id)}
                 >
-                  {col.header}
+                  <span className="flex items-center gap-1">
+                    {col.header}
+                    {sortCol === col.id ? (
+                      sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />
+                    ) : (
+                      <ArrowUpDown className="w-3 h-3 opacity-30" />
+                    )}
+                  </span>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {spec.rows.map((row, i) => (
+            {processedRows.map((row, i) => (
               <tr key={i} className="border-t border-slate-800 hover:bg-slate-800/30">
-                {spec.columns.map((col) => (
+                {visibleColumns.map((col) => (
                   <td key={col.id} className="px-3 py-1.5 text-slate-300 whitespace-nowrap">
                     <CellValue value={row[col.id]} columnId={col.id} />
                   </td>
@@ -108,11 +223,12 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
           </tbody>
         </table>
       </div>
-      {spec.rows.length > 20 && (
-        <div className="px-3 py-1 bg-slate-800/30 border-t border-slate-700 text-xs text-slate-500">
-          Showing {spec.rows.length} rows
-        </div>
-      )}
+
+      {/* Footer */}
+      <div className="px-3 py-1 bg-slate-800/30 border-t border-slate-700 text-[10px] text-slate-500 flex items-center justify-between">
+        <span>{processedRows.length} rows{processedRows.length !== spec.rows.length ? ` (${spec.rows.length} total)` : ''}</span>
+        {spec.query && <span className="truncate ml-2" title={spec.query}>Query: {spec.query}</span>}
+      </div>
     </div>
   );
 }
