@@ -19,7 +19,8 @@ const FleetResourceView = lazy(() => import('../views/fleet/FleetResourceView'))
 const FleetWorkloadsView = lazy(() => import('../views/fleet/FleetWorkloadsView'));
 const FleetAlertsView = lazy(() => import('../views/fleet/FleetAlertsView'));
 const DriftDetectorView = lazy(() => import('../views/fleet/DriftDetectorView').then(m => ({ default: m.DriftDetectorView })));
-const DynamicView = lazy(() => import('../views/DynamicView').then(m => ({ default: m.DynamicView })));
+// DynamicView removed — replaced by CustomView with PostgreSQL persistence
+const CustomViewRedirect = lazy(() => import('../views/CustomView'));
 const IncidentCenterView = lazy(() => import('../views/IncidentCenterView'));
 const OnboardingView = lazy(() => import('../views/OnboardingView'));
 const ReviewQueueView = lazy(() => import('../views/ReviewQueueView'));
@@ -53,7 +54,7 @@ function FleetResourceRoute() {
 
 function DynamicViewRoute() {
   const { id } = useParams<{ id: string }>();
-  return <DynamicView viewId={id} />;
+  return <CustomViewRedirect />;
 }
 
 export function domainRoutes() {
