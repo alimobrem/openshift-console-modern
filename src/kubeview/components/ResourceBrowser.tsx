@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, ChevronRight, ChevronDown, Star, Activity, Package, Globe, Server, HardDrive, Clock, Shield, Bell, Settings, LayoutDashboard } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, Star, Activity, Package, Globe, Server, HardDrive, Clock, Shield, Bell, Settings, LayoutDashboard, ShieldCheck, GitBranch, Layers, ClipboardCheck, Rocket, Brain } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useClusterStore } from '../store/clusterStore';
 import { useCustomViewStore } from '../store/customViewStore';
@@ -172,10 +172,16 @@ export function ResourceBrowser() {
             { label: 'Networking', icon: Globe, path: '/networking', color: 'text-cyan-400' },
             { label: 'Compute', icon: Server, path: '/compute', color: 'text-blue-400' },
             { label: 'Storage', icon: HardDrive, path: '/storage', color: 'text-orange-400' },
-            { label: 'Builds', icon: Clock, path: '/builds', color: 'text-orange-400' },
-            { label: 'Custom Resources', icon: Settings, path: '/crds', color: 'text-purple-400' },
+            { label: 'Security', icon: ShieldCheck, path: '/security', color: 'text-red-400' },
             { label: 'Identity & Access', icon: Shield, path: '/identity', color: 'text-teal-400' },
+            { label: 'GitOps', icon: GitBranch, path: '/gitops', color: 'text-green-400' },
+            { label: 'Fleet', icon: Layers, path: '/fleet', color: 'text-indigo-400' },
+            { label: 'Production Readiness', icon: Rocket, path: '/onboarding', color: 'text-amber-400' },
             { label: 'Alerts', icon: Bell, path: '/alerts', color: 'text-amber-400' },
+            { label: 'Builds', icon: Clock, path: '/builds', color: 'text-orange-400' },
+            { label: 'Review Queue', icon: ClipboardCheck, path: '/reviews', color: 'text-violet-400' },
+            { label: 'Memory', icon: Brain, path: '/memory', color: 'text-pink-400' },
+            { label: 'Custom Resources', icon: Settings, path: '/crds', color: 'text-purple-400' },
             { label: 'Administration', icon: Settings, path: '/admin', color: 'text-slate-400' },
           ].map((page) => (
             <button
