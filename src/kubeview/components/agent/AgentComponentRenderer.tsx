@@ -232,7 +232,7 @@ function formatTimestamp(ts: number) {
 
 function AgentChart({ spec, onAddToView }: { spec: ChartSpec; onAddToView?: (spec: ComponentSpec) => void }) {
   const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>(spec.chartType || 'line');
-  const height = spec.height || 250;
+  const height = spec.height || 300;
 
   // Transform series data into recharts format: [{time, series1, series2, ...}]
   const rechartsData = useMemo(() => {
@@ -306,7 +306,7 @@ function AgentChart({ spec, onAddToView }: { spec: ChartSpec; onAddToView?: (spe
               labelFormatter={(label) => typeof label === 'number' ? formatTimestamp(label) : String(label)}
               labelStyle={{ color: '#94a3b8' }}
             />
-            {spec.series.length > 1 && <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />}
+            {spec.series.length > 1 && spec.series.length <= 6 && <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />}
             {spec.series.map((s, i) => {
               const color = s.color || CHART_COLORS[i % CHART_COLORS.length];
               if (chartType === 'bar') {
