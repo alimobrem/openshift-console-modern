@@ -79,12 +79,16 @@ export default function CustomView() {
       useCustomViewStore.getState().setActiveBuilderId(viewId);
     }
     return () => {
-      // Only clear if we're leaving this specific view
       if (useCustomViewStore.getState().activeBuilderId === viewId) {
         useCustomViewStore.getState().setActiveBuilderId(null);
       }
     };
   }, [viewId]);
+
+  // Subscribe to views array length to ensure re-renders when widgets are added/removed
+  const _viewCount = useCustomViewStore((s) => s.views.length);
+  // Also subscribe to the specific view's layout length for widget changes
+  const _widgetCount = view?.layout.length ?? 0;
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [widgetToRemove, setWidgetToRemove] = useState<number | null>(null);
