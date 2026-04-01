@@ -16,7 +16,7 @@ interface UseAskPulseResult {
 }
 
 /** Timeout for agent queries (ms) — Ask Pulse should be snappy */
-const AGENT_TIMEOUT = 8000;
+const AGENT_TIMEOUT = 30000;
 const DEBOUNCE_MS = 500;
 
 /**
@@ -164,7 +164,9 @@ export function useAskPulse(query: string): UseAskPulseResult {
         })
         .catch((err) => {
           if (controller.signal.aborted) return;
-          setAgentAvailable(false);
+          // Don't mark agent as offline — the main agent dock still works.
+          // Quick-query may time out but full agent chat is available.
+          setAgentAvailable(true);
           setResponse(null);
           setIsLoading(false);
         });
