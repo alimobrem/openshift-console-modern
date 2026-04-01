@@ -3,9 +3,9 @@
  * Lazy-loaded to keep recharts (~150KB) out of the initial bundle.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Plus } from 'lucide-react';
+import { Plus, ChevronDown } from 'lucide-react';
 import {
   LineChart, BarChart, AreaChart, PieChart, ScatterChart, RadarChart, Treemap,
   Line, Bar, Area, Pie, Scatter, Radar, Cell,
@@ -29,13 +29,20 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
   radar: 'Radar', treemap: 'Treemap',
 };
 
-// Which types to show in the quick switcher (top 5)
-const QUICK_TYPES: ChartType[] = ['line', 'bar', 'area', 'pie', 'scatter'];
-
 export default function AgentChart({ spec, onAddToView }: { spec: ChartSpec; onAddToView?: (spec: ComponentSpec) => void }) {
   const [chartType, setChartType] = useState<ChartType>(spec.chartType || 'line');
-  const [showAllTypes, setShowAllTypes] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const height = spec.height || 300;
+
+  useEffect(() => {
+    if (!dropdownOpen) return;
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setDropdownOpen(false);
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [dropdownOpen]);
 
   // Transform series data for time-series charts: [{time, series1, series2, ...}]
   const rechartsData = useMemo(() => {
@@ -76,8 +83,6 @@ export default function AgentChart({ spec, onAddToView }: { spec: ChartSpec; onA
       s.data.map(([x, y]) => ({ x, y, series: s.label, color: s.color || CHART_COLORS[i % CHART_COLORS.length] }))
     );
   }, [spec.series]);
-
-  const displayTypes = showAllTypes ? Object.keys(CHART_TYPE_LABELS) as ChartType[] : QUICK_TYPES;
 
   const renderChart = () => {
     switch (chartType) {
@@ -216,32 +221,36 @@ export default function AgentChart({ spec, onAddToView }: { spec: ChartSpec; onA
           <span className="text-xs font-medium text-slate-300">{spec.title || 'Chart'}</span>
           {spec.description && <span className="text-[10px] text-slate-500 ml-2">{spec.description}</span>}
         </div>
-        <div className="flex items-center gap-0.5">
-          {displayTypes.map((type) => (
+        <div className="flex items-center gap-1">
+          <div className="relative" ref={dropdownRef}>
             <button
-              key={type}
-              onClick={() => setChartType(type)}
-              className={cn(
-                'px-1 py-0.5 text-[9px] rounded transition-colors',
-                chartType === type ? 'bg-violet-700 text-white' : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800',
-              )}
+              onClick={() => setDropdownOpen(!dropdownOpen)}
+              className="flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] rounded bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition-colors"
             >
-              {CHART_TYPE_LABELS[type]}
+              {CHART_TYPE_LABELS[chartType]}
+              <ChevronDown className="w-3 h-3" />
             </button>
-          ))}
-          {!showAllTypes && (
-            <button
-              onClick={() => setShowAllTypes(true)}
-              className="px-1 py-0.5 text-[9px] text-slate-600 hover:text-slate-400 rounded"
-              title="Show all chart types"
-            >
-              +{Object.keys(CHART_TYPE_LABELS).length - QUICK_TYPES.length}
-            </button>
-          )}
+            {dropdownOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded-md shadow-lg z-20 min-w-[100px] py-0.5">
+                {(Object.keys(CHART_TYPE_LABELS) as ChartType[]).map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => { setChartType(type); setDropdownOpen(false); }}
+                    className={cn(
+                      'w-full text-left px-2.5 py-1 text-[10px] transition-colors',
+                      chartType === type ? 'bg-violet-700 text-white' : 'text-slate-300 hover:bg-slate-700',
+                    )}
+                  >
+                    {CHART_TYPE_LABELS[type]}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
           {onAddToView && (
             <button
               onClick={() => onAddToView({ ...spec, chartType })}
-              className="ml-1 p-0.5 text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
+              className="p-0.5 text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
               title="Add to View"
             >
               <Plus className="w-3.5 h-3.5" />

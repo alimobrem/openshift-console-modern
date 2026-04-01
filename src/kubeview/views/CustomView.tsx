@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { Trash2, Plus, LayoutDashboard, Bot, Share2, Check, GripVertical, Pencil, Eye, BarChart3, LineChart as LineChartIcon, AreaChart as AreaChartIcon } from 'lucide-react';
+import { Trash2, Plus, LayoutDashboard, Bot, Share2, Check, GripVertical, Pencil, Eye } from 'lucide-react';
 import { useCustomViewStore } from '../store/customViewStore';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
@@ -307,26 +307,6 @@ export default function CustomView() {
                       <GripVertical className="w-4 h-4" />
                     </div>
                     <div className="absolute top-2 right-2 flex items-center gap-1 z-10">
-                      {/* Chart type switcher (only for chart widgets) */}
-                      {spec.kind === 'chart' && (
-                        <>
-                          {(['line', 'bar', 'area'] as const).map((type) => {
-                            const Icon = type === 'bar' ? BarChart3 : type === 'area' ? AreaChartIcon : LineChartIcon;
-                            const isActive = (spec as import('../engine/agentComponents').ChartSpec).chartType === type || (!('chartType' in spec) && type === 'line');
-                            return (
-                              <button
-                                key={type}
-                                onClick={() => updateWidget(view.id, i, { kind: 'chart', chartType: type } as ComponentSpec)}
-                                className={`p-1 rounded transition-colors ${isActive ? 'bg-violet-700 text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-300'}`}
-                                title={`${type.charAt(0).toUpperCase() + type.slice(1)} chart`}
-                              >
-                                <Icon className="w-3 h-3" />
-                              </button>
-                            );
-                          })}
-                          <div className="w-px h-4 bg-slate-700 mx-0.5" />
-                        </>
-                      )}
                       <button
                         onClick={() => setWidgetToRemove(i)}
                         className="p-1 rounded bg-slate-800 text-slate-500 hover:text-red-400 transition-colors"
