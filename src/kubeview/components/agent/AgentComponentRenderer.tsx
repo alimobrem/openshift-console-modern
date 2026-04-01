@@ -215,7 +215,7 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
               <tr key={i} className="border-t border-slate-800 hover:bg-slate-800/30">
                 {visibleColumns.map((col) => (
                   <td key={col.id} className="px-3 py-1.5 text-slate-300 whitespace-nowrap">
-                    <CellValue value={row[col.id]} columnId={col.id} />
+                    <CellValue value={row[col.id]} columnId={col.id} row={row} />
                   </td>
                 ))}
               </tr>
@@ -234,10 +234,10 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
 }
 
 /** Render cell values with status coloring, links, and known patterns */
-function CellValue({ value, columnId }: { value: unknown; columnId: string }) {
+function CellValue({ value, columnId, row }: { value: unknown; columnId: string; row?: Record<string, unknown> }) {
   const str = String(value ?? '');
 
-  // Render links — values starting with / or http become clickable
+  // Render explicit links — values starting with / or http
   if (str.startsWith('/') || str.startsWith('http')) {
     const label = columnId === 'logs' ? 'View Logs' : columnId === 'link' ? 'Open' : str.split('/').pop() || str;
     return (
@@ -245,6 +245,41 @@ function CellValue({ value, columnId }: { value: unknown; columnId: string }) {
         {label}
       </a>
     );
+  }
+
+  // Auto-link resource names using row context
+  if (row && str) {
+    // Name column — use _link field if available, otherwise build from _gvr + namespace
+    if (columnId === 'name') {
+      const link = row._link ? String(row._link) : null;
+      if (link) {
+        return <a href={link} className="text-blue-400 hover:text-blue-300">{str}</a>;
+      }
+      const gvr = row._gvr ? String(row._gvr) : '';
+      const ns = String(row.namespace || '');
+      if (gvr && ns) {
+        return <a href={`/r/${gvr}/${ns}/${str}`} className="text-blue-400 hover:text-blue-300">{str}</a>;
+      }
+      if (gvr && !ns) {
+        return <a href={`/r/${gvr}/_/${str}`} className="text-blue-400 hover:text-blue-300">{str}</a>;
+      }
+    }
+    if (columnId === 'namespace') {
+      return <a href={`/project/${str}`} className="text-blue-400 hover:text-blue-300">{str}</a>;
+    }
+    if (columnId === 'node') {
+      return <a href={`/r/v1~nodes/_/${str}`} className="text-blue-400 hover:text-blue-300">{str}</a>;
+    }
+    if (columnId === 'target' && str.includes('/')) {
+      // HPA target like "Deployment/nginx" → link to deployment
+      const [kind, name] = str.split('/');
+      const ns = String(row.namespace || '');
+      const kindMap: Record<string, string> = { Deployment: 'apps~v1~deployments', StatefulSet: 'apps~v1~statefulsets', DaemonSet: 'apps~v1~daemonsets' };
+      const gvr = kindMap[kind];
+      if (gvr && ns) {
+        return <a href={`/r/${gvr}/${ns}/${name}`} className="text-blue-400 hover:text-blue-300">{str}</a>;
+      }
+    }
   }
 
   // Auto-color status-like columns

@@ -24,6 +24,10 @@ export interface DataTableSpec {
   rows: Array<Record<string, string | number | boolean>>;
   query?: string;
   timeRange?: string;
+  /** K8s resource type for auto-linking (e.g. 'pods', 'deployments', 'nodes') */
+  resourceType?: string;
+  /** API group~version~resource for detail links (e.g. 'v1~pods', 'apps~v1~deployments') */
+  gvr?: string;
 }
 
 export interface InfoCardGridSpec {
