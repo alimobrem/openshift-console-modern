@@ -1,48 +1,33 @@
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Siren, Zap, Search, Clock, Settings, Play, Activity, Cpu, Bell,
+  Siren, Zap, Search, Clock, Cpu, Bell, Settings,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card } from '../components/primitives/Card';
 import { fetchAgentEvalStatus } from '../engine/evalStatus';
 import { useMonitorStore } from '../store/monitorStore';
 import { useUIStore } from '../store/uiStore';
-import { useTrustStore, type TrustLevel } from '../store/trustStore';
 import { NowTab } from './incidents/NowTab';
 import { InvestigateTab } from './incidents/InvestigateTab';
 import { HistoryTab } from './incidents/HistoryTab';
 
 const AlertsView = lazy(() => import('./AlertsView'));
 
-type IncidentTab = 'now' | 'investigate' | 'history' | 'alerts' | 'config';
+type IncidentTab = 'now' | 'investigate' | 'history' | 'alerts';
 
 const TABS = [
   { id: 'now' as IncidentTab, label: 'Now', icon: Zap },
   { id: 'investigate' as IncidentTab, label: 'Investigate', icon: Search },
   { id: 'history' as IncidentTab, label: 'History', icon: Clock },
   { id: 'alerts' as IncidentTab, label: 'Alerts', icon: Bell },
-  { id: 'config' as IncidentTab, label: 'Config', icon: Settings },
 ] as const;
 
-const TRUST_LEVELS = [
-  { level: 0 as TrustLevel, label: 'Monitor Only', description: 'Observe and report findings. No automated actions.' },
-  { level: 1 as TrustLevel, label: 'Suggest', description: 'Suggest fixes with dry-run previews. Requires manual approval.' },
-  { level: 2 as TrustLevel, label: 'Ask First', description: 'Propose fixes and wait for confirmation before applying.' },
-  { level: 3 as TrustLevel, label: 'Auto-fix Safe', description: 'Automatically fix low-risk issues. Confirm dangerous changes.' },
-  { level: 4 as TrustLevel, label: 'Full Auto', description: 'Automatically fix all issues within enabled categories.' },
-] as const;
-
-const AUTO_FIX_CATEGORIES = [
-  { id: 'crashloop', label: 'CrashLoopBackOff', description: 'Delete crashlooping pods (controller recreates)' },
-  { id: 'workloads', label: 'Degraded Deployments', description: 'Rolling restart for degraded deployments' },
-  { id: 'image_pull', label: 'ImagePullBackOff', description: 'Restart deployment to clear image pull errors' },
-] as const;
 
 export default function IncidentCenterView() {
   const urlTab = new URLSearchParams(window.location.search).get('tab') as IncidentTab | null;
   const [activeTab, setActiveTabState] = useState<IncidentTab>(
-    urlTab && ['now', 'investigate', 'history', 'alerts', 'config'].includes(urlTab) ? urlTab : 'now',
+    urlTab && ['now', 'investigate', 'history', 'alerts'].includes(urlTab) ? urlTab : 'now',
   );
   const setActiveTab = (tab: IncidentTab) => {
     setActiveTabState(tab);
@@ -51,28 +36,8 @@ export default function IncidentCenterView() {
     const qs = params.toString();
     window.history.replaceState(null, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
   };
+  const navigate = useNavigate();
   const connected = useMonitorStore((s) => s.connected);
-  const monitorEnabled = useMonitorStore((s) => s.monitorEnabled);
-  const setMonitorEnabled = useMonitorStore((s) => s.setMonitorEnabled);
-  const triggerScan = useMonitorStore((s) => s.triggerScan);
-  const lastScanTime = useMonitorStore((s) => s.lastScanTime);
-  const findings = useMonitorStore((s) => s.findings);
-  const trustLevel = useTrustStore((s) => s.trustLevel);
-  const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
-  const trustAutoFixCategories = useTrustStore((s) => s.autoFixCategories);
-  const setTrustAutoFixCategories = useTrustStore((s) => s.setAutoFixCategories);
-
-  const autoFixCategories = useMemo(
-    () => new Set(trustAutoFixCategories),
-    [trustAutoFixCategories],
-  );
-
-  const toggleAutoFixCategory = (id: string) => {
-    const next = new Set(autoFixCategories);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setTrustAutoFixCategories(Array.from(next));
-  };
 
   const { data: agentInfo } = useQuery<{ protocol: string; agent: string; tools: number }>({
     queryKey: ['agent', 'version'],
@@ -89,71 +54,6 @@ export default function IncidentCenterView() {
     queryFn: () => fetchAgentEvalStatus().catch(() => null),
     refetchInterval: 60000,
   });
-
-  const { data: monitorCapabilities } = useQuery<{
-    max_trust_level: number;
-    supported_auto_fix_categories: string[];
-  }>({
-    queryKey: ['agent', 'monitor-capabilities'],
-    queryFn: async () => {
-      const res = await fetch('/api/agent/monitor/capabilities');
-      if (!res.ok) return { max_trust_level: 3, supported_auto_fix_categories: ['crashloop', 'workloads'] };
-      return res.json();
-    },
-    staleTime: 300000,
-    refetchInterval: 300000,
-  });
-
-  const maxTrustLevel = Math.max(0, Math.min(monitorCapabilities?.max_trust_level ?? 3, 4)) as TrustLevel;
-  const visibleTrustLevels = useMemo(
-    () => TRUST_LEVELS.filter((level) => level.level <= maxTrustLevel),
-    [maxTrustLevel],
-  );
-  const supportedCategories = useMemo(
-    () => new Set(monitorCapabilities?.supported_auto_fix_categories ?? ['crashloop', 'workloads']),
-    [monitorCapabilities?.supported_auto_fix_categories],
-  );
-  const visibleCategories = useMemo(
-    () => AUTO_FIX_CATEGORIES.filter((category) => supportedCategories.has(category.id)),
-    [supportedCategories],
-  );
-
-  const [scanning, setScanning] = useState(false);
-  const prevLastScan = useRef(lastScanTime);
-
-  useEffect(() => {
-    if (lastScanTime !== prevLastScan.current && scanning) {
-      setScanning(false);
-      useUIStore.getState().addToast({
-        type: findings.length > 0 ? 'warning' : 'success',
-        title: 'Scan complete',
-        detail: findings.length > 0
-          ? `Found ${findings.length} issue${findings.length !== 1 ? 's' : ''}.`
-          : 'No issues found — cluster looks healthy.',
-        duration: 5000,
-      });
-    }
-    prevLastScan.current = lastScanTime;
-  }, [lastScanTime, scanning, findings.length]);
-
-  const handleScanNow = () => {
-    setScanning(true);
-    triggerScan();
-    setTimeout(() => setScanning(false), 30_000);
-  };
-
-  useEffect(() => {
-    if (trustLevel > maxTrustLevel) {
-      setTrustLevel(maxTrustLevel);
-    }
-  }, [trustLevel, maxTrustLevel, setTrustLevel]);
-
-  useEffect(() => {
-    const filtered = Array.from(autoFixCategories).filter((category) => supportedCategories.has(category));
-    if (filtered.length !== autoFixCategories.size) {
-      setTrustAutoFixCategories(filtered);
-    }
-  }, [autoFixCategories, setTrustAutoFixCategories, supportedCategories]);
 
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">
@@ -217,6 +117,13 @@ export default function IncidentCenterView() {
                 {connected ? 'Live' : 'Disconnected'}
               </span>
             </div>
+            <button
+              onClick={() => navigate('/agent')}
+              className="p-2 rounded-lg border border-slate-800 bg-slate-900 text-slate-400 hover:text-slate-200 transition-colors"
+              title="Agent Settings"
+            >
+              <Settings className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
@@ -260,92 +167,6 @@ export default function IncidentCenterView() {
             <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="kv-skeleton w-8 h-8 rounded-full" /></div>}>
               <AlertsView />
             </Suspense>
-          </div>
-        )}
-        {activeTab === 'config' && (
-          <div id="incident-panel-config" role="tabpanel" className="space-y-6">
-            <Card>
-              <div className="px-4 py-4 flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-200">Monitoring</h3>
-                  <p className="text-xs text-slate-400 mt-0.5">Enable continuous cluster monitoring and automated remediation</p>
-                </div>
-                <button
-                  onClick={() => setMonitorEnabled(!monitorEnabled)}
-                  role="switch"
-                  aria-checked={monitorEnabled}
-                  aria-label="Toggle monitoring"
-                  className={cn('relative w-11 h-6 rounded-full transition-colors', monitorEnabled ? 'bg-violet-600' : 'bg-slate-700')}
-                >
-                  <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', monitorEnabled && 'translate-x-5')} />
-                </button>
-              </div>
-            </Card>
-
-            <div className="px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-lg text-xs text-slate-400">
-              Trust controls are enforced server-side. Maximum trust available for this environment is Level {maxTrustLevel}.
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold text-slate-300 mb-3">Trust Level</h3>
-              <div className="grid gap-2">
-                {visibleTrustLevels.map((tl) => (
-                  <button
-                    key={tl.level}
-                    onClick={() => setTrustLevel(tl.level)}
-                    className={cn(
-                      'px-4 py-3 rounded-lg border text-left transition-colors',
-                      trustLevel === tl.level ? 'bg-violet-900/30 border-violet-700' : 'bg-slate-900 border-slate-800 hover:border-slate-700',
-                    )}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center', trustLevel === tl.level ? 'border-violet-500' : 'border-slate-600')}>
-                        {trustLevel === tl.level && <div className="w-2 h-2 rounded-full bg-violet-500" />}
-                      </div>
-                      <span className="text-sm font-medium text-slate-200">Level {tl.level}: {tl.label}</span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-1 ml-6">{tl.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {trustLevel >= 3 && (
-              <div className="px-4 py-3 bg-yellow-900/20 border border-yellow-800/50 rounded-lg text-xs text-yellow-300">
-                Auto-fixes are executed automatically and recorded in Fix History. Auto-fix actions (pod deletion, rolling restart) cannot be rolled back.
-              </div>
-            )}
-
-            {trustLevel >= 2 && (
-              <div>
-                <h3 className="text-sm font-semibold text-slate-300 mb-3">Auto-fix Categories</h3>
-                <div className="grid gap-2">
-                  {visibleCategories.map((cat) => (
-                    <label
-                      key={cat.id}
-                      className={cn(
-                        'flex items-start gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors',
-                        autoFixCategories.has(cat.id) ? 'bg-violet-900/20 border-violet-800' : 'bg-slate-900 border-slate-800 hover:border-slate-700',
-                      )}
-                    >
-                      <input type="checkbox" checked={autoFixCategories.has(cat.id)} onChange={() => toggleAutoFixCategory(cat.id)} className="mt-0.5 rounded border-slate-600" />
-                      <div>
-                        <span className="text-sm font-medium text-slate-200">{cat.label}</span>
-                        <p className="text-xs text-slate-400 mt-0.5">{cat.description}</p>
-                      </div>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <button
-              onClick={handleScanNow}
-              disabled={!connected || scanning}
-              className="px-4 py-2 text-sm bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg flex items-center gap-2 transition-colors"
-            >
-              {scanning ? (<><Activity className="w-4 h-4 animate-pulse" />Scanning...</>) : (<><Play className="w-4 h-4" />Scan Now</>)}
-            </button>
           </div>
         )}
       </div>

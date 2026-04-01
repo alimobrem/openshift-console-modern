@@ -182,6 +182,7 @@ export function ResourceBrowser() {
             { label: 'Review Queue', icon: ClipboardCheck, path: '/reviews', color: 'text-violet-400' },
             { label: 'Memory', icon: Brain, path: '/memory', color: 'text-pink-400' },
             { label: 'Custom Resources', icon: Settings, path: '/crds', color: 'text-purple-400' },
+            { label: 'Agent Settings', icon: Settings, path: '/agent', color: 'text-violet-400' },
             { label: 'Administration', icon: Settings, path: '/admin', color: 'text-slate-400' },
           ].map((page) => (
             <button
@@ -204,7 +205,7 @@ export function ResourceBrowser() {
           <div className="mb-2 flex items-center justify-between px-2">
             <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
               <LayoutDashboard className="h-3 w-3" />
-              Your Dashboards
+              Your Views
             </span>
             <button
               onClick={() => {

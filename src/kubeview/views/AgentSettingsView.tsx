@@ -1,0 +1,300 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import {
+  Bot, Shield, MessageSquare, Activity, Play, Eye, Brain,
+  Zap, AlertTriangle, CheckCircle2, XCircle, Settings,
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Card } from '../components/primitives/Card';
+import { useMonitorStore } from '../store/monitorStore';
+import { useTrustStore, TRUST_LABELS, TRUST_DESCRIPTIONS, type TrustLevel, type CommunicationStyle } from '../store/trustStore';
+import { useAgentStore } from '../store/agentStore';
+
+const TRUST_LEVELS = [
+  { level: 0 as TrustLevel, label: 'Monitor Only', description: 'Observe and report findings. No automated actions.', icon: Eye },
+  { level: 1 as TrustLevel, label: 'Suggest', description: 'Suggest fixes with dry-run previews. Requires manual approval.', icon: MessageSquare },
+  { level: 2 as TrustLevel, label: 'Ask First', description: 'Propose fixes and wait for confirmation before applying.', icon: Shield },
+  { level: 3 as TrustLevel, label: 'Auto-fix Safe', description: 'Automatically fix low-risk issues. Confirm dangerous changes.', icon: Zap },
+  { level: 4 as TrustLevel, label: 'Full Auto', description: 'Automatically fix all issues within enabled categories.', icon: Activity },
+] as const;
+
+const AUTO_FIX_CATEGORIES = [
+  { id: 'crashloop', label: 'CrashLoopBackOff', description: 'Delete crashlooping pods (controller recreates)' },
+  { id: 'workloads', label: 'Degraded Deployments', description: 'Rolling restart for degraded deployments' },
+  { id: 'image_pull', label: 'ImagePullBackOff', description: 'Restart deployment to clear image pull errors' },
+] as const;
+
+const COMM_OPTIONS: { value: CommunicationStyle; label: string; description: string }[] = [
+  { value: 'brief', label: 'Brief', description: 'Short, actionable answers' },
+  { value: 'detailed', label: 'Detailed', description: 'Full explanations with context' },
+  { value: 'technical', label: 'Technical', description: 'Deep technical detail, CLI examples' },
+];
+
+export default function AgentSettingsView() {
+  const navigate = useNavigate();
+  const connected = useAgentStore((s) => s.connected);
+  const monitorEnabled = useMonitorStore((s) => s.monitorEnabled);
+  const setMonitorEnabled = useMonitorStore((s) => s.setMonitorEnabled);
+  const monitorConnected = useMonitorStore((s) => s.connected);
+  const triggerScan = useMonitorStore((s) => s.triggerScan);
+  const trustLevel = useTrustStore((s) => s.trustLevel);
+  const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
+  const autoFixCategories = useTrustStore((s) => s.autoFixCategories);
+  const setAutoFixCategories = useTrustStore((s) => s.setAutoFixCategories);
+  const toggleAutoFixCategory = (id: string) => {
+    const next = new Set(autoFixCategories);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setAutoFixCategories(Array.from(next));
+  };
+  const communicationStyle = useTrustStore((s) => s.communicationStyle);
+  const setCommunicationStyle = useTrustStore((s) => s.setCommunicationStyle);
+  const [scanning, setScanning] = useState(false);
+
+  const { data: capabilities } = useQuery({
+    queryKey: ['monitor', 'capabilities'],
+    queryFn: async () => {
+      const res = await fetch('/api/agent/monitor/capabilities');
+      if (!res.ok) return { max_trust_level: 4 };
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+  const maxTrustLevel = (capabilities?.max_trust_level ?? 4) as TrustLevel;
+  const visibleTrustLevels = TRUST_LEVELS.filter((tl) => tl.level <= maxTrustLevel);
+
+  const { data: versionInfo } = useQuery({
+    queryKey: ['agent', 'version'],
+    queryFn: async () => {
+      const res = await fetch('/api/agent/version');
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 300_000,
+  });
+
+  const handleScanNow = async () => {
+    setScanning(true);
+    try { await triggerScan(); } finally { setScanning(false); }
+  };
+
+  return (
+    <div className="h-full overflow-auto bg-slate-950 p-6">
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
+              <Bot className="w-6 h-6 text-violet-400" />
+              Agent Settings
+            </h1>
+            <p className="text-sm text-slate-400 mt-1">Configure trust, monitoring, communication, and auto-fix behavior</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {connected ? (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-900/30 border border-emerald-800 rounded-lg text-xs text-emerald-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                Connected
+              </span>
+            ) : (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-lg text-xs text-slate-400">
+                <span className="w-2 h-2 rounded-full bg-slate-500" />
+                Disconnected
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Agent Info */}
+        {versionInfo && (
+          <div className="flex items-center gap-4 text-xs text-slate-500">
+            <span>Agent v{versionInfo.agent}</span>
+            <span>Protocol {versionInfo.protocol}</span>
+            <span>{versionInfo.tools} tools</span>
+          </div>
+        )}
+
+        {/* Monitoring */}
+        <Card>
+          <div className="p-4 space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Activity className="w-5 h-5 text-violet-400" />
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-200">Continuous Monitoring</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Automatically scan the cluster for issues and anomalies</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMonitorEnabled(!monitorEnabled)}
+                role="switch"
+                aria-checked={monitorEnabled}
+                className={cn('relative w-11 h-6 rounded-full transition-colors', monitorEnabled ? 'bg-violet-600' : 'bg-slate-700')}
+              >
+                <span className={cn('absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform', monitorEnabled && 'translate-x-5')} />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleScanNow}
+                disabled={!monitorConnected || scanning}
+                className="px-3 py-1.5 text-xs bg-violet-600 hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-md flex items-center gap-1.5 transition-colors"
+              >
+                {scanning ? <><Activity className="w-3.5 h-3.5 animate-pulse" />Scanning...</> : <><Play className="w-3.5 h-3.5" />Scan Now</>}
+              </button>
+              <button
+                onClick={() => navigate('/incidents')}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-slate-200 border border-slate-700 rounded-md transition-colors"
+              >
+                View Incidents
+              </button>
+            </div>
+          </div>
+        </Card>
+
+        {/* Trust Level */}
+        <Card>
+          <div className="p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <Shield className="w-5 h-5 text-blue-400" />
+              <div>
+                <h3 className="text-sm font-semibold text-slate-200">Trust Level</h3>
+                <p className="text-xs text-slate-400 mt-0.5">Controls what actions the agent can take autonomously</p>
+              </div>
+            </div>
+
+            <div className="text-xs text-slate-500 bg-slate-900/50 border border-slate-800 rounded-md px-3 py-2">
+              Trust controls are enforced server-side. Maximum trust for this environment: Level {maxTrustLevel}.
+            </div>
+
+            <div className="grid gap-2">
+              {visibleTrustLevels.map((tl) => {
+                const Icon = tl.icon;
+                return (
+                  <button
+                    key={tl.level}
+                    onClick={() => setTrustLevel(tl.level)}
+                    className={cn(
+                      'px-4 py-3 rounded-lg border text-left transition-colors',
+                      trustLevel === tl.level ? 'bg-violet-900/30 border-violet-700' : 'bg-slate-900 border-slate-800 hover:border-slate-700',
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <div className={cn('w-4 h-4 rounded-full border-2 flex items-center justify-center', trustLevel === tl.level ? 'border-violet-500' : 'border-slate-600')}>
+                        {trustLevel === tl.level && <div className="w-2 h-2 rounded-full bg-violet-500" />}
+                      </div>
+                      <Icon className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="text-sm font-medium text-slate-200">Level {tl.level}: {tl.label}</span>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-1 ml-6">{tl.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+
+            {trustLevel >= 3 && (
+              <div className="flex items-start gap-2 px-3 py-2 bg-yellow-900/20 border border-yellow-800/50 rounded-md text-xs text-yellow-300">
+                <AlertTriangle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                Auto-fixes are executed automatically and recorded in Fix History. Some actions cannot be rolled back.
+              </div>
+            )}
+          </div>
+        </Card>
+
+        {/* Auto-fix Categories */}
+        {trustLevel >= 2 && (
+          <Card>
+            <div className="p-4 space-y-4">
+              <div className="flex items-center gap-3">
+                <Zap className="w-5 h-5 text-amber-400" />
+                <div>
+                  <h3 className="text-sm font-semibold text-slate-200">Auto-fix Categories</h3>
+                  <p className="text-xs text-slate-400 mt-0.5">Select which issue types the agent can fix automatically</p>
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                {AUTO_FIX_CATEGORIES.map((cat) => (
+                  <label
+                    key={cat.id}
+                    className={cn(
+                      'flex items-start gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors',
+                      autoFixCategories.includes(cat.id) ? 'bg-violet-900/20 border-violet-800' : 'bg-slate-900 border-slate-800 hover:border-slate-700',
+                    )}
+                  >
+                    <input type="checkbox" checked={autoFixCategories.includes(cat.id)} onChange={() => toggleAutoFixCategory(cat.id)} className="mt-0.5 rounded border-slate-600" />
+                    <div>
+                      <span className="text-sm font-medium text-slate-200">{cat.label}</span>
+                      <p className="text-xs text-slate-400 mt-0.5">{cat.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Communication Style */}
+        <Card>
+          <div className="p-4 space-y-4">
+            <div className="flex items-center gap-3">
+              <MessageSquare className="w-5 h-5 text-violet-400" />
+              <div>
+                <h3 className="text-sm font-semibold text-slate-200">Communication Style</h3>
+                <p className="text-xs text-slate-400 mt-0.5">How the agent formats its responses</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              {COMM_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setCommunicationStyle(opt.value)}
+                  className={cn(
+                    'px-3 py-2.5 rounded-lg border text-center transition-colors',
+                    communicationStyle === opt.value ? 'bg-violet-900/30 border-violet-700' : 'bg-slate-900 border-slate-800 hover:border-slate-700',
+                  )}
+                >
+                  <div className="text-sm font-medium text-slate-200">{opt.label}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{opt.description}</div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        {/* Quick Links */}
+        <Card>
+          <div className="p-4 space-y-3">
+            <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+              <Settings className="w-4 h-4 text-slate-400" />
+              Related
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: 'Incidents', path: '/incidents', icon: Zap, color: 'text-red-400' },
+                { label: 'Fix History', path: '/incidents?tab=history', icon: CheckCircle2, color: 'text-emerald-400' },
+                { label: 'What I\'ve Learned', path: '/memory', icon: Brain, color: 'text-pink-400' },
+                { label: 'Your Views', path: '/views', icon: Eye, color: 'text-violet-400' },
+              ].map((link) => (
+                <button
+                  key={link.path}
+                  onClick={() => navigate(link.path)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800 bg-slate-900 hover:border-slate-700 transition-colors text-left"
+                >
+                  <link.icon className={cn('w-4 h-4', link.color)} />
+                  <span className="text-sm text-slate-300">{link.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        <p className="text-xs text-slate-600 text-center">
+          Preferences are saved locally and sent to the agent on each connection.
+        </p>
+      </div>
+    </div>
+  );
+}

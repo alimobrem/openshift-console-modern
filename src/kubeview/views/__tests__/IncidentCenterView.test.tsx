@@ -96,13 +96,12 @@ describe('IncidentCenterView', () => {
     expect(screen.getByText(/Real-time incidents, correlation analysis/)).toBeDefined();
   });
 
-  it('renders all 5 tab buttons', () => {
+  it('renders all 4 tab buttons', () => {
     renderView();
     expect(screen.getByRole('tab', { name: /Now/ })).toBeDefined();
     expect(screen.getByRole('tab', { name: /Investigate/ })).toBeDefined();
     expect(screen.getByRole('tab', { name: /History/ })).toBeDefined();
     expect(screen.getByRole('tab', { name: /Alerts/ })).toBeDefined();
-    expect(screen.getByRole('tab', { name: /Config/ })).toBeDefined();
   });
 
   it('shows Now tab content by default', () => {
@@ -115,23 +114,9 @@ describe('IncidentCenterView', () => {
     expect(screen.getByText('Disconnected')).toBeDefined();
   });
 
-  it('switches to Config tab on click', () => {
+  it('has Agent Settings button linking to /agent', () => {
     renderView();
-    fireEvent.click(screen.getByRole('tab', { name: /Config/ }));
-    expect(screen.getByText('Monitoring')).toBeDefined();
-    expect(screen.getByText('Trust Level')).toBeDefined();
-  });
-
-  it('shows Scan Now button on Config tab', () => {
-    renderView();
-    fireEvent.click(screen.getByRole('tab', { name: /Config/ }));
-    expect(screen.getByText('Scan Now')).toBeDefined();
-  });
-
-  it('shows monitoring toggle on Config tab', () => {
-    renderView();
-    fireEvent.click(screen.getByRole('tab', { name: /Config/ }));
-    expect(screen.getByRole('switch', { name: /Toggle monitoring/ })).toBeDefined();
+    expect(screen.getByTitle('Agent Settings')).toBeDefined();
   });
 
   it('has tablist role for accessibility', () => {
