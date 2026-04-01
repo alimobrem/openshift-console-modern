@@ -21,6 +21,8 @@ export interface DataTableSpec {
   title?: string;
   columns: Array<{ id: string; header: string; width?: string }>;
   rows: Array<Record<string, string | number | boolean>>;
+  query?: string;      // stored PromQL for live refresh
+  timeRange?: string;  // stored for refresh
 }
 
 export interface InfoCardGridSpec {
@@ -51,6 +53,7 @@ export interface KeyValueSpec {
 
 export interface ChartSpec {
   kind: 'chart';
+  chartType?: 'line' | 'bar' | 'area';  // default 'line'
   title?: string;
   series: Array<{
     label: string;
@@ -58,7 +61,10 @@ export interface ChartSpec {
     color?: string;
   }>;
   yAxisLabel?: string;
+  xAxisLabel?: string;
   height?: number;
+  query?: string;      // stored PromQL for live refresh + editing
+  timeRange?: string;  // stored for refresh
 }
 
 export interface TabsSpec {

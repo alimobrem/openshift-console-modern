@@ -2,9 +2,15 @@
  * Renders agent ComponentSpec objects as interactive UI primitives.
  */
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { CheckCircle, AlertTriangle, XCircle, Clock, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { CheckCircle, AlertTriangle, XCircle, Clock, HelpCircle, ChevronDown, ChevronUp, Plus } from 'lucide-react';
+import {
+  LineChart, BarChart, AreaChart,
+  Line, Bar, Area,
+  XAxis, YAxis, Tooltip, Legend,
+  ResponsiveContainer, CartesianGrid,
+} from 'recharts';
 import type {
   ComponentSpec,
   DataTableSpec,
@@ -25,15 +31,16 @@ const MAX_DEPTH = 5;
 interface Props {
   spec: ComponentSpec;
   depth?: number;
+  onAddToView?: (spec: ComponentSpec) => void;
 }
 
-export function AgentComponentRenderer({ spec, depth = 0 }: Props) {
+export function AgentComponentRenderer({ spec, depth = 0, onAddToView }: Props) {
   if (depth > MAX_DEPTH) {
     return <div className="text-xs text-slate-500 italic">Content nested too deeply</div>;
   }
   switch (spec.kind) {
     case 'data_table':
-      return <AgentDataTable spec={spec} />;
+      return <AgentDataTable spec={spec} onAddToView={onAddToView} />;
     case 'info_card_grid':
       return <AgentInfoCardGrid spec={spec} />;
     case 'badge_list':
@@ -43,7 +50,7 @@ export function AgentComponentRenderer({ spec, depth = 0 }: Props) {
     case 'key_value':
       return <AgentKeyValue spec={spec} />;
     case 'chart':
-      return <AgentChart spec={spec} />;
+      return <AgentChart spec={spec} onAddToView={onAddToView} />;
     case 'tabs':
       return <AgentTabs spec={spec} depth={depth} />;
     case 'grid':
@@ -56,12 +63,21 @@ export function AgentComponentRenderer({ spec, depth = 0 }: Props) {
 }
 
 /** Compact data table for inline chat rendering */
-function AgentDataTable({ spec }: { spec: DataTableSpec }) {
+function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToView?: (spec: ComponentSpec) => void }) {
   return (
     <div className="my-2 border border-slate-700 rounded-lg overflow-hidden">
       {spec.title && (
-        <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700 text-xs font-medium text-slate-300">
-          {spec.title}
+        <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700 text-xs font-medium text-slate-300 flex items-center justify-between">
+          <span className="truncate">{spec.title}</span>
+          {onAddToView && (
+            <button
+              onClick={() => onAddToView(spec)}
+              className="p-0.5 text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors flex-shrink-0"
+              title="Add to View"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       )}
       <div className="overflow-x-auto max-h-64">
@@ -207,66 +223,107 @@ function AgentKeyValue({ spec }: { spec: KeyValueSpec }) {
   );
 }
 
-function AgentChart({ spec }: { spec: ChartSpec }) {
-  // Minimal inline SVG sparkline chart for agent responses
-  const height = spec.height || 120;
-  const width = 500;
-  const padding = { top: 10, right: 10, bottom: 20, left: 40 };
+const CHART_COLORS = ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#38bdf8', '#fb923c', '#e879f9'];
 
-  const allValues = spec.series.flatMap((s) => s.data.map(([, v]) => v));
-  const minVal = Math.min(...allValues);
-  const maxVal = Math.max(...allValues);
-  const range = maxVal - minVal || 1;
+function formatTimestamp(ts: number) {
+  return new Intl.DateTimeFormat('en', { hour: '2-digit', minute: '2-digit' }).format(ts);
+}
 
-  const allTimes = spec.series.flatMap((s) => s.data.map(([t]) => t));
-  const minTime = Math.min(...allTimes);
-  const maxTime = Math.max(...allTimes);
-  const timeRange = maxTime - minTime || 1;
+function AgentChart({ spec, onAddToView }: { spec: ChartSpec; onAddToView?: (spec: ComponentSpec) => void }) {
+  const [chartType, setChartType] = useState<'line' | 'bar' | 'area'>(spec.chartType || 'line');
+  const height = spec.height || 250;
 
-  const scaleX = (t: number) => padding.left + ((t - minTime) / timeRange) * (width - padding.left - padding.right);
-  const scaleY = (v: number) => height - padding.bottom - ((v - minVal) / range) * (height - padding.top - padding.bottom);
+  // Transform series data into recharts format: [{time, series1, series2, ...}]
+  const rechartsData = useMemo(() => {
+    const timeMap = new Map<number, Record<string, number>>();
+    for (const series of spec.series) {
+      for (const [ts, val] of series.data) {
+        const entry = timeMap.get(ts) || { time: ts };
+        entry[series.label] = val;
+        timeMap.set(ts, entry);
+      }
+    }
+    return Array.from(timeMap.values()).sort((a, b) => a.time - b.time);
+  }, [spec.series]);
 
-  const colors = ['#60a5fa', '#34d399', '#fbbf24', '#f87171', '#a78bfa'];
+  const ChartComponent = chartType === 'bar' ? BarChart : chartType === 'area' ? AreaChart : LineChart;
 
   return (
     <div className="my-2 border border-slate-700 rounded-lg overflow-hidden bg-slate-900/50">
-      {spec.title && (
-        <div className="px-3 py-1.5 border-b border-slate-700 text-xs font-medium text-slate-300">
-          {spec.title}
-        </div>
-      )}
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" style={{ maxHeight: height }}>
-        {/* Y-axis labels */}
-        <text x={padding.left - 4} y={padding.top + 4} className="text-[9px] fill-slate-500" textAnchor="end">
-          {maxVal.toFixed(1)}
-        </text>
-        <text x={padding.left - 4} y={height - padding.bottom} className="text-[9px] fill-slate-500" textAnchor="end">
-          {minVal.toFixed(1)}
-        </text>
-        {spec.yAxisLabel && (
-          <text x={8} y={height / 2} className="text-[8px] fill-slate-500" textAnchor="middle" transform={`rotate(-90, 8, ${height / 2})`}>
-            {spec.yAxisLabel}
-          </text>
-        )}
-        {/* Grid line */}
-        <line x1={padding.left} y1={height - padding.bottom} x2={width - padding.right} y2={height - padding.bottom} stroke="#334155" strokeWidth={0.5} />
-        <line x1={padding.left} y1={padding.top} x2={padding.left} y2={height - padding.bottom} stroke="#334155" strokeWidth={0.5} />
-        {/* Series */}
-        {spec.series.map((series, si) => {
-          if (series.data.length < 2) return null;
-          const color = series.color || colors[si % colors.length];
-          const points = series.data.map(([t, v]) => `${scaleX(t)},${scaleY(v)}`).join(' ');
-          return <polyline key={si} points={points} fill="none" stroke={color} strokeWidth={1.5} />;
-        })}
-      </svg>
-      {spec.series.length > 1 && (
-        <div className="px-3 py-1 border-t border-slate-700 flex gap-3">
-          {spec.series.map((s, i) => (
-            <span key={i} className="text-xs text-slate-400 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color || colors[i % colors.length] }} />
-              {s.label}
-            </span>
+      {/* Header with title, chart type switcher, and add-to-view button */}
+      <div className="px-3 py-1.5 border-b border-slate-700 flex items-center justify-between">
+        <span className="text-xs font-medium text-slate-300 truncate">{spec.title || 'Chart'}</span>
+        <div className="flex items-center gap-1">
+          {/* Chart type switcher */}
+          {(['line', 'bar', 'area'] as const).map((type) => (
+            <button
+              key={type}
+              onClick={() => setChartType(type)}
+              className={cn(
+                'px-1.5 py-0.5 text-[10px] rounded transition-colors',
+                chartType === type
+                  ? 'bg-violet-700 text-white'
+                  : 'text-slate-500 hover:text-slate-300 hover:bg-slate-800',
+              )}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
           ))}
+          {/* Add to View button */}
+          {onAddToView && (
+            <button
+              onClick={() => onAddToView({ ...spec, chartType })}
+              className="ml-1 p-0.5 text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
+              title="Add to View"
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Chart body */}
+      <div className="p-2" style={{ height }}>
+        <ResponsiveContainer width="100%" height="100%">
+          <ChartComponent data={rechartsData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+            <XAxis
+              dataKey="time"
+              tickFormatter={formatTimestamp}
+              stroke="#64748b"
+              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              axisLine={{ stroke: '#334155' }}
+            />
+            <YAxis
+              stroke="#64748b"
+              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              axisLine={{ stroke: '#334155' }}
+              label={spec.yAxisLabel ? { value: spec.yAxisLabel, angle: -90, position: 'insideLeft', style: { fill: '#94a3b8', fontSize: 10 } } : undefined}
+            />
+            <Tooltip
+              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: 6, fontSize: 11 }}
+              labelFormatter={(label) => typeof label === 'number' ? formatTimestamp(label) : String(label)}
+              labelStyle={{ color: '#94a3b8' }}
+            />
+            {spec.series.length > 1 && <Legend wrapperStyle={{ fontSize: 11, color: '#94a3b8' }} />}
+            {spec.series.map((s, i) => {
+              const color = s.color || CHART_COLORS[i % CHART_COLORS.length];
+              if (chartType === 'bar') {
+                return <Bar key={s.label} dataKey={s.label} fill={color} fillOpacity={0.8} />;
+              }
+              if (chartType === 'area') {
+                return <Area key={s.label} dataKey={s.label} stroke={color} fill={color} fillOpacity={0.15} strokeWidth={1.5} dot={false} />;
+              }
+              return <Line key={s.label} dataKey={s.label} stroke={color} strokeWidth={1.5} dot={false} />;
+            })}
+          </ChartComponent>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Query info (if available) */}
+      {spec.query && (
+        <div className="px-3 py-1 border-t border-slate-700 text-[10px] text-slate-600 truncate" title={spec.query}>
+          PromQL: {spec.query}
         </div>
       )}
     </div>
