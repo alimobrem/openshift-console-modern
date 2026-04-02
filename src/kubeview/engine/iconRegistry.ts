@@ -55,6 +55,13 @@ import {
   Ban,
   CheckCircle,
   Droplet,
+
+  // Tab/nav icons
+  Bot,
+  GitBranch,
+  Rocket,
+  LayoutDashboard,
+  Gauge,
 } from 'lucide-react';
 
 import type { LucideIcon } from 'lucide-react';
@@ -113,6 +120,13 @@ const iconRegistry: Record<string, LucideIcon> = {
   Ban,
   CheckCircle,
   Droplet,
+
+  // Tab/nav icons
+  Bot,
+  GitBranch,
+  Rocket,
+  LayoutDashboard,
+  Gauge,
 };
 
 /**
