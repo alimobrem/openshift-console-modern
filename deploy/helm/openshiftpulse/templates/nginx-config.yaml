@@ -86,6 +86,7 @@ data:
           proxy_set_header Upgrade $http_upgrade;
           proxy_set_header Connection $connection_upgrade;
           proxy_set_header X-Forwarded-Access-Token $http_x_forwarded_access_token;
+          proxy_set_header X-Forwarded-User $http_x_forwarded_user;
           proxy_http_version 1.1;
           proxy_read_timeout 3600s;
         }
@@ -94,6 +95,7 @@ data:
           proxy_pass http://{{ .Values.agent.serviceName | default (printf "%s-openshift-sre-agent" .Release.Name) }}:8080/;
           proxy_set_header Authorization "Bearer __AGENT_TOKEN__";
           proxy_set_header X-Forwarded-Access-Token $http_x_forwarded_access_token;
+          proxy_set_header X-Forwarded-User $http_x_forwarded_user;
           proxy_read_timeout 60s;
         }
         {{- else }}
