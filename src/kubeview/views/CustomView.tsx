@@ -45,14 +45,18 @@ function generateDefaultLayout(specs: ComponentSpec[], templateId?: string): Rea
     const rows = spec.kind === 'data_table' ? (spec as any).rows?.length || 5 : 0;
     const h =
       spec.kind === 'info_card_grid' ? 2 :
+      spec.kind === 'grid' ? 2 :
+      spec.kind === 'metric_card' ? 2 :
       spec.kind === 'status_list' ? Math.min(2 + Math.ceil(((spec as any).items?.length || 3) / 2), 6) :
-      spec.kind === 'badge_list' ? 2 :
+      spec.kind === 'badge_list' ? 1 :
       spec.kind === 'key_value' ? Math.min(2 + Math.ceil(((spec as any).pairs?.length || 2) / 2), 5) :
-      spec.kind === 'chart' ? 6 :
+      spec.kind === 'chart' ? 5 :
       spec.kind === 'data_table' ? Math.min(2 + Math.ceil(rows * 0.5), 8) :
+      spec.kind === 'log_viewer' ? 5 :
+      spec.kind === 'yaml_viewer' ? 4 :
       spec.kind === 'tabs' ? 8 :
       3;
-    const layout = { i: String(i), x: 0, y, w: 4, h, minW: 2, minH: 2 };
+    const layout = { i: String(i), x: 0, y, w: 4, h, minW: 1, minH: 1 };
     y += h;
     return layout;
   });

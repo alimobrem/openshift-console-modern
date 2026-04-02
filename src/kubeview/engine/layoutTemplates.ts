@@ -33,10 +33,10 @@ const TEMPLATES: LayoutTemplate[] = [
     description: '4 metric cards across top, 2 charts side-by-side, full-width table',
     tags: ['sre', 'monitoring', 'overview'],
     slots: [
-      { name: 'metric1', expectedKinds: ['metric_card', 'info_card_grid'], position: { x: 0, y: 0, w: 1, h: 2 }, description: 'Top-left metric' },
-      { name: 'metric2', expectedKinds: ['metric_card', 'info_card_grid'], position: { x: 1, y: 0, w: 1, h: 2 }, description: 'Second metric' },
-      { name: 'metric3', expectedKinds: ['metric_card', 'info_card_grid'], position: { x: 2, y: 0, w: 1, h: 2 }, description: 'Third metric' },
-      { name: 'metric4', expectedKinds: ['metric_card', 'info_card_grid'], position: { x: 3, y: 0, w: 1, h: 2 }, description: 'Fourth metric', optional: true },
+      { name: 'metric1', expectedKinds: ['metric_card', 'info_card_grid', 'grid'], position: { x: 0, y: 0, w: 1, h: 2 }, description: 'Top-left metric' },
+      { name: 'metric2', expectedKinds: ['metric_card', 'info_card_grid', 'grid'], position: { x: 1, y: 0, w: 1, h: 2 }, description: 'Second metric' },
+      { name: 'metric3', expectedKinds: ['metric_card', 'info_card_grid', 'grid'], position: { x: 2, y: 0, w: 1, h: 2 }, description: 'Third metric' },
+      { name: 'metric4', expectedKinds: ['metric_card', 'info_card_grid', 'grid'], position: { x: 3, y: 0, w: 1, h: 2 }, description: 'Fourth metric', optional: true },
       { name: 'chart_left', expectedKinds: ['chart'], position: { x: 0, y: 2, w: 2, h: 5 }, description: 'Left chart' },
       { name: 'chart_right', expectedKinds: ['chart'], position: { x: 2, y: 2, w: 2, h: 5 }, description: 'Right chart', optional: true },
       { name: 'table', expectedKinds: ['data_table', 'status_list'], position: { x: 0, y: 7, w: 4, h: 6 }, description: 'Full-width table' },
@@ -48,7 +48,7 @@ const TEMPLATES: LayoutTemplate[] = [
     description: 'Summary cards, 2-column charts, data table, events log',
     tags: ['namespace', 'overview', 'workloads'],
     slots: [
-      { name: 'summary', expectedKinds: ['info_card_grid'], position: { x: 0, y: 0, w: 4, h: 2 }, description: 'Summary cards' },
+      { name: 'summary', expectedKinds: ['info_card_grid', 'grid'], position: { x: 0, y: 0, w: 4, h: 2 }, description: 'Summary cards' },
       { name: 'chart_left', expectedKinds: ['chart'], position: { x: 0, y: 2, w: 2, h: 5 }, description: 'Left chart (CPU/memory)', optional: true },
       { name: 'chart_right', expectedKinds: ['chart'], position: { x: 2, y: 2, w: 2, h: 5 }, description: 'Right chart', optional: true },
       { name: 'table', expectedKinds: ['data_table'], position: { x: 0, y: 7, w: 4, h: 6 }, description: 'Pod/workload table' },
