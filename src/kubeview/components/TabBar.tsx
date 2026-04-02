@@ -59,6 +59,29 @@ export function getTabTitle(path: string): string {
   return last.charAt(0).toUpperCase() + last.slice(1);
 }
 
+const ROUTE_ICONS: Record<string, string> = {
+  '/agent': 'Bot',
+  '/pulse': 'Activity',
+  '/workloads': 'Package',
+  '/networking': 'Globe',
+  '/compute': 'Server',
+  '/storage': 'HardDrive',
+  '/incidents': 'Bell',
+  '/security': 'ShieldCheck',
+  '/gitops': 'GitBranch',
+  '/fleet': 'Layers',
+  '/admin': 'Settings',
+  '/identity': 'Shield',
+  '/readiness': 'Rocket',
+  '/welcome': 'Home',
+};
+
+function getTabIcon(path: string): string {
+  if (ROUTE_ICONS[path]) return ROUTE_ICONS[path];
+  if (path.startsWith('/custom/')) return 'LayoutDashboard';
+  return '';
+}
+
 export function TabBar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -127,6 +150,7 @@ export function TabBar() {
 
       addTab({
         title,
+        icon: getTabIcon(currentPath),
         path: currentPath,
         pinned: false,
         closable: true,
