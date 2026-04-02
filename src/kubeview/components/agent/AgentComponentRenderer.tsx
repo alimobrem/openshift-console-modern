@@ -790,24 +790,45 @@ function AgentYamlViewer({ spec }: { spec: YamlViewerSpec }) {
 
 // ─── Metric Card ─────────────────────────────────────────────────────────────
 
-const TREND_ICONS: Record<string, string> = { up: '↑', down: '↓', stable: '→' };
-const TREND_COLORS: Record<string, string> = { up: 'text-red-400', down: 'text-emerald-400', stable: 'text-slate-400' };
-const STATUS_RING: Record<string, string> = { healthy: 'border-emerald-500', warning: 'border-amber-500', error: 'border-red-500' };
+import { MetricCard as SparklineMetricCard } from '../metrics/Sparkline';
+
+const METRIC_STATUS_COLORS: Record<string, string> = {
+  healthy: '#10b981',
+  warning: '#f59e0b',
+  error: '#ef4444',
+};
+const METRIC_STATUS_BORDER: Record<string, string> = {
+  healthy: 'border-emerald-800',
+  warning: 'border-amber-800',
+  error: 'border-red-800',
+};
 
 function AgentMetricCard({ spec }: { spec: MetricCardSpec }) {
+  const color = spec.color || METRIC_STATUS_COLORS[spec.status || ''] || '#3b82f6';
+
+  // If a PromQL query is provided, render the sparkline MetricCard
+  if (spec.query) {
+    return (
+      <SparklineMetricCard
+        title={spec.title}
+        query={spec.query}
+        unit={spec.unit || ''}
+        color={color}
+        thresholds={spec.thresholds}
+      />
+    );
+  }
+
+  // Static metric card (no query — just value + optional sparkline data)
   return (
-    <div className={cn('rounded-lg border bg-slate-900/60 p-4', STATUS_RING[spec.status || ''] || 'border-slate-800')}>
-      <div className="text-xs text-slate-400">{spec.title}</div>
-      <div className="flex items-baseline gap-2 mt-1">
-        <span className="text-2xl font-bold text-slate-100">{spec.value}</span>
-        {spec.unit && <span className="text-sm text-slate-500">{spec.unit}</span>}
-        {spec.trend && (
-          <span className={cn('text-sm font-medium', TREND_COLORS[spec.trend])}>
-            {TREND_ICONS[spec.trend]} {spec.trendValue || ''}
-          </span>
-        )}
+    <div className={cn('bg-slate-900 rounded-lg border p-3', METRIC_STATUS_BORDER[spec.status || ''] || 'border-slate-800')}>
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-xs text-slate-400">{spec.title}</span>
+        <span className="text-sm font-mono font-bold" style={{ color }}>
+          {spec.value}{spec.unit ? spec.unit : ''}
+        </span>
       </div>
-      {spec.description && <div className="text-xs text-slate-500 mt-1">{spec.description}</div>}
+      {spec.description && <div className="text-xs text-slate-500">{spec.description}</div>}
     </div>
   );
 }

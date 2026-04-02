@@ -152,6 +152,12 @@ export interface MetricCardSpec {
   trendValue?: string;
   status?: 'healthy' | 'warning' | 'error';
   description?: string;
+  /** Optional PromQL query — renders a live sparkline chart when provided */
+  query?: string;
+  /** Sparkline color (default: auto from status) */
+  color?: string;
+  /** Threshold values for sparkline color changes */
+  thresholds?: { warning: number; critical: number };
 }
 
 export interface ViewSpec {
