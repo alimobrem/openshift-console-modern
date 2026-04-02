@@ -26,6 +26,7 @@ import type {
 } from '../../engine/agentComponents';
 import { Badge } from '../primitives/Badge';
 import { InfoCard } from '../primitives/InfoCard';
+import { MetricCard as SparklineMetricCard } from '../metrics/Sparkline';
 
 const MAX_DEPTH = 5;
 
@@ -789,8 +790,6 @@ function AgentYamlViewer({ spec }: { spec: YamlViewerSpec }) {
 }
 
 // ─── Metric Card ─────────────────────────────────────────────────────────────
-
-import { MetricCard as SparklineMetricCard } from '../metrics/Sparkline';
 
 const METRIC_STATUS_COLORS: Record<string, string> = {
   healthy: '#10b981',
