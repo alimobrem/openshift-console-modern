@@ -1,87 +1,25 @@
 /**
- * SaveViewWatcher — watches for view creation opportunities:
- * 1. Agent sends view_spec event → show save toast immediately
- * 2. Agent response has components → show "Save as View" toast
+ * SaveViewWatcher — syncs local view state when the agent creates a view.
+ * Views are auto-saved on the backend via create_dashboard — this just
+ * refreshes the local store and clears the pending spec.
  */
 
 import { useEffect, useRef } from 'react';
 import { useAgentStore } from '../../store/agentStore';
 import { useCustomViewStore } from '../../store/customViewStore';
-import { useUIStore } from '../../store/uiStore';
-import type { ViewSpec } from '../../engine/agentComponents';
 
 export function SaveViewWatcher() {
   const pendingViewSpec = useAgentStore((s) => s.pendingViewSpec);
-  const messages = useAgentStore((s) => s.messages);
-  const streaming = useAgentStore((s) => s.streaming);
   const lastHandledViewSpec = useRef<string | null>(null);
-  const lastHandledMsgId = useRef<string | null>(null);
 
-  // Watch for view_spec events (from create_dashboard tool)
-  // Views are auto-saved on the backend — just notify and add to local state
   useEffect(() => {
     if (!pendingViewSpec || pendingViewSpec.id === lastHandledViewSpec.current) return;
     lastHandledViewSpec.current = pendingViewSpec.id;
 
-    // Add to local store (already saved on backend)
+    // Refresh local store (already saved on backend)
     useCustomViewStore.getState().loadViews();
     useAgentStore.setState({ pendingViewSpec: null });
-
-    useUIStore.getState().addToast({
-      type: 'success',
-      title: `View saved: "${pendingViewSpec.title}"`,
-      detail: `${pendingViewSpec.layout.length} widgets`,
-      duration: 5000,
-      action: {
-        label: 'Open View',
-        onClick: () => {
-          window.location.hash = '';
-          window.location.pathname = `/custom/${pendingViewSpec.id}`;
-        },
-      },
-    });
   }, [pendingViewSpec]);
-
-  // Watch for assistant messages with components — offer to save as view
-  useEffect(() => {
-    if (streaming) return; // Wait until stream is done
-    if (messages.length === 0) return;
-
-    const lastMsg = messages[messages.length - 1];
-    if (lastMsg.role !== 'assistant') return;
-    if (!lastMsg.components || lastMsg.components.length === 0) return;
-    if (lastMsg.id === lastHandledMsgId.current) return;
-    lastHandledMsgId.current = lastMsg.id;
-
-    // Don't show if we already showed a view_spec toast for this turn
-    if (pendingViewSpec) return;
-
-    // Only show if there are 2+ components (single component has the + button)
-    if (lastMsg.components.length < 2) return;
-
-    const components = lastMsg.components;
-    useUIStore.getState().addToast({
-      type: 'success',
-      title: 'Save as View?',
-      detail: `${components.length} widgets generated — save them as a reusable view`,
-      duration: 15000,
-      action: {
-        label: 'Save View',
-        onClick: () => {
-          // Derive a meaningful name from the first component's title
-          const firstTitle = (components[0] as any)?.title || '';
-          const autoTitle = firstTitle || `${components.length}-Widget View`;
-          const view: ViewSpec = {
-            id: `cv-${Date.now().toString(36)}`,
-            title: autoTitle,
-            layout: components,
-            generatedAt: Date.now(),
-          };
-          useCustomViewStore.getState().saveView(view);
-        },
-      },
-    });
-  }, [messages, streaming, pendingViewSpec]);
 
   return null;
 }
