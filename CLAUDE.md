@@ -16,9 +16,12 @@ npm run dev              # rspack dev server on port 9000
 npm run build            # production build (~1s)
 
 # Tests
-npx vitest --run         # run all tests (~7s)
+npx vitest --run         # run all tests (~9s, 1888 tests)
 npx vitest --run src/kubeview/views/__tests__/WorkloadsView.test.tsx  # single file
 npx vitest --run -t "test name pattern"  # single test by name
+
+# Helm chart validation (no cluster needed)
+./deploy/test-helm.sh    # 12 tests: lint, template, security, token leak check
 
 # Type checking
 npm run type-check       # tsc --noEmit
@@ -225,15 +228,15 @@ Helm umbrella chart in `deploy/helm/pulse/`. UI and agent always deployed togeth
 
 When deploying to OpenShift clusters, always verify NetworkPolicy egress rules, image pull access, and OAuth/TLS configuration before the first deploy attempt. Run a pre-deploy checklist rather than iterating through failures.
 
-**Pre-deploy checklist:**
-1. `oc whoami` — verify cluster auth works
-2. `oc get networkpolicy -n openshiftpulse` — check egress allows agent → Kubernetes API, Prometheus, Vertex AI
-3. `podman login --get-login quay.io` — verify image push access
-4. `oc get secret openshiftpulse-oauth-secrets -n openshiftpulse` — verify OAuth secrets exist (or will be created)
-5. `helm template deploy/helm/pulse/ --set ...` — dry-run to catch config errors before deploying
+**Pre-deploy checklist (run before every deploy):**
+1. `./deploy/test-helm.sh` — validate Helm charts locally (12 tests, no cluster needed)
+2. `oc whoami` — verify cluster auth works
+3. `oc get networkpolicy -n openshiftpulse` — check egress allows agent → Kubernetes API, Prometheus, Vertex AI
+4. `podman login --get-login quay.io` — verify image push access
+5. `oc get secret openshiftpulse-oauth-secrets -n openshiftpulse` — verify OAuth secrets exist (or will be created)
+6. Verify `ANTHROPIC_VERTEX_PROJECT_ID` or `ANTHROPIC_API_KEY` is set
 
 When fixing PostgreSQL deployment issues, validate password encoding, avoid reserved SQL keywords in schema, and check SERIAL/sequence conflicts before the first deploy. Prefer testing with a local PG instance first.
-6. Verify `ANTHROPIC_VERTEX_PROJECT_ID` or `ANTHROPIC_API_KEY` is set
 
 ### GitHub Pages
 - **UI**: https://alimobrem.github.io/OpenshiftPulse/ (cyberpunk theme, `docs/index.html`)
