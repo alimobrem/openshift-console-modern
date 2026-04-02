@@ -369,7 +369,7 @@ export function CommandBar() {
                   Getting Started
                 </button>
                 <button
-                  onClick={() => { setShowUserMenu(false); go('/users', 'Users'); }}
+                  onClick={() => { setShowUserMenu(false); go('/identity?tab=users', 'Identity & Access'); }}
                   className="w-full px-3 py-2 text-left text-sm text-slate-300 hover:bg-slate-700 transition-colors"
                 >
                   User Management

@@ -1029,8 +1029,7 @@ users:
                             setConfirmAction(check.action!.id);
                           } else if (check.action!.path) {
                             const pageName = check.action!.path.startsWith('/admin') ? 'Admin'
-                              : check.action!.path.startsWith('/access-control') ? 'Access Control'
-                              : check.action!.path.startsWith('/users') ? 'Users'
+                              : check.action!.path.startsWith('/identity') ? 'Identity & Access'
                               : check.action!.label;
                             go(check.action!.path, pageName);
                           }

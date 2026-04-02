@@ -72,6 +72,14 @@ export default function CustomView() {
   const updateWidget = useCustomViewStore((s) => s.updateWidget);
   const shareView = useCustomViewStore((s) => s.shareView);
 
+  // Load views if the requested view isn't in the store yet
+  const loadViews = useCustomViewStore((s) => s.loadViews);
+  useEffect(() => {
+    if (viewId && !view) {
+      loadViews();
+    }
+  }, [viewId, view, loadViews]);
+
   // Update tab title to match view title
   const updateTab = useUIStore((s) => s.updateTab);
   useEffect(() => {

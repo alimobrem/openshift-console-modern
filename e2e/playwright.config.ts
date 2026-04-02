@@ -19,7 +19,9 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
   ],
-  /* Start mock K8s + dev server before tests (unless targeting a deployed instance) */
+  /* Tear down agent + PostgreSQL containers after tests */
+  globalTeardown: process.env.PULSE_URL ? undefined : './global-teardown.ts',
+  /* Start mock K8s + agent + dev server before tests (unless targeting a deployed instance) */
   ...(process.env.PULSE_URL ? {} : {
     webServer: [
       {
@@ -30,10 +32,20 @@ export default defineConfig({
         timeout: 10_000,
       },
       {
+        command: 'bash start-agent.sh',
+        cwd: __dirname,
+        url: 'http://localhost:8080/healthz',
+        reuseExistingServer: true,
+        timeout: 120_000,
+      },
+      {
         command: 'npm run dev',
         url: 'http://localhost:9000',
         reuseExistingServer: !process.env.CI,
         timeout: 60_000,
+        env: {
+          PULSE_AGENT_WS_TOKEN: process.env.E2E_AGENT_TOKEN || 'e2e-test-token',
+        },
       },
     ],
   }),

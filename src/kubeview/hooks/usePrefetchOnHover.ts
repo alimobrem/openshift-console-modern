@@ -50,12 +50,13 @@ const VIEW_DATA_REQUIREMENTS: Record<string, string[]> = {
     '/apis/networking.k8s.io/v1/networkpolicies',
     '/api/v1/namespaces',
   ],
-  '/access-control': [
+  '/identity': [
     '/apis/rbac.authorization.k8s.io/v1/clusterroles',
     '/apis/rbac.authorization.k8s.io/v1/clusterrolebindings',
     '/apis/rbac.authorization.k8s.io/v1/roles',
     '/apis/rbac.authorization.k8s.io/v1/rolebindings',
     '/api/v1/serviceaccounts',
+    '/apis/user.openshift.io/v1/users',
     '/api/v1/namespaces',
   ],
   '/pulse': [
@@ -69,10 +70,6 @@ const VIEW_DATA_REQUIREMENTS: Record<string, string[]> = {
     '/apis/build.openshift.io/v1/builds',
     '/apis/build.openshift.io/v1/buildconfigs',
     '/apis/image.openshift.io/v1/imagestreams',
-  ],
-  '/users': [
-    '/apis/user.openshift.io/v1/users',
-    '/api/v1/serviceaccounts',
   ],
 };
 

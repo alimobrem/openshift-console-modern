@@ -21,7 +21,6 @@ const DriftDetectorView = lazy(() => import('../views/fleet/DriftDetectorView').
 const CustomViewRedirect = lazy(() => import('../views/CustomView'));
 const IncidentCenterView = lazy(() => import('../views/IncidentCenterView'));
 const OnboardingView = lazy(() => import('../views/OnboardingView'));
-const ReviewQueueView = lazy(() => import('../views/ReviewQueueView'));
 const AgentSettingsView = lazy(() => import('../views/AgentSettingsView'));
 
 function CatchFallback() {
@@ -64,7 +63,7 @@ export function domainRoutes() {
       <Route path="compute" element={<Lazy><ComputeView /></Lazy>} />
       <Route path="storage" element={<Lazy><StorageView /></Lazy>} />
       <Route path="builds" element={<Navigate to="/workloads?tab=builds" replace />} />
-      <Route path="crds" element={<Navigate to="/admin?tab=crds" replace />} />
+      <Route path="crds" element={<Navigate to="/admin" replace />} />
       <Route path="security" element={<Lazy><SecurityView /></Lazy>} />
       <Route path="access-control" element={<Navigate to="/identity?tab=rbac" replace />} />
       <Route path="users" element={<Navigate to="/identity?tab=users" replace />} />

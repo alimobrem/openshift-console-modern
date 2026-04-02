@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Clock, Search, ChevronDown, ChevronRight, Info,
   AlertTriangle, CheckCircle, XCircle, Activity,
@@ -40,6 +40,11 @@ export function HistoryTab() {
   const selectedNamespace = useUIStore((s) => s.selectedNamespace);
   const nsFilter = selectedNamespace !== '*' ? selectedNamespace : undefined;
   const fixHistory = useMonitorStore((s) => s.fixHistory);
+  const loadFixHistory = useMonitorStore((s) => s.loadFixHistory);
+
+  useEffect(() => {
+    loadFixHistory();
+  }, [loadFixHistory]);
 
   const [timeRange, setTimeRange] = useState<TimeRange>('24h');
   const [searchQuery, setSearchQuery] = useState('');

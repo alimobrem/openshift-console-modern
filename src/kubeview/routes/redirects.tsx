@@ -15,12 +15,7 @@ export function redirectRoutes() {
       {isFeatureEnabled('incidentCenter') && (
         <Route path="monitor" element={<Navigate to="/incidents" replace />} />
       )}
-      {isFeatureEnabled('identityView') && (
-        <>
-          <Route path="users" element={<Navigate to="/identity" replace />} />
-          <Route path="access-control" element={<Navigate to="/identity" replace />} />
-        </>
-      )}
+      {/* /users and /access-control redirects are in domainRoutes.tsx */}
     </>
   );
 }

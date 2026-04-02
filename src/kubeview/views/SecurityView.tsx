@@ -159,7 +159,7 @@ export default function SecurityView() {
         ? 'kubeadmin still exists — remove after configuring an identity provider'
         : 'kubeadmin has been removed',
       severity: kubeadminExists ? 'warning' : 'info',
-      link: '/users', linkTitle: 'Users',
+      link: '/identity?tab=users', linkTitle: 'Identity & Access',
     });
 
     // TLS (on HyperShift, API server TLS is managed by the hosting provider)
@@ -195,7 +195,7 @@ export default function SecurityView() {
         ? 'No non-system cluster-admin bindings'
         : `${clusterAdmins.length} subject${clusterAdmins.length > 1 ? 's' : ''} with cluster-admin: ${clusterAdmins.map(a => `${a.kind}/${a.name}`).join(', ')}`,
       severity: clusterAdmins.length > CLUSTER_ADMIN_THRESHOLD + 2 ? 'warning' : 'info',
-      link: '/access-control', linkTitle: 'Access Control',
+      link: '/identity?tab=rbac', linkTitle: 'Identity & Access',
     });
 
     // Network policies
@@ -327,7 +327,7 @@ export default function SecurityView() {
             {warningFails.length > 0 && <div className="text-xs text-yellow-400">{warningFails.length} warning</div>}
           </div>
           <SummaryCard icon={<Users className="w-4 h-4 text-blue-400" />} label="Cluster Admins" value={String(clusterAdmins.length)}
-            sub={clusterAdmins.length > 0 ? clusterAdmins.slice(0, 2).map(a => a.name).join(', ') : 'none'} onClick={() => go('/access-control', 'Access Control')} />
+            sub={clusterAdmins.length > 0 ? clusterAdmins.slice(0, 2).map(a => a.name).join(', ') : 'none'} onClick={() => go('/identity?tab=rbac', 'Identity & Access')} />
           <SummaryCard icon={<Network className="w-4 h-4 text-cyan-400" />} label="Network Policies" value={String(networkPolicies.length)}
             sub={`${nsWithNetPol.size} namespaces covered`} onClick={() => go('/networking', 'Networking')} />
           <SummaryCard icon={<Lock className="w-4 h-4 text-amber-400" />} label="TLS Certificates" value={String(tlsSecretCount)}
@@ -375,7 +375,7 @@ export default function SecurityView() {
               <Key className="w-4 h-4 text-red-400" />
               Cluster-Admin Access ({clusterAdmins.length})
             </h2>
-            <button onClick={() => go('/access-control', 'Access Control')}
+            <button onClick={() => go('/identity?tab=rbac', 'Identity & Access')}
               className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1">
               Manage <ArrowRight className="w-3 h-3" />
             </button>
@@ -429,10 +429,9 @@ export default function SecurityView() {
 
         {/* Quick links */}
         <MetricGrid>
-          <QuickLink icon={<Users className="w-5 h-5 text-blue-400" />} label="Access Control" description="RBAC roles and bindings" onClick={() => go('/access-control', 'Access Control')} />
-          <QuickLink icon={<Users className="w-5 h-5 text-teal-400" />} label="User Management" description="Users, groups, impersonation" onClick={() => go('/users', 'Users')} />
+          <QuickLink icon={<Users className="w-5 h-5 text-blue-400" />} label="Identity & Access" description="RBAC roles, bindings, users, groups" onClick={() => go('/identity', 'Identity & Access')} />
           <QuickLink icon={<Lock className="w-5 h-5 text-amber-400" />} label="Certificates" description="TLS cert inventory and expiry" onClick={() => go('/admin?tab=certificates', 'Certificates')} />
-          <QuickLink icon={<Shield className="w-5 h-5 text-orange-400" />} label="Readiness" description="Production readiness checks" onClick={() => go('/admin?tab=readiness', 'Readiness')} />
+          <QuickLink icon={<Shield className="w-5 h-5 text-orange-400" />} label="Readiness" description="Production readiness checks" onClick={() => go('/readiness', 'Production Readiness')} />
         </MetricGrid>
       </div>
     </div>

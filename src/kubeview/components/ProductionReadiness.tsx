@@ -636,8 +636,8 @@ export default function ProductionReadiness() {
             { label: 'Storage', checks: 6, desc: 'Default SC, reclaim policy, binding mode, snapshots, quotas', icon: <HardDrive className="w-4 h-4 text-orange-400" />, path: '/storage' },
             { label: 'Networking', checks: 6, desc: 'Route TLS, network policies, NodePort, ingress, egress', icon: <Globe className="w-4 h-4 text-cyan-400" />, path: '/networking' },
             { label: 'Compute', checks: 6, desc: 'HA masters, workers, MHCs, pressure, kubelet, autoscaling', icon: <Server className="w-4 h-4 text-blue-400" />, path: '/compute' },
-            { label: 'Access Control', checks: 6, desc: 'SA privileges, wildcard rules, stale bindings, isolation', icon: <Shield className="w-4 h-4 text-indigo-400" />, path: '/access-control' },
-            { label: 'Identity & Access', checks: 6, desc: 'IdP, kubeadmin, cluster-admin audit, inactive users, groups', icon: <Users className="w-4 h-4 text-teal-400" />, path: '/users' },
+            { label: 'Access Control', checks: 6, desc: 'SA privileges, wildcard rules, stale bindings, isolation', icon: <Shield className="w-4 h-4 text-indigo-400" />, path: '/identity?tab=rbac' },
+            { label: 'Identity & Access', checks: 6, desc: 'IdP, kubeadmin, cluster-admin audit, inactive users, groups', icon: <Users className="w-4 h-4 text-teal-400" />, path: '/identity?tab=users' },
             { label: 'Security', checks: 10, desc: 'TLS, encryption, SCCs, network policies, secrets management, ACS detection', icon: <Shield className="w-4 h-4 text-indigo-400" />, path: '/security' },
           ].map((audit) => (
             <button key={audit.label} onClick={() => go(audit.path, audit.label)}

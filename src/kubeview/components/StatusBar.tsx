@@ -44,13 +44,11 @@ export function StatusBar() {
     if (path === '/storage') return 'Storage';
     if (path === '/builds') return 'Builds';
     if (path === '/crds') return 'Custom Resources';
-    if (path === '/access-control') return 'Access Control';
-    if (path === '/users') return 'User Management';
+    if (path === '/identity') return 'Identity & Access';
     if (path === '/admin') return 'Administration';
     if (path === '/alerts') return 'Alerts';
     if (path === '/incidents') return 'Incident Center';
     if (path === '/reviews') return 'Review Queue';
-    if (path === '/identity') return 'Identity & Access';
     if (path === '/security') return 'Security';
     if (path === '/gitops') return 'GitOps';
     if (path === '/fleet') return 'Fleet';

@@ -1,11 +1,10 @@
-import React, { Suspense, lazy } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Settings, Puzzle, Shield, Database, GitBranch,
   ArrowUpCircle, GitCompare, Gauge, Lock,
 } from 'lucide-react';
 
-const CRDsView = lazy(() => import('./CRDsView'));
 import { cn } from '@/lib/utils';
 import { k8sList, k8sGet } from '../engine/query';
 import { fetchAgentEvalStatus } from '../engine/evalStatus';
@@ -15,7 +14,6 @@ import type { ClusterVersion, ClusterOperator, Node, Condition } from '../engine
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useClusterStore } from '../store/clusterStore';
 import ClusterConfig from '../components/ClusterConfig';
-import ProductionReadiness from '../components/ProductionReadiness';
 import { parseCpu, parseMem, parseResourceValue } from '../engine/formatting';
 import { QuotasTab } from './admin/QuotasTab';
 import { CertificatesTab } from './admin/CertificatesTab';

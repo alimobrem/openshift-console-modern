@@ -205,7 +205,16 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true,
-        pathRewrite: (path: string) => path.replace(/^\/api\/agent/, ''),
+        pathRewrite: (path: string) => {
+          const stripped = path.replace(/^\/api\/agent/, '');
+          const token = process.env.PULSE_AGENT_WS_TOKEN;
+          if (!token) return stripped;
+          const sep = stripped.includes('?') ? '&' : '?';
+          return `${stripped}${sep}token=${token}`;
+        },
+        ...(process.env.PULSE_AGENT_WS_TOKEN ? {
+          headers: { 'X-Forwarded-Access-Token': 'e2e-test-user' },
+        } : {}),
       },
       ...(process.env.ALERTMANAGER_URL ? [{
         context: ['/api/alertmanager'],

@@ -14,6 +14,7 @@ vi.mock('../../../store/uiStore', () => ({
 vi.mock('../../../store/monitorStore', () => ({
   useMonitorStore: (sel: any) => sel({
     fixHistory: [],
+    loadFixHistory: vi.fn(),
   }),
 }));
 

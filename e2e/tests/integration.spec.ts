@@ -31,8 +31,11 @@ test.describe('Integration: Data Flow', () => {
   });
 
   test('Compute view renders heading', async ({ page }) => {
+    // Navigate to welcome first to warm the bundle, then to compute
+    await page.goto('/welcome');
+    await page.waitForLoadState('networkidle');
     await page.goto('/compute');
-    await expect(page.locator('text=Compute').first()).toBeVisible({ timeout: 15_000 });
+    await expect(page.locator('h1:has-text("Compute")').first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('Pulse view renders heading', async ({ page }) => {

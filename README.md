@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.19.1"><img src="https://img.shields.io/badge/release-v5.19.1-2563eb?style=for-the-badge" alt="Version"></a>
-  <img src="https://img.shields.io/badge/tests-1866%20unit%20%2B%2014%20Helm%20%2B%2028%20E2E-10b981?style=for-the-badge" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-1888%20unit%20%2B%2016%20Helm%20%2B%2053%20E2E-10b981?style=for-the-badge" alt="Tests">
   <img src="https://img.shields.io/badge/health%20checks-77-f59e0b?style=for-the-badge" alt="Health Checks">
   <img src="https://img.shields.io/badge/CVEs-0-10b981?style=for-the-badge" alt="CVEs">
   <img src="https://img.shields.io/badge/license-MIT-6366f1?style=for-the-badge" alt="License">
@@ -86,7 +86,7 @@ npm run dev    # http://localhost:9000
 
 | Category | What You Get |
 |----------|-------------|
-| **AI Agent** | Claude-powered SRE diagnostics and security scanning. 112 tools, 10 runbooks, dynamic UI rendering (10 component types: data_table, info_card_grid, chart, status_list, badge_list, key_value, relationship_tree, tabs, grid, section), dashboard generation with auto-save to PostgreSQL, prompt caching, dynamic tool selection, cluster context injection. [pulse-agent](https://github.com/alimobrem/pulse-agent) |
+| **AI Agent** | Claude-powered SRE diagnostics and security scanning. 72 tools, 10 runbooks, dynamic UI rendering (10 component types: data_table, info_card_grid, chart, status_list, badge_list, key_value, relationship_tree, tabs, grid, section), dashboard generation with auto-save to PostgreSQL, prompt caching, dynamic tool selection, cluster context injection. [pulse-agent](https://github.com/alimobrem/pulse-agent) |
 | **Predictive AI** | Live cluster-aware smart prompts: AI suggestions reflect actual issues (crash-looping pods, degraded operators, pending PVCs) not generic templates. Integrated into Command Palette (`?` mode), dock agent panel, and empty states. |
 | **Native AI Layer** | Unified intelligence layer across all surfaces: smart prompts adapt to cluster state, AI query mode in Command Palette (`?`), violet-branded AI surfaces, auto-expanding InlineAgent for unhealthy resources, "Ask AI" buttons on PulseView attention items, first-run onboarding, dock notification dot for background insights |
 | **Ask Pulse** | Natural language queries in Cmd+K — type a question, get AI-powered answers with action buttons. Dedicated WebSocket, falls back gracefully when agent is offline. |
@@ -117,7 +117,7 @@ npm run dev    # http://localhost:9000
 
 | Feature | Details |
 |---------|---------|
-| **AI Agent** | Chat with Claude-powered SRE/Security agent (112 tools, 10 component types). "Ask Agent" from any resource. Streaming, tool execution indicators, confirmation gates. Agent Settings at `/agent` with Settings/Memory/Views tabs. |
+| **AI Agent** | Chat with Claude-powered SRE/Security agent (72 tools, 10 component types). "Ask Agent" from any resource. Streaming, tool execution indicators, confirmation gates. Agent Settings at `/agent` with Settings/Memory/Views tabs. |
 | **Ask Pulse** | Natural language queries in Cmd+K: type a question in the Command Palette, get AI-powered answers with action buttons. "Open in Agent" for full conversations. |
 | **Incident Actions** | PR-style review of AI-proposed changes merged into Incident Center: YAML diffs, risk badges, business impact, approve/reject. Live data from monitor WebSocket. |
 | **Native AI UX** | Unified violet-branded intelligence layer: `?` in Command Palette sends to agent, smart prompts adapt to cluster state, "Ask AI" on PulseView attention items, auto-expand InlineAgent for unhealthy resources, AI empty state suggestions, first-run onboarding card, dock agent notification dot. |
@@ -173,7 +173,7 @@ npm run dev    # http://localhost:9000
 | **State** | Zustand + TanStack Query | Client + server state separation |
 | **Real-time** | WebSocket watches | Instant updates, 60s polling fallback |
 | **Styling** | Tailwind CSS 3.4 + Radix UI | Utility-first, headless components, CVA variants |
-| **Testing** | Vitest + Playwright + Helm | 1,866 unit + 14 Helm + 28 E2E in ~8s |
+| **Testing** | Vitest + Playwright + Helm | 1,888 unit + 16 Helm + 53 E2E in ~9s |
 | **Charts** | Pure SVG sparklines | Zero chart library dependency |
 | **Security** | Red Hat UBI images | 0 CVEs, all images from Red Hat registries |
 
@@ -322,7 +322,7 @@ Browser --> OAuth Proxy (8443/TLS) --> nginx (8080) --> K8s API / Prometheus / A
 ---
 
 <p align="center">
-  <strong>1,866 unit + 14 Helm + 28 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>14 views</strong> &bull; <strong>112 AI tools</strong> &bull; <strong>500+ operators</strong>
+  <strong>1,888 unit + 16 Helm + 53 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>14 views</strong> &bull; <strong>72 AI tools</strong> &bull; <strong>500+ operators</strong>
 </p>
 
 <p align="center">
