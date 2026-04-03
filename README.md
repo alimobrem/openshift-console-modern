@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.19.1"><img src="https://img.shields.io/badge/release-v5.19.1-2563eb?style=for-the-badge" alt="Version"></a>
+  <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.20.0"><img src="https://img.shields.io/badge/release-v5.20.0-2563eb?style=for-the-badge" alt="Version"></a>
   <img src="https://img.shields.io/badge/tests-1888%20unit%20%2B%2016%20Helm%20%2B%2053%20E2E-10b981?style=for-the-badge" alt="Tests">
   <img src="https://img.shields.io/badge/health%20checks-77-f59e0b?style=for-the-badge" alt="Health Checks">
   <img src="https://img.shields.io/badge/CVEs-0-10b981?style=for-the-badge" alt="CVEs">
@@ -104,7 +104,7 @@ npm run dev    # http://localhost:9000
 | **Admin Overview** | Firing alerts, named degraded operators, cert warnings, quota hot spots, health score, and Agent quality gate status with PASS/FAIL emphasis — the 8am view |
 | **ArgoCD / GitOps** | 4-step setup wizard (operator install → git config → first app → verify), sync badges, auto-PR on save, drift detection, Rollouts (canary/blue-green), Projects. GitHub, GitLab, Bitbucket. |
 | **Capacity Planning** | predict_linear() projections for CPU, memory, disk, pods with days-until-exhaustion and trend charts |
-| **HyperShift** | Auto-detects hosted control planes, adapts checks, hides irrelevant Machine API panels |
+| **HyperShift** | Auto-detects hosted control planes via infrastructure API. Cluster type badge, dedicated ClusterTypeSummary (NodePool counts vs master/etcd health), role-filtered hex map, adapted capacity planning queries, section ordering tuned per cluster type |
 | **Production Readiness Program** | 30 gates across 6 categories (infrastructure, security, observability, reliability, operations, compliance). Wizard + checklist modes, blocking gates, waiver workflow, continuous re-checks on schedule |
 | **Degraded Mode UX** | Standardized failure handling across all views — graceful degradation with inline error states, retry actions, and partial data rendering when APIs are unavailable |
 | **Trust Escalation** | Confirmation dialog for agent trust level 3/4 escalation, preventing accidental grant of destructive capabilities |
@@ -149,7 +149,7 @@ npm run dev    # http://localhost:9000
 | **Pulse** | AI morning briefing, overnight agent activity feed, incident insights rail, cost trends. "Cluster Zen" calm state when healthy. Fleet mode: cluster health table, risk scores, AI analysis |
 | **Agent** | Consolidated agent hub: Settings, Memory, and Views tabs at `/agent` |
 | **Workloads** | Metrics + 6-check health audit, deployments sorted unhealthy-first |
-| **Compute** | Node metrics, CPU/memory bars, HyperShift-aware |
+| **Compute** | Node hex map with role filters, cluster type summary (HyperShift vs self-managed), capacity planning, machine management |
 | **Storage** | PVC health, capacity audit, CSI drivers |
 | **Networking** | Routes, network policies, ingress health |
 | **Alerts** | Now a tab in Incident Center — severity filters, silence lifecycle |
@@ -173,7 +173,7 @@ npm run dev    # http://localhost:9000
 | **State** | Zustand + TanStack Query | Client + server state separation |
 | **Real-time** | WebSocket watches | Instant updates, 60s polling fallback |
 | **Styling** | Tailwind CSS 3.4 + Radix UI | Utility-first, headless components, CVA variants |
-| **Testing** | Vitest + Playwright + Helm | 1,888 unit + 16 Helm + 53 E2E in ~9s |
+| **Testing** | Vitest + Playwright + Helm | 1,882 unit + 16 Helm + 53 E2E in ~9s |
 | **Charts** | Pure SVG sparklines | Zero chart library dependency |
 | **Security** | Red Hat UBI images | 0 CVEs, all images from Red Hat registries |
 
@@ -322,7 +322,7 @@ Browser --> OAuth Proxy (8443/TLS) --> nginx (8080) --> K8s API / Prometheus / A
 ---
 
 <p align="center">
-  <strong>1,888 unit + 16 Helm + 53 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>14 views</strong> &bull; <strong>72 AI tools</strong> &bull; <strong>500+ operators</strong>
+  <strong>1,882 unit + 16 Helm + 53 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>14 views</strong> &bull; <strong>72 AI tools</strong> &bull; <strong>500+ operators</strong>
 </p>
 
 <p align="center">

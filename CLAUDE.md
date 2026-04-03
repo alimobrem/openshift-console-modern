@@ -16,7 +16,7 @@ npm run dev              # rspack dev server on port 9000
 npm run build            # production build (~1s)
 
 # Tests
-npx vitest --run         # run all unit tests (~9s, 1888 tests)
+npx vitest --run         # run all unit tests (~9s, 1882 tests)
 npx vitest --run src/kubeview/views/__tests__/WorkloadsView.test.tsx  # single file
 npx vitest --run -t "test name pattern"  # single test by name
 
@@ -181,7 +181,7 @@ Agent:          Agent Settings (Settings/Memory/Views tabs)
 - **Config**: `vitest.config.ts` — excludes `.claude/worktrees/**` and `e2e/`
 - **Coverage thresholds**: 40% statements, 30% branches, 35% functions, 40% lines (enforced in vitest.config.ts)
 - **Setup**: `src/kubeview/__tests__/setup.tsx` — factories, mock server, renderWithProviders
-- **1,888 unit tests** across 161 files (~9s)
+- **1,882 unit tests** across 161 files (~9s)
 - **E2E**: Playwright (53 test cases across 6 specs) — `npm run e2e` auto-starts mock K8s + agent (podman) + dev server, tears down containers after
 - **E2E config**: `e2e/playwright.config.ts`, mock K8s in `e2e/mock-k8s-server.mjs`, agent+pg in `e2e/docker-compose.agent.yml`
 - **E2E agent stack**: `e2e/start-agent.sh` / `e2e/stop-agent.sh` — starts real agent + PostgreSQL in podman containers
