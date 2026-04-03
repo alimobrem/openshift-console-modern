@@ -17,8 +17,6 @@ const FleetResourceView = lazy(() => import('../views/fleet/FleetResourceView'))
 const FleetWorkloadsView = lazy(() => import('../views/fleet/FleetWorkloadsView'));
 const FleetAlertsView = lazy(() => import('../views/fleet/FleetAlertsView'));
 const DriftDetectorView = lazy(() => import('../views/fleet/DriftDetectorView').then(m => ({ default: m.DriftDetectorView })));
-// DynamicView removed — replaced by CustomView with PostgreSQL persistence
-const CustomViewRedirect = lazy(() => import('../views/CustomView'));
 const IncidentCenterView = lazy(() => import('../views/IncidentCenterView'));
 const OnboardingView = lazy(() => import('../views/OnboardingView'));
 const AgentSettingsView = lazy(() => import('../views/AgentSettingsView'));
@@ -50,9 +48,9 @@ function FleetResourceRoute() {
   return <FleetResourceView gvrKey={gvrKey} />;
 }
 
-function DynamicViewRoute() {
+function DynamicViewRedirectRoute() {
   const { id } = useParams<{ id: string }>();
-  return <CustomViewRedirect />;
+  return <Navigate to={`/custom/${id}`} replace />;
 }
 
 export function domainRoutes() {
@@ -81,7 +79,7 @@ export function domainRoutes() {
       <Route path="fleet/r/:gvr" element={<Lazy><FleetResourceRoute /></Lazy>} />
       <Route path="fleet/drift" element={<Lazy><DriftDetectorView /></Lazy>} />
       <Route path="monitor" element={<Navigate to="/incidents" replace />} />
-      <Route path="dynamic/:id" element={<Lazy><DynamicViewRoute /></Lazy>} />
+      <Route path="dynamic/:id" element={<DynamicViewRedirectRoute />} />
       <Route path="incidents" element={<Lazy>{isFeatureEnabled('incidentCenter') ? <IncidentCenterView /> : <CatchFallback />}</Lazy>} />
       <Route path="readiness" element={<Lazy>{isFeatureEnabled('onboarding') ? <OnboardingView /> : <CatchFallback />}</Lazy>} />
       <Route path="onboarding" element={<Navigate to="/readiness" replace />} />

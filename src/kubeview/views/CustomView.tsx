@@ -1,5 +1,5 @@
 import { useParams } from 'react-router-dom';
-import { Trash2, Plus, LayoutDashboard, Bot, Share2, Check, GripVertical, Pencil, Eye } from 'lucide-react';
+import { Trash2, Plus, LayoutDashboard, Bot, Share2, Check, GripVertical, Pencil, Eye, RefreshCw } from 'lucide-react';
 import { useCustomViewStore } from '../store/customViewStore';
 import { useUIStore } from '../store/uiStore';
 import { useAgentStore } from '../store/agentStore';
@@ -129,6 +129,15 @@ export default function CustomView() {
   // Derive layout from already-subscribed view to avoid redundant selector
   const viewLayout = view?.layout;
 
+  const REFRESH_OPTIONS = [
+    { label: '5s', ms: 5000 },
+    { label: '10s', ms: 10000 },
+    { label: '30s', ms: 30000 },
+    { label: '1m', ms: 60000 },
+    { label: '5m', ms: 300000 },
+    { label: 'Off', ms: 0 },
+  ];
+  const [refreshInterval, setRefreshInterval] = useState(60000);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [widgetToRemove, setWidgetToRemove] = useState<number | null>(null);
   const [editMode, setEditMode] = useState(false);
@@ -279,6 +288,23 @@ export default function CustomView() {
             </p>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Refresh interval selector */}
+            <div className="flex items-center gap-0.5 bg-slate-800 rounded px-1 py-0.5">
+              <RefreshCw className="w-3 h-3 text-slate-500" />
+              {REFRESH_OPTIONS.map((opt) => (
+                <button
+                  key={opt.label}
+                  onClick={() => setRefreshInterval(opt.ms)}
+                  className={`px-1.5 py-0.5 text-xs rounded transition-colors ${
+                    refreshInterval === opt.ms
+                      ? 'bg-blue-600 text-white'
+                      : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
             <button
               onClick={() => setEditMode(!editMode)}
               className={`p-1.5 rounded transition-colors ${editMode ? 'bg-amber-700 text-white' : 'bg-slate-800 text-slate-400 hover:text-slate-200'}`}
@@ -382,7 +408,7 @@ export default function CustomView() {
                     />
                   )}
                   <ErrorBoundary>
-                    <AgentComponentRenderer spec={spec} />
+                    <AgentComponentRenderer spec={spec} refreshInterval={refreshInterval || undefined} />
                   </ErrorBoundary>
                 </div>
               </div>

@@ -38,14 +38,14 @@ const CHART_TYPE_LABELS: Record<ChartType, string> = {
   radar: 'Radar', treemap: 'Treemap',
 };
 
-export default function AgentChart({ spec, onAddToView }: { spec: ChartSpec; onAddToView?: (spec: ComponentSpec) => void }) {
+export default function AgentChart({ spec, onAddToView, refreshInterval }: { spec: ChartSpec; onAddToView?: (spec: ComponentSpec) => void; refreshInterval?: number }) {
   const [chartType, setChartType] = useState<ChartType>(spec.chartType || 'line');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const height = spec.height || 300;
 
   // Live data hook — fetches fresh Prometheus data when spec.query is set
-  const { series: liveSeries, isLive, isFetching, error: liveError, lastUpdated, isPaused, togglePause } = useChartLiveData(spec);
+  const { series: liveSeries, isLive, isFetching, error: liveError, lastUpdated, isPaused, togglePause } = useChartLiveData(spec, refreshInterval);
 
   useEffect(() => {
     if (!dropdownOpen) return;

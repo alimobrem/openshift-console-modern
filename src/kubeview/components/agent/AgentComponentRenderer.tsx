@@ -34,9 +34,10 @@ interface Props {
   spec: ComponentSpec;
   depth?: number;
   onAddToView?: (spec: ComponentSpec) => void;
+  refreshInterval?: number;
 }
 
-export function AgentComponentRenderer({ spec, depth = 0, onAddToView }: Props) {
+export function AgentComponentRenderer({ spec, depth = 0, onAddToView, refreshInterval }: Props) {
   if (depth > MAX_DEPTH) {
     return <div className="text-xs text-slate-500 italic">Content nested too deeply</div>;
   }
@@ -52,7 +53,7 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView }: Props) 
     case 'key_value':
       return <AgentKeyValue spec={spec} />;
     case 'chart':
-      return <Suspense fallback={<div className="h-48 flex items-center justify-center text-slate-500 text-xs">Loading chart...</div>}><LazyAgentChart spec={spec} onAddToView={onAddToView} /></Suspense>;
+      return <Suspense fallback={<div className="h-48 flex items-center justify-center text-slate-500 text-xs">Loading chart...</div>}><LazyAgentChart spec={spec} onAddToView={onAddToView} refreshInterval={refreshInterval} /></Suspense>;
     case 'tabs':
       return <AgentTabs spec={spec} depth={depth} />;
     case 'grid':
