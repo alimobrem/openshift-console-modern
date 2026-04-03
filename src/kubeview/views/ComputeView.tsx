@@ -8,6 +8,7 @@ import { k8sList } from '../engine/query';
 import { queryInstant } from '../components/metrics/prometheus';
 import { MetricCard } from '../components/metrics/Sparkline';
 import { CHART_COLORS } from '../engine/colors';
+import { NodeHexMap } from './compute/NodeHexMap';
 import { MetricGrid } from '../components/primitives/MetricGrid';
 import type { K8sResource } from '../engine/renderers';
 import type { Node, Pod, Machine, NodePool, Condition } from '../engine/types';
@@ -298,6 +299,9 @@ export default function ComputeView() {
 
         {/* Alerts */}
         <NodeAlerts unreadyNodes={unreadyNodes} pressureNodes={pressureNodes} go={go} />
+
+        {/* Node hex map */}
+        <NodeHexMap nodes={nodeDetails} onNodeClick={(name) => go(`/r/v1~nodes/_/${name}`, name)} />
 
         {/* Node table */}
         <NodeTable nodeDetails={nodeDetails} totalCount={nodes.length} go={go} />
