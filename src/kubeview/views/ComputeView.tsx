@@ -20,7 +20,7 @@ import { useClusterStore } from '../store/clusterStore';
 import { Card } from '../components/primitives/Card';
 import { CapacityTab } from './compute/CapacityTab';
 import { StatCard } from './compute/StatCard';
-import { NodeTable } from './compute/NodeTable';
+// NodeTable replaced by NodeHexMap visualization
 import { NodeAlerts } from './compute/NodeAlerts';
 import { MachineManagement } from './compute/MachineManagement';
 import { MachineConfigSection } from './compute/MachineConfigSection';
@@ -288,8 +288,6 @@ export default function ComputeView() {
         {/* Node hex map */}
         <NodeHexMap nodes={nodeDetails} onNodeClick={(name) => go(`/r/v1~nodes/_/${name}`, name)} onViewAll={() => go('/r/v1~nodes', 'Nodes')} />
 
-        {/* Node table */}
-        <NodeTable nodeDetails={nodeDetails} totalCount={nodes.length} go={go} />
 
         {/* Machine Management */}
         <MachineManagement
