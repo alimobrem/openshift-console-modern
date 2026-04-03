@@ -229,11 +229,13 @@ function HexNode({ nd, pods, onClick, onPodClick }: {
           background: 'linear-gradient(180deg, #0f172a 0%, #020617 100%)',
         }}
       >
-        {/* Status dot with pulse for unhealthy */}
+        {/* Status badge */}
         <div
-          className={cn('absolute top-5 right-10 w-1.5 h-1.5 rounded-full', !nd.status.ready && 'animate-pulse')}
-          style={{ background: status.color, boxShadow: `0 0 4px ${status.glow}` }}
-        />
+          className={cn('absolute top-4 right-8 px-1.5 py-0.5 rounded text-[7px] font-semibold', !nd.status.ready && 'animate-pulse')}
+          style={{ color: status.color, background: `${status.color}20`, border: `1px solid ${status.color}40` }}
+        >
+          {status.label}
+        </div>
 
         <Server className="w-4 h-4 mb-1" style={{ color: status.color }} />
         <div className="text-[10px] font-semibold text-slate-200 text-center truncate w-full">{shortName}</div>
