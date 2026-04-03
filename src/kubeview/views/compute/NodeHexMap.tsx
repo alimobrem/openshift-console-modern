@@ -50,7 +50,7 @@ const POD_STATUS_COLOR: Record<string, string> = {
 
 // ─── SVG Hex helpers ─────────────────────────────────────────────────────────
 
-const HEX_SIZE = 85;
+const HEX_SIZE = 64;
 const HEX_W = HEX_SIZE * 2;
 const HEX_H = Math.sqrt(3) * HEX_SIZE;
 
@@ -119,13 +119,13 @@ export function NodeHexMap({ nodes, podsByNode, onNodeClick, onPodClick, onViewA
   const hexPositions = Array.from({ length: TOTAL_HEXES }, (_, i) => {
     const col = i % COLS;
     const row = Math.floor(i / COLS);
-    const cx = HEX_SIZE + 10 + col * (HEX_W * 0.77) + (row % 2 === 1 ? HEX_W * 0.385 : 0);
-    const cy = HEX_SIZE + 10 + row * (HEX_H * 0.88);
+    const cx = HEX_SIZE + 10 + col * (HEX_W * 0.82) + (row % 2 === 1 ? HEX_W * 0.41 : 0);
+    const cy = HEX_SIZE + 10 + row * (HEX_H * 0.95);
     return { cx, cy };
   });
 
-  const svgW = COLS * (HEX_W * 0.77) + HEX_SIZE + 20;
-  const svgH = Math.ceil(TOTAL_HEXES / COLS) * (HEX_H * 0.88) + HEX_SIZE + 20;
+  const svgW = COLS * (HEX_W * 0.82) + HEX_SIZE + 20;
+  const svgH = Math.ceil(TOTAL_HEXES / COLS) * (HEX_H * 0.95) + HEX_SIZE + 20;
 
   const handleNodeContext = useCallback((e: React.MouseEvent, nd: NodeDetail) => {
     e.preventDefault();
@@ -227,12 +227,12 @@ export function NodeHexMap({ nodes, podsByNode, onNodeClick, onPodClick, onViewA
           const podDots = pods.slice(0, 30);
           const maxDots = Math.min(nd.podCap, 30);
           const dotCols = Math.ceil(Math.sqrt(maxDots * 1.2));
-          const dotSpacing = 8;
+          const dotSpacing = 6;
           const dotsStartX = cx - (dotCols * dotSpacing) / 2 + dotSpacing / 2;
           const dotsStartY = cy + 12;
 
           // Gauge bar dimensions
-          const barW = HEX_SIZE * 1;
+          const barW = HEX_SIZE * 0.9;
           const barX = cx - barW / 2;
           const cpuPct = nd.cpuUsagePct ?? 0;
           const memPct = nd.memUsagePct ?? 0;
@@ -257,25 +257,25 @@ export function NodeHexMap({ nodes, podsByNode, onNodeClick, onPodClick, onViewA
                 filter="url(#glow)" />
 
               {/* Node icon */}
-              <text x={cx} y={cy - HEX_SIZE * 0.52} textAnchor="middle" fill={status.color} fontSize={14}>⬡</text>
+              <text x={cx} y={cy - HEX_SIZE * 0.52} textAnchor="middle" fill={status.color} fontSize={10}>⬡</text>
 
               {/* Name + role */}
-              <text x={cx} y={cy - HEX_SIZE * 0.32} textAnchor="middle" fill="#e2e8f0" fontSize={11} fontWeight={600}>{shortName}</text>
-              <text x={cx} y={cy - HEX_SIZE * 0.18} textAnchor="middle" fill="#64748b" fontSize={9}>{nd.roles.join(' · ')}</text>
+              <text x={cx} y={cy - HEX_SIZE * 0.3} textAnchor="middle" fill="#e2e8f0" fontSize={9} fontWeight={600}>{shortName}</text>
+              <text x={cx} y={cy - HEX_SIZE * 0.14} textAnchor="middle" fill="#64748b" fontSize={7}>{nd.roles.join(' · ')}</text>
 
               {/* CPU gauge */}
-              <rect x={barX} y={cy - 8} width={barW} height={4} rx={2} fill="#1e293b" />
-              <rect x={barX} y={cy - 8} width={barW * cpuPct / 100} height={4} rx={2}
+              <rect x={barX} y={cy - 6} width={barW} height={3} rx={1.5} fill="#1e293b" />
+              <rect x={barX} y={cy - 6} width={barW * cpuPct / 100} height={3} rx={1.5}
                 fill={cpuPct > 80 ? '#ef4444' : cpuPct > 60 ? '#f59e0b' : '#3b82f6'} />
-              <text x={cx + barW / 2 + 6} y={cy - 5} fill="#64748b" fontSize={8} fontWeight={500}>{Math.round(cpuPct)}%</text>
-              <text x={barX - 2} y={cy - 5} textAnchor="end" fill="#3b82f6" fontSize={7}>CPU</text>
+              <text x={cx + barW / 2 + 5} y={cy - 4} fill="#64748b" fontSize={6} fontWeight={500}>{Math.round(cpuPct)}%</text>
+              <text x={barX - 1} y={cy - 4} textAnchor="end" fill="#3b82f6" fontSize={6}>CPU</text>
 
               {/* Memory gauge */}
-              <rect x={barX} y={cy + 1} width={barW} height={4} rx={2} fill="#1e293b" />
-              <rect x={barX} y={cy + 1} width={barW * memPct / 100} height={4} rx={2}
+              <rect x={barX} y={cy + 1} width={barW} height={3} rx={1.5} fill="#1e293b" />
+              <rect x={barX} y={cy + 1} width={barW * memPct / 100} height={3} rx={1.5}
                 fill={memPct > 80 ? '#ef4444' : memPct > 60 ? '#f59e0b' : '#8b5cf6'} />
-              <text x={cx + barW / 2 + 6} y={cy + 4} fill="#64748b" fontSize={8} fontWeight={500}>{Math.round(memPct)}%</text>
-              <text x={barX - 2} y={cy + 4} textAnchor="end" fill="#8b5cf6" fontSize={7}>MEM</text>
+              <text x={cx + barW / 2 + 5} y={cy + 3} fill="#64748b" fontSize={6} fontWeight={500}>{Math.round(memPct)}%</text>
+              <text x={barX - 1} y={cy + 3} textAnchor="end" fill="#8b5cf6" fontSize={6}>MEM</text>
 
               {/* Pod dots */}
               {Array.from({ length: maxDots }, (_, j) => {
@@ -302,12 +302,12 @@ export function NodeHexMap({ nodes, podsByNode, onNodeClick, onPodClick, onViewA
               })}
 
               {/* Pod count */}
-              <text x={cx} y={cy + HEX_SIZE * 0.58} textAnchor="middle" fill="#64748b" fontSize={8} fontFamily="monospace">
+              <text x={cx} y={cy + HEX_SIZE * 0.55} textAnchor="middle" fill="#64748b" fontSize={7} fontFamily="monospace">
                 {nd.podCount}/{nd.podCap}
               </text>
 
               {/* Status dot */}
-              <circle cx={cx + HEX_SIZE * 0.5} cy={cy - HEX_SIZE * 0.4} r={3}
+              <circle cx={cx + HEX_SIZE * 0.45} cy={cy - HEX_SIZE * 0.35} r={2.5}
                 fill={status.color} opacity={0.9}>
                 {!nd.status.ready && <animate attributeName="opacity" values="0.4;1;0.4" dur="1.5s" repeatCount="indefinite" />}
               </circle>
