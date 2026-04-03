@@ -88,8 +88,18 @@ export default function AdminView() {
     setActiveTabState(tab as Tab);
     const url = new URL(window.location.href);
     if (tab === 'overview') url.searchParams.delete('tab'); else url.searchParams.set('tab', tab);
-    window.history.replaceState(null, '', url.toString());
+    window.history.pushState(null, '', url.toString());
   };
+
+  // Sync tab state when browser back/forward navigates
+  React.useEffect(() => {
+    const handler = () => {
+      const t = new URLSearchParams(window.location.search).get('tab') as Tab | null;
+      setActiveTabState(t || 'overview');
+    };
+    window.addEventListener('popstate', handler);
+    return () => window.removeEventListener('popstate', handler);
+  }, []);
 
   // --- Data fetching ---
 
