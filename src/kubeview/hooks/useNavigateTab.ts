@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/uiStore';
+import { getRouteIcon } from '../engine/navRegistry';
 
 /**
  * Hook that combines addTab + navigate into a single `go(path, title)` function.
@@ -11,7 +12,8 @@ export function useNavigateTab() {
   const addTab = useUIStore((s) => s.addTab);
 
   return useCallback((path: string, title: string) => {
-    addTab({ title, path, pinned: false, closable: true });
+    const icon = getRouteIcon(path);
+    addTab({ title, icon: icon || undefined, path, pinned: false, closable: true });
     navigate(path);
   }, [navigate, addTab]);
 }
