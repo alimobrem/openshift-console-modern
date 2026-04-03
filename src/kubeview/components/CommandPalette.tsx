@@ -501,6 +501,30 @@ function getCommandItems(
         icon: 'Trash2',
         path: '/workloads',
       },
+      {
+        type: 'action' as const,
+        id: 'create-dashboard',
+        title: 'Create custom dashboard',
+        subtitle: 'Ask AI to generate a new view with charts and metrics',
+        icon: 'LayoutDashboard',
+        action: () => {
+          const { connectAndSend } = useAgentStore.getState();
+          connectAndSend('Create a custom dashboard. Ask me what data I want to see.');
+          useUIStore.getState().openDock('agent');
+        },
+      },
+      {
+        type: 'action' as const,
+        id: 'scan-now',
+        title: 'Scan cluster now',
+        subtitle: 'Trigger an immediate agent scan of the cluster',
+        icon: 'Radar',
+        action: () => {
+          const { connectAndSend } = useAgentStore.getState();
+          connectAndSend('Run a full cluster scan now and report any issues.');
+          useUIStore.getState().openDock('agent');
+        },
+      },
     ] satisfies CommandItem[]).filter((item) =>
       item.title.toLowerCase().includes(cleanQuery) ||
       item.subtitle?.toLowerCase().includes(cleanQuery)

@@ -314,37 +314,40 @@ function SettingsTabContent() {
       </Card>
 
       {/* Auto-fix Categories */}
-      {trustLevel >= 2 && (
-        <Card>
-          <div className="p-4 space-y-4">
-            <div className="flex items-center gap-3">
-              <Zap className="w-5 h-5 text-amber-400" />
-              <div>
-                <h3 className="text-sm font-semibold text-slate-200">Auto-fix Categories</h3>
-                <p className="text-xs text-slate-400 mt-0.5">Select which issue types the agent can fix automatically</p>
-              </div>
-            </div>
-
-            <div className="grid gap-2">
-              {AUTO_FIX_CATEGORIES.map((cat) => (
-                <label
-                  key={cat.id}
-                  className={cn(
-                    'flex items-start gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-colors',
-                    autoFixCategories.includes(cat.id) ? 'bg-violet-900/20 border-violet-800' : 'bg-slate-900 border-slate-800 hover:border-slate-700',
-                  )}
-                >
-                  <input type="checkbox" checked={autoFixCategories.includes(cat.id)} onChange={() => toggleAutoFixCategory(cat.id)} className="mt-0.5 rounded border-slate-600" />
-                  <div>
-                    <span className="text-sm font-medium text-slate-200">{cat.label}</span>
-                    <p className="text-xs text-slate-400 mt-0.5">{cat.description}</p>
-                  </div>
-                </label>
-              ))}
+      <Card className={trustLevel < 2 ? 'opacity-50' : undefined}>
+        <div className="p-4 space-y-4">
+          <div className="flex items-center gap-3">
+            <Zap className="w-5 h-5 text-amber-400" />
+            <div>
+              <h3 className="text-sm font-semibold text-slate-200">Auto-fix Categories</h3>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {trustLevel < 2
+                  ? 'Unlock at Trust Level 2 (Ask First) to configure auto-fix categories'
+                  : 'Select which issue types the agent can fix automatically'}
+              </p>
             </div>
           </div>
-        </Card>
-      )}
+
+          <div className="grid gap-2">
+            {AUTO_FIX_CATEGORIES.map((cat) => (
+              <label
+                key={cat.id}
+                className={cn(
+                  'flex items-start gap-3 px-4 py-3 rounded-lg border transition-colors',
+                  trustLevel < 2 ? 'cursor-not-allowed bg-slate-900 border-slate-800' :
+                  autoFixCategories.includes(cat.id) ? 'cursor-pointer bg-violet-900/20 border-violet-800' : 'cursor-pointer bg-slate-900 border-slate-800 hover:border-slate-700',
+                )}
+              >
+                <input type="checkbox" checked={autoFixCategories.includes(cat.id)} onChange={() => toggleAutoFixCategory(cat.id)} disabled={trustLevel < 2} className="mt-0.5 rounded border-slate-600 disabled:opacity-50" />
+                <div>
+                  <span className="text-sm font-medium text-slate-200">{cat.label}</span>
+                  <p className="text-xs text-slate-400 mt-0.5">{cat.description}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+      </Card>
 
       {/* Communication Style */}
       <Card>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Trash2, Share2, ExternalLink, Check, Bot, Loader2, History, Undo2, X, Download, Upload } from 'lucide-react';
 import { useCustomViewStore } from '../store/customViewStore';
 import { useUIStore } from '../store/uiStore';
+import { useAgentStore } from '../store/agentStore';
 import { EmptyState } from '../components/primitives/EmptyState';
 import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import { formatRelativeTime } from '../engine/formatters';
@@ -180,6 +181,15 @@ export default function ViewsManagement({ embedded = false }: { embedded?: boole
           </div>
         )}
 
+        {/* Import button in embedded mode */}
+        {embedded && (
+          <div className="flex justify-end mb-3">
+            <button onClick={handleImport} className="flex items-center gap-1.5 px-3 py-1.5 rounded text-xs bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors">
+              <Upload className="w-3.5 h-3.5" /> Import View
+            </button>
+          </div>
+        )}
+
         {/* Loading state */}
         {loading && views.length === 0 && (
           <div className="flex items-center justify-center py-20">
@@ -205,7 +215,13 @@ export default function ViewsManagement({ embedded = false }: { embedded?: boole
             <EmptyState
               icon={<Bot className="w-12 h-12 text-slate-600" />}
               title="No views yet"
-              description="Ask the AI to create one. Try: &quot;Create a dashboard showing node health and crashlooping pods.&quot;"
+              description="Ask the AI to build any dashboard you need."
+              aiPrompts={[
+                { label: 'Node health dashboard', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing node health: CPU/memory utilization, pod density, and node conditions'); useUIStore.getState().openDock('agent'); } },
+                { label: 'Workload overview', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing deployment status, pod restart trends, and OOM kills'); useUIStore.getState().openDock('agent'); } },
+                { label: 'Security posture', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing security audit score, cluster-admin bindings, unprotected namespaces, and SCC usage'); useUIStore.getState().openDock('agent'); } },
+                { label: 'Cost & capacity', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing resource utilization ratios, capacity projections, and idle workloads'); useUIStore.getState().openDock('agent'); } },
+              ]}
             />
           </div>
         )}
