@@ -124,7 +124,7 @@ export default function ViewsManagement({ embedded = false }: { embedded?: boole
       try {
         const text = await file.text();
         const data = JSON.parse(text);
-        if (!data.title || !data.layout) { alert('Invalid view file'); return; }
+        if (!data.title || !data.layout) { useUIStore.getState().addToast({ type: 'error', title: 'Import Failed', detail: 'File must contain title and layout fields' }); return; }
         const saveView = useCustomViewStore.getState().saveView;
         const viewSpec: ViewSpec = {
           id: `cv-${Date.now().toString(36)}`,
@@ -137,7 +137,7 @@ export default function ViewsManagement({ embedded = false }: { embedded?: boole
         };
         await saveView(viewSpec);
         loadViews();
-      } catch { alert('Failed to import view'); }
+      } catch { useUIStore.getState().addToast({ type: 'error', title: 'Import Failed', detail: 'Could not parse view file' }); }
     };
     input.click();
   };

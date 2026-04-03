@@ -3,13 +3,13 @@ import {
   ArrowRight, Shield, Bell, Settings,
   HardDrive, Package, Globe, Server, Puzzle, Users, Hammer,
   CheckCircle, XCircle, GitBranch, ChevronDown,
-  Github, HeartPulse, Search, AlertCircle, RefreshCw,
-  History, Rocket, AlertTriangle, GitPullRequest,
-  Monitor, Sparkles, Brain, Store, FlaskConical,
+  HeartPulse, Search, AlertCircle, RefreshCw,
+  History, AlertTriangle, GitPullRequest,
+  Monitor, Sparkles, Brain, Github,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchBriefing, fetchMemoryStats, type BriefingResponse, type MemoryStats } from '../engine/fixHistory';
+import { fetchBriefing, type BriefingResponse } from '../engine/fixHistory';
 import { useCustomViewStore } from '../store/customViewStore';
 import { useUIStore } from '../store/uiStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
@@ -25,7 +25,6 @@ const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(na
 const MOD_KEY = isMac ? '\u2318' : 'Ctrl+';
 
 export default function WelcomeView() {
-  const openCommandPalette = useUIStore((s) => s.openCommandPalette);
   const connectionStatus = useUIStore((s) => s.connectionStatus);
   const go = useNavigateTab();
   const queryClient = useQueryClient();
@@ -55,13 +54,6 @@ export default function WelcomeView() {
   const pendingActions = useMonitorStore((s) => s.pendingActions.length);
 
   const customViews = useCustomViewStore((s) => s.views);
-
-  const { data: memoryStats } = useQuery<MemoryStats>({
-    queryKey: ['memory-stats'],
-    queryFn: fetchMemoryStats,
-    staleTime: 30_000,
-    retry: false,
-  });
 
   const { data: briefing, isLoading: briefingLoading, isError: briefingError } = useQuery<BriefingResponse>({
     queryKey: ['briefing'],
@@ -167,19 +159,19 @@ export default function WelcomeView() {
         </div>
 
         {/* ── More Views (collapsible) ── */}
-        <MoreViews go={go} memoryStats={memoryStats} customViews={customViews} />
+        <MoreViews go={go} customViews={customViews} />
 
         {/* ── Agent Preferences (collapsed) ── */}
-        <a
-          href="/agent"
-          className="flex items-center justify-between px-4 py-2.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800/50 transition-colors"
+        <button
+          onClick={() => go('/agent', 'Agent Settings')}
+          className="flex items-center justify-between px-4 py-2.5 rounded-lg border border-slate-800 bg-slate-900 hover:bg-slate-800/50 transition-colors w-full text-left"
         >
           <div className="flex items-center gap-2">
             <Settings className="w-4 h-4 text-slate-500" />
             <span className="text-xs font-medium text-slate-400">Agent Settings</span>
           </div>
           <ChevronDown className="w-3.5 h-3.5 text-slate-600 -rotate-90" />
-        </a>
+        </button>
 
         {/* ── Footer ── */}
         <footer className="flex items-center justify-center gap-4 text-xs text-slate-600 pb-4">
@@ -315,8 +307,8 @@ function NavCard({ icon, color, border, title, sub, onClick, path }: {
   );
 }
 
-function MoreViews({ go, memoryStats, customViews }: {
-  go: (path: string, title: string) => void; memoryStats?: MemoryStats; customViews: Array<{ id: string; title: string }>;
+function MoreViews({ go, customViews }: {
+  go: (path: string, title: string) => void; customViews: Array<{ id: string; title: string }>;
 }) {
   const [open, setOpen] = useState(false);
 

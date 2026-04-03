@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import type { K8sResource } from '../../engine/renderers';
 import type { ClusterOperator, Condition } from '../../engine/types';
 import { Card } from '../../components/primitives/Card';
+import { SearchInput } from '../../components/primitives/SearchInput';
 
 export interface OperatorsTabProps {
   operators: K8sResource[];
@@ -13,6 +14,7 @@ export interface OperatorsTabProps {
 }
 
 export function OperatorsTab({ operators, go }: OperatorsTabProps) {
+  const [search, setSearch] = React.useState('');
   const operatorList = operators.map((co) => {
     const op = co as unknown as ClusterOperator;
     const conditions: Condition[] = op.status?.conditions || [];
@@ -48,9 +50,10 @@ export function OperatorsTab({ operators, go }: OperatorsTabProps) {
           <div className="text-xl font-bold text-slate-100">{progressingOps.length}</div>
         </div>
       </div>
+      <SearchInput value={search} onChange={setSearch} placeholder="Filter operators..." />
       <Card>
         <div className="divide-y divide-slate-800">
-          {operatorList.map((op) => (
+          {operatorList.filter((op) => !search || op.name.toLowerCase().includes(search.toLowerCase())).map((op) => (
             <div key={op.name} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-800/50 cursor-pointer transition-colors" onClick={() => go(`/r/config.openshift.io~v1~clusteroperators/_/${op.name}`, op.name)}>
               {op.degraded ? <XCircle className="w-4 h-4 text-red-500 shrink-0" /> :
                op.progressing ? <RefreshCw className="w-4 h-4 text-yellow-500 shrink-0 animate-spin" /> :

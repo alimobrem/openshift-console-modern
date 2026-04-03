@@ -1,8 +1,8 @@
 import React, { lazy, Suspense } from 'react';
 import {
   Package, Box, Clock, AlertCircle, XCircle,
-  FileText, ArrowRight, Plus, AlertTriangle, Info, RefreshCw,
-  Layers, Timer, Hammer,
+  FileText, ArrowRight, AlertTriangle, RefreshCw,
+  Hammer,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { K8sResource } from '../engine/renderers';
@@ -19,6 +19,9 @@ import { Panel } from '../components/primitives/Panel';
 import { sanitizePromQL } from '../engine/query';
 import { SectionHeader } from '../components/primitives/SectionHeader';
 import { Card } from '../components/primitives/Card';
+import { FilterButtonGroup } from '../components/primitives/FilterButtonGroup';
+import type { AuditCheck } from '../components/audit/types';
+import { HealthAuditPanel } from '../components/audit/HealthAuditPanel';
 
 const BuildsView = lazy(() => import('./BuildsView'));
 
@@ -54,6 +57,7 @@ export default function WorkloadsView() {
     return (params.get('tab') as Tab) || 'overview';
   })();
   const [activeTab, setActiveTab] = React.useState<Tab>(initialTab);
+  const [deployFilter, setDeployFilter] = React.useState<string | null>(null);
 
   const switchTab = (tab: Tab) => {
     const url = new URL(window.location.href);
@@ -129,6 +133,15 @@ export default function WorkloadsView() {
   const oldReplicaSets = React.useMemo(() =>
     replicasets.filter(rs => (rs.spec?.replicas ?? 0) === 0 && (rs.status?.replicas ?? 0) === 0),
   [replicasets]);
+
+  const sortedDeploys = React.useMemo(() =>
+    [...deployments].sort((a, b) => {
+      const sa = getDeploymentStatus(a);
+      const sb = getDeploymentStatus(b);
+      if (sa.available !== sb.available) return sa.available ? 1 : -1;
+      return (sb.desired - sb.ready) - (sa.desired - sa.ready);
+    }),
+  [deployments]);
 
   // Issues
   const issues: Array<{ msg: string; severity: 'warning' | 'critical' }> = [];
@@ -397,15 +410,27 @@ export default function WorkloadsView() {
 
         {/* Deployments list */}
         <Panel title={`Deployments (${deployments.length})`} icon={<Package className="w-4 h-4 text-blue-400" />}>
+          {deployments.length > 0 && (
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-800">
+              <FilterButtonGroup
+                options={[
+                  { key: null, label: `All (${deployments.length})` },
+                  { key: 'unhealthy', label: `Unhealthy (${unhealthyDeploys.length})` },
+                  { key: 'healthy', label: `Healthy (${deployments.length - unhealthyDeploys.length})` },
+                ]}
+                value={deployFilter}
+                onChange={setDeployFilter}
+              />
+            </div>
+          )}
           {deployments.length === 0 ? (
             <div className="text-center py-6 text-sm text-slate-500">No deployments{nsFilter ? ` in ${nsFilter}` : ''}</div>
           ) : (
             <div className="divide-y divide-slate-800 max-h-80 overflow-auto">
-              {[...deployments].sort((a, b) => {
-                const sa = getDeploymentStatus(a);
-                const sb = getDeploymentStatus(b);
-                if (sa.available !== sb.available) return sa.available ? 1 : -1;
-                return (sb.desired - sb.ready) - (sa.desired - sa.ready);
+              {sortedDeploys.filter((d) => {
+                if (!deployFilter) return true;
+                const s = getDeploymentStatus(d);
+                return deployFilter === 'unhealthy' ? !s.available : s.available;
               }).map((d) => {
                 const s = getDeploymentStatus(d);
                 return (
@@ -457,23 +482,7 @@ export default function WorkloadsView() {
   );
 }
 
-function Tip({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div className="flex gap-2">
-      <div className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0" />
-      <div>
-        <span className="font-medium text-slate-200">{title}</span>
-        <p className="text-slate-500">{desc}</p>
-      </div>
-    </div>
-  );
-}
-
-
 // ===== Workload Health Audit =====
-
-import type { AuditCheck } from '../components/audit/types';
-import { HealthAuditPanel } from '../components/audit/HealthAuditPanel';
 
 function WorkloadHealthAudit({ deployments, pdbs, go }: { deployments: Deployment[]; pdbs: PodDisruptionBudget[]; go: (path: string, title: string) => void }) {
   // PDB label selectors for matching

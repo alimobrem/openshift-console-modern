@@ -11,6 +11,7 @@ interface ConfirmDialogProps {
   confirmLabel?: string;
   variant?: 'danger' | 'warning';
   loading?: boolean;
+  children?: React.ReactNode;
 }
 
 export function ConfirmDialog({
@@ -22,6 +23,7 @@ export function ConfirmDialog({
   confirmLabel = 'Delete',
   variant = 'danger',
   loading = false,
+  children,
 }: ConfirmDialogProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
@@ -122,11 +124,13 @@ export function ConfirmDialog({
         </div>
 
         {/* Description */}
-        <p id="dialog-description" className="mb-6 text-sm text-slate-300">
+        <p id="dialog-description" className="text-sm text-slate-300">
           {description}
         </p>
+        {children}
 
         {/* Actions */}
+        <div className="mb-6" />
         <div className="flex justify-end gap-3">
           <button
             ref={cancelButtonRef}

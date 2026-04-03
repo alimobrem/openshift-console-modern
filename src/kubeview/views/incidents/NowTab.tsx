@@ -26,7 +26,18 @@ interface Silence {
   comment: string;
 }
 
-async function createQuickSilence(alertName: string, duration = '2h') {
+const DEFAULT_SILENCE_DURATION = '2h';
+
+const SILENCE_DURATION_LABELS: Record<string, string> = {
+  '30m': '30 minutes', '1h': '1 hour', '2h': '2 hours',
+  '4h': '4 hours', '8h': '8 hours', '24h': '24 hours', '1d': '1 day',
+};
+
+function formatSilenceDuration(d: string): string {
+  return SILENCE_DURATION_LABELS[d] || d;
+}
+
+async function createQuickSilence(alertName: string, duration = DEFAULT_SILENCE_DURATION) {
   // Parse duration string (e.g., '2h', '30m', '1d') into milliseconds
   const durationMatch = duration.match(/^(\d+)(m|h|d)$/);
   let durationMs = 2 * 60 * 60 * 1000; // default 2 hours
@@ -45,8 +56,8 @@ async function createQuickSilence(alertName: string, duration = '2h') {
       matchers: [{ name: 'alertname', value: alertName, isRegex: false }],
       startsAt: new Date().toISOString(),
       endsAt,
-      createdBy: 'pulse-ui',
-      comment: `Quick silence from Incident Center (${duration})`,
+      createdBy: useUIStore.getState().impersonateUser || 'pulse-ui',
+      comment: `Quick silence from Incident Center (${formatSilenceDuration(duration)})`,
     }),
   });
   if (!res.ok) throw new Error('Failed to create silence');
@@ -88,11 +99,11 @@ export function NowTab() {
     [silences],
   );
 
-  const handleSilence = async (alertName: string) => {
+  const handleSilence = async (alertName: string, duration = DEFAULT_SILENCE_DURATION) => {
     const addToast = useUIStore.getState().addToast;
     try {
-      await createQuickSilence(alertName);
-      addToast({ type: 'success', title: 'Silence created', detail: `${alertName} silenced for 2 hours` });
+      await createQuickSilence(alertName, duration);
+      addToast({ type: 'success', title: 'Silence created', detail: `${alertName} silenced for ${formatSilenceDuration(duration)}` });
       queryClient.invalidateQueries({ queryKey: ['incidents', 'silences'] });
     } catch (err: unknown) {
       showErrorToast(err, 'Failed to create silence');
@@ -218,7 +229,7 @@ export function NowTab() {
               onDismiss={incident.source === 'finding' ? () => dismissFinding(incident.id) : undefined}
               onSilence={
                 incident.source === 'prometheus-alert'
-                  ? () => handleSilence(incident.title)
+                  ? (duration?: string) => handleSilence(incident.title, duration)
                   : undefined
               }
             />
@@ -276,11 +287,12 @@ function IncidentCard({
 }: {
   incident: IncidentItem;
   onDismiss?: () => void;
-  onSilence?: () => void;
+  onSilence?: (duration?: string) => void;
 }) {
   const [silencing, setSilencing] = useState(false);
   const [confirmSilence, setConfirmSilence] = useState(false);
   const [confirmDismiss, setConfirmDismiss] = useState(false);
+  const [silenceDuration, setSilenceDuration] = useState(DEFAULT_SILENCE_DURATION);
 
   return (
     <Card>
@@ -339,7 +351,7 @@ function IncidentCard({
               onClick={() => setConfirmSilence(true)}
               disabled={silencing}
               className="px-2.5 py-1.5 text-xs bg-slate-700 hover:bg-slate-600 text-slate-300 rounded flex items-center gap-1.5 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              title="Silence this alert for 2 hours"
+              title={`Silence this alert for ${formatSilenceDuration(silenceDuration)}`}
             >
               <BellOff className="w-3.5 h-3.5" />
               {silencing ? 'Silencing...' : 'Silence'}
@@ -362,18 +374,35 @@ function IncidentCard({
         open={confirmSilence}
         onClose={() => setConfirmSilence(false)}
         title="Silence Alert"
-        description={`Silence alert ${incident.title} for 2 hours?`}
+        description={`Silence "${incident.title}" for ${formatSilenceDuration(silenceDuration)}?`}
         confirmLabel="Silence"
         variant="warning"
         loading={silencing}
         onConfirm={async () => {
           if (onSilence) {
             setSilencing(true);
-            try { await onSilence(); } finally { setSilencing(false); }
+            try { await onSilence(silenceDuration); } finally { setSilencing(false); }
           }
           setConfirmSilence(false);
         }}
-      />
+      >
+        <div className="flex gap-1 mt-2">
+          {['30m', '1h', '2h', '4h', '8h', '24h'].map((d) => (
+            <button
+              key={d}
+              onClick={() => setSilenceDuration(d)}
+              className={cn(
+                'px-2.5 py-1 text-xs rounded transition-colors',
+                silenceDuration === d
+                  ? 'bg-amber-600/30 text-amber-300 border border-amber-600/50'
+                  : 'bg-slate-800 text-slate-400 border border-slate-700 hover:text-slate-200',
+              )}
+            >
+              {d}
+            </button>
+          ))}
+        </div>
+      </ConfirmDialog>
 
       {/* Dismiss Confirmation Dialog */}
       <ConfirmDialog

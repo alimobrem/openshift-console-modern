@@ -18,7 +18,7 @@ import { useAgentStore } from '../store/agentStore';
 import { MetricGrid } from '../components/primitives/MetricGrid';
 import { Card } from '../components/primitives/Card';
 
-interface AuditCheck {
+interface SecurityAuditCheck {
   id: string;
   label: string;
   pass: boolean;
@@ -136,8 +136,8 @@ export default function SecurityView() {
   const opaqueSecretCount = secrets.filter((s: any) => s.type === 'Opaque').length;
 
   // Audit checks
-  const checks: AuditCheck[] = useMemo(() => {
-    const c: AuditCheck[] = [];
+  const checks: SecurityAuditCheck[] = useMemo(() => {
+    const c: SecurityAuditCheck[] = [];
 
     // Identity
     c.push({

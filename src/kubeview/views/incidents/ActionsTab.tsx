@@ -27,6 +27,19 @@ export function ActionsTab() {
   const rejectAction = useMonitorStore((s) => s.rejectAction);
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [confirmBulk, setConfirmBulk] = useState<'approve' | 'reject' | null>(null);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
+  const handleBulkAction = async (action: 'approve' | 'reject') => {
+    setBulkProcessing(true);
+    const fn = action === 'approve' ? approveAction : rejectAction;
+    for (const a of pendingActions) {
+      fn(a.id);
+      await new Promise((r) => setTimeout(r, 100)); // throttle to avoid flooding WS
+    }
+    setBulkProcessing(false);
+    setConfirmBulk(null);
+  };
 
   const filteredRecent = useMemo(() => {
     if (!searchQuery) return recentActions;
@@ -57,10 +70,22 @@ export function ActionsTab() {
 
       {/* Pending actions */}
       <div className="space-y-2">
-        <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
-          <Clock className="w-4 h-4 text-violet-400" />
-          Pending Approval ({pendingActions.length})
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
+            <Clock className="w-4 h-4 text-violet-400" />
+            Pending Approval ({pendingActions.length})
+          </h2>
+          {pendingActions.length > 1 && (
+            <div className="flex items-center gap-2">
+              <button onClick={() => setConfirmBulk('approve')} className="px-2.5 py-1 text-xs bg-green-600/20 text-green-300 border border-green-700/50 rounded hover:bg-green-600/30 transition-colors">
+                Approve All ({pendingActions.length})
+              </button>
+              <button onClick={() => setConfirmBulk('reject')} className="px-2.5 py-1 text-xs bg-slate-700 text-slate-300 border border-slate-600 rounded hover:bg-slate-600 transition-colors">
+                Reject All
+              </button>
+            </div>
+          )}
+        </div>
         {!hasPending ? (
           <EmptyState
             icon={<CheckCircle className="w-8 h-8 text-green-400" />}
@@ -102,6 +127,18 @@ export function ActionsTab() {
           ))
         )}
       </div>
+
+      {/* Bulk action confirmation */}
+      <ConfirmDialog
+        open={confirmBulk !== null}
+        onClose={() => setConfirmBulk(null)}
+        title={confirmBulk === 'approve' ? 'Approve All Actions' : 'Reject All Actions'}
+        description={`${confirmBulk === 'approve' ? 'Approve' : 'Reject'} all ${pendingActions.length} pending actions?`}
+        confirmLabel={confirmBulk === 'approve' ? 'Approve All' : 'Reject All'}
+        variant="warning"
+        loading={bulkProcessing}
+        onConfirm={() => confirmBulk && handleBulkAction(confirmBulk)}
+      />
     </div>
   );
 }
