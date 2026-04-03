@@ -127,12 +127,31 @@ export default function ComputeView() {
   const unreadyNodes = nodes.filter((n) => !getNodeStatus(n).ready);
   const pressureNodes = nodes.filter((n) => { const s = getNodeStatus(n); return s.ready && (s.pressure.disk || s.pressure.memory || s.pressure.pid); });
 
-  // Pods per node
+  // Pods per node (count)
   const podsByNode = React.useMemo(() => {
     const map = new Map<string, number>();
     for (const pod of pods as unknown as Pod[]) {
       const nodeName = pod.spec?.nodeName;
       if (nodeName) map.set(nodeName, (map.get(nodeName) || 0) + 1);
+    }
+    return map;
+  }, [pods]);
+
+  // Pod details per node (for hex map clickable dots)
+  const podDetailsByNode = React.useMemo(() => {
+    const map: Record<string, Array<{ name: string; namespace: string; status: string; restarts: number }>> = {};
+    for (const pod of pods as unknown as Pod[]) {
+      const nodeName = pod.spec?.nodeName;
+      if (!nodeName) continue;
+      if (!map[nodeName]) map[nodeName] = [];
+      const cs = pod.status?.containerStatuses?.[0];
+      const waitReason = cs?.state?.waiting?.reason;
+      map[nodeName].push({
+        name: pod.metadata.name,
+        namespace: pod.metadata.namespace || '',
+        status: waitReason || pod.status?.phase || 'Unknown',
+        restarts: cs?.restartCount || 0,
+      });
     }
     return map;
   }, [pods]);
@@ -286,7 +305,13 @@ export default function ComputeView() {
         <NodeAlerts unreadyNodes={unreadyNodes} pressureNodes={pressureNodes} go={go} />
 
         {/* Node hex map */}
-        <NodeHexMap nodes={nodeDetails} onNodeClick={(name) => go(`/r/v1~nodes/_/${name}`, name)} onViewAll={() => go('/r/v1~nodes', 'Nodes')} />
+        <NodeHexMap
+          nodes={nodeDetails}
+          podsByNode={podDetailsByNode}
+          onNodeClick={(name) => go(`/r/v1~nodes/_/${name}`, name)}
+          onPodClick={(ns, name) => go(`/r/v1~pods/${ns}/${name}`, name)}
+          onViewAll={() => go('/r/v1~nodes', 'Nodes')}
+        />
 
 
         {/* Machine Management */}

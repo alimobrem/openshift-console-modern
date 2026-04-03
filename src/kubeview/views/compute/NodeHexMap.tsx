@@ -9,9 +9,19 @@ import { cn } from '@/lib/utils';
 import { Server, Cpu, MemoryStick, Box, ChevronRight } from 'lucide-react';
 import type { NodeDetail } from './types';
 
+export interface PodInfo {
+  name: string;
+  namespace: string;
+  status: string; // Running, Pending, Failed, Succeeded, Unknown
+  restarts: number;
+}
+
 interface Props {
   nodes: NodeDetail[];
+  /** Map of node name → pods running on that node */
+  podsByNode?: Record<string, PodInfo[]>;
   onNodeClick?: (name: string) => void;
+  onPodClick?: (namespace: string, name: string) => void;
   onViewAll?: () => void;
 }
 
@@ -31,8 +41,8 @@ function getStatus(nd: NodeDetail) {
   return STATUS.ready;
 }
 
-/** CSS clip-path for a flat-top hexagon */
-const HEX_CLIP = 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)';
+/** CSS clip-path for a proper flat-top hexagon (60° angles) */
+const HEX_CLIP = 'polygon(50% 0%, 93.3% 25%, 93.3% 75%, 50% 100%, 6.7% 75%, 6.7% 25%)';
 
 function GaugeBar({ icon: Icon, value, color }: { icon: any; value: number | null; color: string }) {
   const pct = value != null ? Math.min(100, Math.max(0, value)) : null;
@@ -56,12 +66,20 @@ function GaugeBar({ icon: Icon, value, color }: { icon: any; value: number | nul
   );
 }
 
-function HexNode({ nd, onClick }: { nd: NodeDetail; onClick?: () => void }) {
+const POD_STATUS_COLOR: Record<string, string> = {
+  Running: '#10b981',
+  Succeeded: '#3b82f6',
+  Pending: '#f59e0b',
+  Failed: '#ef4444',
+  Unknown: '#6b7280',
+  CrashLoopBackOff: '#ef4444',
+};
+
+function HexNode({ nd, pods, onClick, onPodClick }: { nd: NodeDetail; pods?: PodInfo[]; onClick?: () => void; onPodClick?: (ns: string, name: string) => void }) {
   const status = getStatus(nd);
   const [hovered, setHovered] = useState(false);
+  const [hoveredPod, setHoveredPod] = useState<PodInfo | null>(null);
 
-  const maxDots = Math.min(nd.podCap, 30);
-  const filledDots = Math.round((nd.podCount / nd.podCap) * maxDots);
   const podPct = nd.podCap > 0 ? Math.round((nd.podCount / nd.podCap) * 100) : 0;
 
   const shortName = nd.name
@@ -124,30 +142,62 @@ function HexNode({ nd, onClick }: { nd: NodeDetail; onClick?: () => void }) {
           <GaugeBar icon={MemoryStick} value={nd.memUsagePct} color="#8b5cf6" />
         </div>
 
-        {/* Pod dots */}
-        <div className="flex flex-wrap gap-[1.5px] justify-center max-w-[80px]">
-          {Array.from({ length: maxDots }, (_, i) => (
-            <div
-              key={i}
-              className="rounded-[1px]"
-              style={{
-                width: 4,
-                height: 4,
-                background: i < filledDots
-                  ? podPct > 90 ? '#ef4444' : podPct > 75 ? '#f59e0b' : '#10b981'
-                  : '#1e293b',
-                opacity: i < filledDots ? 0.9 : 0.25,
-              }}
-            />
-          ))}
+        {/* Pod dots — clickable if pod data available */}
+        <div className="flex flex-wrap gap-[2px] justify-center max-w-[90px] relative">
+          {pods ? (
+            // Real pods — each dot is clickable
+            <>
+              {pods.slice(0, 30).map((pod, i) => (
+                <div
+                  key={pod.name}
+                  className="rounded-sm cursor-pointer hover:scale-150 hover:z-10 transition-transform relative"
+                  style={{
+                    width: 6,
+                    height: 6,
+                    background: POD_STATUS_COLOR[pod.status] || '#6b7280',
+                    opacity: 0.9,
+                  }}
+                  onClick={(e) => { e.stopPropagation(); onPodClick?.(pod.namespace, pod.name); }}
+                  onMouseEnter={() => setHoveredPod(pod)}
+                  onMouseLeave={() => setHoveredPod(null)}
+                />
+              ))}
+              {/* Empty slots */}
+              {Array.from({ length: Math.max(0, Math.min(nd.podCap - pods.length, 20)) }, (_, i) => (
+                <div key={`empty-${i}`} className="rounded-sm" style={{ width: 6, height: 6, background: '#1e293b', opacity: 0.2 }} />
+              ))}
+            </>
+          ) : (
+            // Fallback: no pod data, show count-based dots
+            Array.from({ length: Math.min(nd.podCap, 25) }, (_, i) => (
+              <div
+                key={i}
+                className="rounded-sm"
+                style={{
+                  width: 6,
+                  height: 6,
+                  background: i < nd.podCount
+                    ? podPct > 90 ? '#ef4444' : podPct > 75 ? '#f59e0b' : '#10b981'
+                    : '#1e293b',
+                  opacity: i < nd.podCount ? 0.9 : 0.2,
+                }}
+              />
+            ))
+          )}
         </div>
+        {/* Pod tooltip */}
+        {hoveredPod && (
+          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 rounded bg-slate-800 border border-slate-700 text-[9px] text-slate-200 whitespace-nowrap z-20 shadow-lg pointer-events-none">
+            {hoveredPod.namespace}/{hoveredPod.name} — {hoveredPod.status}{hoveredPod.restarts > 0 ? ` (${hoveredPod.restarts} restarts)` : ''}
+          </div>
+        )}
         <div className="text-[8px] font-mono text-slate-500 mt-0.5">{nd.podCount}/{nd.podCap}</div>
       </div>
     </div>
   );
 }
 
-export function NodeHexMap({ nodes, onNodeClick, onViewAll }: Props) {
+export function NodeHexMap({ nodes, podsByNode, onNodeClick, onPodClick, onViewAll }: Props) {
   const sorted = [...nodes].sort((a, b) => {
     const aReady = a.status.ready ? 1 : 0;
     const bReady = b.status.ready ? 1 : 0;
@@ -190,7 +240,9 @@ export function NodeHexMap({ nodes, onNodeClick, onViewAll }: Props) {
           <HexNode
             key={nd.name}
             nd={nd}
+            pods={podsByNode?.[nd.name]}
             onClick={() => onNodeClick?.(nd.name)}
+            onPodClick={onPodClick}
           />
         ))}
       </div>
