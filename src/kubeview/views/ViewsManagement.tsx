@@ -210,71 +210,88 @@ export default function ViewsManagement({ embedded = false }: { embedded?: boole
           </div>
         )}
 
-        {/* View cards grid */}
+        {/* View cards */}
         {sortedViews.length > 0 && (
           <div className="space-y-3">
-            {sortedViews.map((view) => (
+            {sortedViews.map((view) => {
+              // Count component types for mini-summary
+              const kinds = new Map<string, number>();
+              for (const w of view.layout) {
+                const k = (w as any).kind || 'unknown';
+                kinds.set(k, (kinds.get(k) || 0) + 1);
+              }
+              const kindSummary = Array.from(kinds.entries())
+                .map(([k, n]) => `${n} ${k.replace('_', ' ')}`)
+                .join(' · ');
+
+              return (
               <div
                 key={view.id}
-                className="group rounded-lg border border-slate-800 bg-slate-900 p-4 hover:border-slate-700 transition-colors flex items-center gap-4"
+                className="group relative rounded-lg border border-slate-800 bg-gradient-to-r from-slate-900 to-slate-900/80 hover:border-violet-800/50 hover:from-slate-900 hover:to-violet-950/20 transition-all cursor-pointer overflow-hidden"
+                onClick={() => navigate(`/custom/${view.id}`)}
               >
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-sm font-semibold text-slate-100 truncate">{view.title}</h3>
-                  {view.description && (
-                    <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{view.description}</p>
-                  )}
-                  <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                    <span>{view.layout.length} widget{view.layout.length !== 1 ? 's' : ''}</span>
-                    <span>Updated {formatRelativeTime(view.generatedAt)}</span>
-                  </div>
-                </div>
+                {/* Left accent bar */}
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-violet-600 rounded-l" />
 
-                {/* Actions */}
-                <div className="flex items-center gap-1.5 shrink-0">
-                  <button
-                    onClick={() => navigate(`/custom/${view.id}`)}
-                    className="flex items-center gap-1 px-2.5 py-1.5 rounded text-xs font-medium bg-violet-700 hover:bg-violet-600 text-white transition-colors"
-                  >
-                    <ExternalLink className="w-3 h-3" />
-                    Open
-                  </button>
-                  <button
-                    onClick={() => handleExport(view)}
-                    className="flex items-center gap-1 px-2 py-1.5 rounded text-xs bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-                    title="Download as JSON"
-                  >
-                    <Download className="w-3 h-3" /> Export
-                  </button>
-                  <button
-                    onClick={() => handleShare(view)}
-                    className="flex items-center gap-1 px-2 py-1.5 rounded text-xs bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors"
-                    title={copiedId === view.id ? 'Link copied!' : 'Copy share link'}
-                  >
-                    {copiedId === view.id ? (
-                      <Check className="w-3 h-3 text-emerald-400" />
-                    ) : (
-                      <Share2 className="w-3 h-3" />
+                <div className="flex items-center gap-4 p-4 pl-5">
+                  {/* Icon */}
+                  <div className="shrink-0 w-10 h-10 rounded-lg bg-violet-600/10 border border-violet-800/30 flex items-center justify-center">
+                    <LayoutDashboard className="w-5 h-5 text-violet-400" />
+                  </div>
+
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-sm font-semibold text-slate-100">{view.title}</h3>
+                    {view.description && (
+                      <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{view.description}</p>
                     )}
-                    {copiedId === view.id ? 'Copied' : 'Share'}
-                  </button>
-                  <button
-                    onClick={() => openHistory(view.id)}
-                    className="ml-auto p-1.5 rounded text-slate-500 hover:text-violet-400 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Version history"
-                  >
-                    <History className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(view)}
-                    className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Delete view"
+                    <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+                      <span className="flex items-center gap-1">
+                        <LayoutDashboard className="w-3 h-3" />
+                        {view.layout.length} widget{view.layout.length !== 1 ? 's' : ''}
+                      </span>
+                      <span>·</span>
+                      <span>{kindSummary}</span>
+                      <span>·</span>
+                      <span>Updated {formatRelativeTime(view.generatedAt)}</span>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      onClick={() => handleExport(view)}
+                      className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                      title="Export as JSON"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleShare(view)}
+                      className="p-1.5 rounded text-slate-500 hover:text-slate-200 hover:bg-slate-800 transition-colors"
+                      title={copiedId === view.id ? 'Copied!' : 'Share'}
+                    >
+                      {copiedId === view.id ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Share2 className="w-3.5 h-3.5" />}
+                    </button>
+                    <button
+                      onClick={() => openHistory(view.id)}
+                      className="p-1.5 rounded text-slate-500 hover:text-violet-400 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all"
+                      title="Version history"
+                    >
+                      <History className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteTarget(view)}
+                      className="p-1.5 rounded text-slate-500 hover:text-red-400 hover:bg-slate-800 opacity-0 group-hover:opacity-100 transition-all"
+                      title="Delete view"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
+                  </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
