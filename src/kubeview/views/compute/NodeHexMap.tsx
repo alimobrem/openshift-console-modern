@@ -229,13 +229,6 @@ function HexNode({ nd, pods, onClick, onPodClick }: {
           background: 'linear-gradient(180deg, #0f172a 0%, #020617 100%)',
         }}
       >
-        {/* Status badge */}
-        <div
-          className={cn('absolute top-4 right-8 px-1.5 py-0.5 rounded text-[7px] font-semibold', !nd.status.ready && 'animate-pulse')}
-          style={{ color: status.color, background: `${status.color}20`, border: `1px solid ${status.color}40` }}
-        >
-          {status.label}
-        </div>
 
         <Server className="w-4 h-4 mb-1" style={{ color: status.color }} />
         <div className="text-[10px] font-semibold text-slate-200 text-center truncate w-full">{shortName}</div>
@@ -300,6 +293,14 @@ function HexNode({ nd, pods, onClick, onPodClick }: {
           <div className="text-[9px] text-slate-500 mt-1">Click to expand pods · Right-click for actions</div>
         </div>
       )}
+
+      {/* Status badge — outside clip-path so it's never clipped */}
+      <div
+        className={cn('absolute -top-1 right-2 px-1.5 py-0.5 rounded text-[7px] font-semibold z-10', !nd.status.ready && 'animate-pulse')}
+        style={{ color: status.color, background: `${status.color}15`, border: `1px solid ${status.color}40` }}
+      >
+        {status.label}
+      </div>
 
       {/* Context menu */}
       {ctxMenu && (
