@@ -9,4 +9,5 @@ dist
 .DS_Store
 .eslintrc.json
 coverage/
+package-lock.json
 .claude/

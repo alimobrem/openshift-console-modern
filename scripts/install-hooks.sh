@@ -11,8 +11,8 @@ cat > "$HOOK_DIR/pre-commit" << 'HOOK'
 #!/bin/bash
 # Pre-commit hook: type-check + test + build
 echo "Running pre-commit checks..."
-npm run type-check || exit 1
-npm run test || exit 1
+pnpm run type-check || exit 1
+pnpm run test || exit 1
 echo "Pre-commit checks passed."
 HOOK
 

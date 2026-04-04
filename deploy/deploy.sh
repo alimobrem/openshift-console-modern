@@ -11,7 +11,7 @@
 #   ./deploy/deploy.sh --dry-run                # Preview
 #   ./deploy/deploy.sh --skip-build             # Redeploy with existing images
 #
-# Prerequisites: oc (logged in), helm, npm, podman (logged in to quay.io)
+# Prerequisites: oc (logged in), helm, pnpm, podman (logged in to quay.io)
 
 set -euo pipefail
 DEPLOY_START=$(date +%s)
@@ -195,7 +195,7 @@ fi
 
 step "Preflight checks"
 
-for cmd in oc helm npm podman; do
+for cmd in oc helm pnpm podman; do
   command -v "$cmd" &>/dev/null || { error "'$cmd' not found. Install it and try again."; exit 1; }
 done
 oc whoami &>/dev/null || { error "Not logged in to OpenShift. Run 'oc login' first."; exit 1; }
@@ -211,7 +211,7 @@ if [[ "$SKIP_BUILD" == "false" ]]; then
   fi
 fi
 
-info "Tools: oc, helm, npm, podman — OK"
+info "Tools: oc, helm, pnpm, podman — OK"
 CLUSTER_API=$(oc whoami --show-server)
 info "Cluster: $CLUSTER_API"
 
@@ -326,7 +326,7 @@ if [[ "$DRY_RUN" == "true" ]]; then
   echo "  Helm release: $RELEASE (umbrella chart)"
   echo ""
   echo "  Deploy order:"
-  echo "    1. Build images (npm + podman, parallel)"
+  echo "    1. Build images (pnpm + podman, parallel)"
   echo "    2. Single helm upgrade --install (umbrella chart)"
   echo "    3. Health check"
   echo ""
@@ -340,7 +340,7 @@ if [[ "$SKIP_BUILD" == "false" ]]; then
   step "Building & pushing images"
 
   cd "$PROJECT_DIR"
-  npm run build --silent
+  pnpm run build --silent
   info "UI built (dist/)"
 
   info "Building UI and Agent images in parallel..."

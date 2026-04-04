@@ -10,36 +10,36 @@ OpenShift Pulse — a React/TypeScript dashboard for OpenShift Day-2 operations.
 
 ```bash
 # Dev server (requires `oc proxy --port=8001` running separately)
-npm run dev              # rspack dev server on port 9000
+pnpm dev                 # rspack dev server on port 9000
 
 # Build
-npm run build            # production build (~1s)
+pnpm build               # production build (~1s)
 
 # Tests
-npx vitest --run         # run all unit tests (~9s, 1882 tests)
-npx vitest --run src/kubeview/views/__tests__/WorkloadsView.test.tsx  # single file
-npx vitest --run -t "test name pattern"  # single test by name
+pnpm exec vitest --run   # run all unit tests (~9s, 1882 tests)
+pnpm exec vitest --run src/kubeview/views/__tests__/WorkloadsView.test.tsx  # single file
+pnpm exec vitest --run -t "test name pattern"  # single test by name
 
 # Helm chart validation (no cluster needed)
 ./deploy/test-helm.sh    # 12 tests: lint, template, security, token leak check
 
 # Type checking
-npm run type-check       # tsc --noEmit
+pnpm type-check          # tsc --noEmit
 
 # Full verify
-npm run verify           # type-check + strict + lint + test + build
+pnpm verify              # type-check + strict + lint + test + build
 
 # E2E tests (auto-starts mock K8s + dev server)
-npm run e2e              # headless Playwright
-npm run e2e:headed       # visible browser
-npm run e2e:ui           # Playwright UI mode
+pnpm e2e                 # headless Playwright
+pnpm e2e:headed          # visible browser
+pnpm e2e:ui              # Playwright UI mode
 
 # Lint & format
-npm run lint             # eslint with --fix
-npm run format           # prettier
+pnpm lint                # eslint with --fix
+pnpm format              # prettier
 
 # Screenshots (requires Playwright + live cluster)
-PULSE_URL=https://... PULSE_USER=cluster-admin PULSE_PASS=... npx tsx scripts/capture-screenshots.ts
+PULSE_URL=https://... PULSE_USER=cluster-admin PULSE_PASS=... pnpm exec tsx scripts/capture-screenshots.ts
 ```
 
 ## Architecture
