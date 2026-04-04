@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
   Wrench, List, BarChart3, History, Search, ChevronLeft, ChevronRight,
-  AlertTriangle, CheckCircle2, Clock, Database, Bot, Shield, Palette,
+  AlertTriangle, CheckCircle2, Clock, Database, Bot, Shield, Palette, ArrowRight,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToolUsageStore } from '../store/toolUsageStore';
@@ -337,9 +337,9 @@ function UsageRow({ entry: e }: { entry: ToolUsageEntry }) {
 /* ------------------------------------------------------------------ */
 
 function StatsTab() {
-  const { stats, statsLoading, loadStats } = useToolUsageStore();
+  const { stats, statsLoading, loadStats, chains, chainsLoading, loadChains } = useToolUsageStore();
 
-  useEffect(() => { loadStats(); }, [loadStats]);
+  useEffect(() => { loadStats(); loadChains(); }, [loadStats, loadChains]);
 
   if (statsLoading) {
     return <div className="flex justify-center py-12"><div className="kv-skeleton w-8 h-8 rounded-full" /></div>;
@@ -422,6 +422,25 @@ function StatsTab() {
           ))}
         </div>
       </div>
+
+      {/* Common Patterns */}
+      {!chainsLoading && chains && chains.bigrams.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 className="text-xs font-medium text-slate-300 mb-3">Common Tool Chains</h3>
+          <div className="space-y-1.5">
+            {chains.bigrams.slice(0, 10).map((b, i) => (
+              <div key={i} className="flex items-center gap-2 text-xs">
+                <span className="font-mono text-slate-300">{b.from_tool}</span>
+                <ArrowRight className="w-3 h-3 text-slate-600" />
+                <span className="font-mono text-slate-300">{b.to_tool}</span>
+                <span className="text-slate-500 ml-auto">{b.frequency}x</span>
+                <span className="text-blue-400">{Math.round(b.probability * 100)}%</span>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-slate-600 mt-2">{chains.total_sessions_analyzed} sessions analyzed</p>
+        </div>
+      )}
     </div>
   );
 }

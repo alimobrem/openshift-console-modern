@@ -61,6 +61,18 @@ export interface UsageStats {
   by_status: Record<string, number>;
 }
 
+export interface ChainBigram {
+  from_tool: string;
+  to_tool: string;
+  frequency: number;
+  probability: number;
+}
+
+export interface ChainData {
+  bigrams: ChainBigram[];
+  total_sessions_analyzed: number;
+}
+
 export interface UsageFilters {
   tool_name?: string;
   agent_mode?: string;
@@ -77,15 +89,18 @@ interface ToolUsageState {
   agents: AgentInfo[];
   usage: { entries: ToolUsageEntry[]; total: number; page: number; per_page: number } | null;
   stats: UsageStats | null;
+  chains: ChainData | null;
   toolsLoading: boolean;
   agentsLoading: boolean;
   usageLoading: boolean;
   statsLoading: boolean;
+  chainsLoading: boolean;
   filters: UsageFilters;
   loadTools: () => Promise<void>;
   loadAgents: () => Promise<void>;
   loadUsage: (filters?: Partial<UsageFilters>) => Promise<void>;
   loadStats: (from?: string, to?: string) => Promise<void>;
+  loadChains: () => Promise<void>;
   setFilters: (filters: Partial<UsageFilters>) => void;
 }
 
@@ -104,10 +119,12 @@ export const useToolUsageStore = create<ToolUsageState>()((set, get) => ({
   agents: [],
   usage: null,
   stats: null,
+  chains: null,
   toolsLoading: false,
   agentsLoading: false,
   usageLoading: false,
   statsLoading: false,
+  chainsLoading: false,
   filters: { page: 1, per_page: 50 },
 
   loadTools: async () => {
@@ -148,6 +165,12 @@ export const useToolUsageStore = create<ToolUsageState>()((set, get) => ({
     const qs = params.toString();
     const data = await apiFetch<UsageStats>(`/tools/usage/stats${qs ? `?${qs}` : ''}`);
     set({ stats: data, statsLoading: false });
+  },
+
+  loadChains: async () => {
+    set({ chainsLoading: true });
+    const data = await apiFetch<ChainData>('/tools/usage/chains');
+    set({ chains: data, chainsLoading: false });
   },
 
   setFilters: (partial) => {
