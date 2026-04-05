@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v5.20.0"><img src="https://img.shields.io/badge/release-v5.20.0-2563eb?style=for-the-badge" alt="Version"></a>
-  <img src="https://img.shields.io/badge/tests-1888%20unit%20%2B%2016%20Helm%20%2B%2053%20E2E-10b981?style=for-the-badge" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-1882%20unit%20%2B%2013%20Helm%20%2B%2053%20E2E-10b981?style=for-the-badge" alt="Tests">
   <img src="https://img.shields.io/badge/health%20checks-77-f59e0b?style=for-the-badge" alt="Health Checks">
   <img src="https://img.shields.io/badge/CVEs-0-10b981?style=for-the-badge" alt="CVEs">
   <img src="https://img.shields.io/badge/license-MIT-6366f1?style=for-the-badge" alt="License">
@@ -74,7 +74,7 @@ npm run dev    # http://localhost:9000
 | ![Networking](docs/screenshots/networking.png) | ![Security](docs/screenshots/security.png) |
 | **Networking** — Routes, policies, health audit | **Security** — Policy status, ACS detection |
 | ![Access Control](docs/screenshots/access-control.png) | ![Admin](docs/screenshots/admin.png) |
-| **Access Control** — RBAC audit, cluster-admin review | **Admin** — Alerts, operators, certs, quotas |
+| **Access Control** — RBAC audit, cluster-admin review | **Admin** — Operators, config, updates, quotas |
 
 </details>
 
@@ -86,19 +86,19 @@ npm run dev    # http://localhost:9000
 
 | Category | What You Get |
 |----------|-------------|
-| **AI Agent** | Claude-powered SRE diagnostics and security scanning. 105 tools, 73 PromQL recipes, 10 runbooks, dynamic UI rendering (10 component types: data_table, info_card_grid, chart, status_list, badge_list, key_value, relationship_tree, tabs, grid, section), dashboard generation with semantic layout engine and auto-save to PostgreSQL, prompt caching, dynamic tool selection, cluster context injection, intelligence loop for continuous improvement. [pulse-agent](https://github.com/alimobrem/pulse-agent) |
+| **AI Agent** | Claude-powered SRE diagnostics and security scanning. 102 tools, 73 PromQL recipes, 10 runbooks, dynamic UI rendering (14 component types: data_table, info_card_grid, chart, status_list, badge_list, key_value, relationship_tree, tabs, grid, section, log_viewer, yaml_viewer, metric_card, node_map), dashboard generation with semantic layout engine and auto-save to PostgreSQL, prompt caching, dynamic tool selection, cluster context injection, intelligence loop for continuous improvement. [pulse-agent](https://github.com/alimobrem/pulse-agent) |
 | **Predictive AI** | Live cluster-aware smart prompts: AI suggestions reflect actual issues (crash-looping pods, degraded operators, pending PVCs) not generic templates. Integrated into Command Palette (`?` mode), dock agent panel, and empty states. |
 | **Native AI Layer** | Unified intelligence layer across all surfaces: smart prompts adapt to cluster state, AI query mode in Command Palette (`?`), violet-branded AI surfaces, auto-expanding InlineAgent for unhealthy resources, "Ask AI" buttons on PulseView attention items, first-run onboarding, dock notification dot for background insights |
 | **Ask Pulse** | Natural language queries in Cmd+K — type a question, get AI-powered answers with action buttons. Dedicated WebSocket, falls back gracefully when agent is offline. |
 | **Review Queue** | GitHub-PR-style view of AI-proposed infrastructure changes with YAML diffs, risk badges, and approve/reject actions. Now merged into Incident Center Actions tab. |
 | **Enhanced Pulse** | AI morning briefing card, overnight agent activity feed, incident-driven insights rail, cost trend sparkline. All backed by real cluster data. |
 | **Ambient AI** | AI insights on every resource detail view, inline "Ask about this" agent, natural language table filters, dock agent panel, proactive background notifications, fleet-wide AI analysis |
-| **Error Intelligence** | Structured PulseError classification (7 categories), actionable suggestions on every error toast, "Ask AI" button for agent-assisted diagnosis, Admin > Errors tab for ops visibility, error tracking store with persistence |
+| **Error Intelligence** | Structured PulseError classification (7 categories), actionable suggestions on every error toast, "Ask AI" button for agent-assisted diagnosis, error tracking store with persistence |
 | **Multi-Cluster Fleet** | Fleet dashboard with health scores, cluster switcher (`Cmd+Shift+C`), cross-cluster search, compliance matrix, certificate heat map, RBAC comparison, config drift detection. Auto-detects ACM/MCE managed clusters. |
 | **Cluster Health** | 77 automated checks (31 cluster + 46 domain) with YAML fix examples and "Why it matters" explanations. Actionable metrics: OOMKilled, CrashLoopBackOff, Pending pods, CPU throttling, Nodes Not Ready, API latency/error rate, etcd health. HyperShift-aware — hides control plane metrics unavailable on hosted clusters. |
 | **Daily Briefing** | Risk score ring, control plane status, certificate expiry, attention items with remediation steps. "Cluster Zen" calm state when everything is healthy. |
 | **Instant Navigation** | Hover-prefetch preloads view data before click — navigation feels instant with zero skeleton flash. Applied to Welcome tiles and Command Palette. |
-| **Incident Center** | Consolidates Monitor + Alerts + Errors + Review Queue into 4 tabs: Now (live findings), Investigate (alerts + errors + AI root-cause investigation reports), Actions (merged Review Queue + auto-fix history + post-fix verification), History (correlated timeline). Trust controls are backend-capability-aware. |
+| **Incident Center** | Consolidates Monitor + Alerts + Errors + Review Queue into 5 tabs: Now (live findings), Investigate (alerts + errors + AI root-cause investigation reports), Actions (merged Review Queue + auto-fix history + post-fix verification), History (correlated timeline), Alerts (severity filters, silence lifecycle). Trust controls are backend-capability-aware. |
 | **Identity & Access** | Unified view merging User Management + Access Control into a single surface for users, groups, service accounts, RBAC audit, and impersonation |
 | **Incident Timeline** | Unified timeline merging alerts, events, rollouts, and config changes with correlation groups |
 | **Admin Overview** | Firing alerts, named degraded operators, cert warnings, quota hot spots, health score, and Agent quality gate status with PASS/FAIL emphasis — the 8am view |
@@ -119,7 +119,7 @@ npm run dev    # http://localhost:9000
 
 | Feature | Details |
 |---------|---------|
-| **AI Agent** | Chat with Claude-powered SRE/Security agent (105 tools, 73 PromQL recipes, 10 component types). "Ask Agent" from any resource. Streaming, tool execution indicators, confirmation gates. Agent Settings at `/agent` with Settings/Memory/Views tabs. |
+| **AI Agent** | Chat with Claude-powered SRE/Security agent (102 tools, 73 PromQL recipes, 14 component types). "Ask Agent" from any resource. Streaming, tool execution indicators, confirmation gates. Agent Settings at `/agent` with Settings/Memory/Views tabs. |
 | **Ask Pulse** | Natural language queries in Cmd+K: type a question in the Command Palette, get AI-powered answers with action buttons. "Open in Agent" for full conversations. |
 | **Incident Actions** | PR-style review of AI-proposed changes merged into Incident Center: YAML diffs, risk badges, business impact, approve/reject. Live data from monitor WebSocket. |
 | **Native AI UX** | Unified violet-branded intelligence layer: `?` in Command Palette sends to agent, smart prompts adapt to cluster state, "Ask AI" on PulseView attention items, auto-expand InlineAgent for unhealthy resources, AI empty state suggestions, first-run onboarding card, dock agent notification dot. |
@@ -143,7 +143,7 @@ npm run dev    # http://localhost:9000
 | **Smart Diagnosis** | 10 error patterns from pod logs with specific fix suggestions |
 | **Auto-Generated Tables** | Sortable, searchable, j/k navigation, CSV/JSON export |
 
-### Views (16)
+### Views (18 routable + 5 merged)
 
 | View | Highlights |
 |------|-----------|
@@ -156,15 +156,20 @@ npm run dev    # http://localhost:9000
 | **Networking** | Routes, network policies, ingress health |
 | **Alerts** | Now a tab in Incident Center — severity filters, silence lifecycle |
 | **Builds** | Now a tab in Workloads — BuildConfigs, ImageStreams, one-click trigger |
-| **Access Control** | RBAC audit (6 checks), recent changes |
-| **User Management** | Users/groups/SAs, impersonation, identity audit |
+| **Access Control** | Now merged into Identity — RBAC audit (6 checks), recent changes |
+| **User Management** | Now merged into Identity — Users/groups/SAs, impersonation, identity audit |
 | **CRDs** | Now a tab in Admin — browse by API group, search, filter |
 | **Security** | 10 checks, SCC audit, ACS detection |
 | **GitOps** | 4-step setup wizard, ArgoCD Applications, sync history, drift, Rollouts (canary/blue-green), Projects |
+| **Identity** | Unified view merging Users, Groups, Service Accounts, RBAC audit, and impersonation at `/identity` |
+| **Incidents** | 5 tabs: Now (live findings), Investigate (alerts + errors + AI investigation), Actions (review queue + auto-fix), History (correlated timeline), Alerts |
+| **Readiness** | Production readiness program — 30 gates across 6 categories, wizard + checklist modes, waiver workflow |
 | **Fleet** | Multi-cluster dashboard, cross-cluster search, comparison, compliance, cert heat map |
 | **Custom Views** | AI-generated dashboards at `/custom/:viewId`. Agent creates views via `create_dashboard` tool with metric cards, charts, and tables. Semantic auto-layout, version history, clone, delete, share. Plan → Build → Critique workflow |
 | **Tools** | Tool catalog (agents + tools by category), Usage Log (paginated audit trail), Analytics (top tools bar chart, by mode/category, context hogs, tool chain patterns, unused tools coverage chart, token efficiency) |
-| **Admin** | 11 tabs: Overview, Readiness, Operators, Config, Updates, Snapshots, Quotas, Certificates, GitOps, Errors, Timeline |
+| **Project** | Namespace-scoped dashboard at `/project/:namespace` with resource summary and health overview |
+| **Claim** | Share token claim view at `/share/:shareToken` for accepting shared custom views |
+| **Admin** | 8 tabs: Overview, Operators, Config, Updates, Snapshots, Quotas, Certificates, CRDs |
 
 ---
 
@@ -177,7 +182,7 @@ npm run dev    # http://localhost:9000
 | **State** | Zustand + TanStack Query | Client + server state separation |
 | **Real-time** | WebSocket watches | Instant updates, 60s polling fallback |
 | **Styling** | Tailwind CSS 3.4 + Radix UI | Utility-first, headless components, CVA variants |
-| **Testing** | Vitest + Playwright + Helm | 1,882 unit + 16 Helm + 53 E2E in ~9s |
+| **Testing** | Vitest + Playwright + Helm | 1,882 unit + 13 Helm + 53 E2E in ~9s |
 | **Charts** | Pure SVG sparklines | Zero chart library dependency |
 | **Security** | Red Hat UBI images | 0 CVEs, all images from Red Hat registries |
 
@@ -295,8 +300,8 @@ npm run type-check   # TypeScript checking
 src/kubeview/
 ├── engine/              # Query, discovery, watch, snapshot, timeline
 │   └── types/           # 50+ typed K8s interfaces
-├── views/               # 15 views + admin tabs
-│   └── admin/           # Overview, Operators, Updates, Snapshots, Quotas, Certificates, Errors
+├── views/               # 18 views + admin tabs
+│   └── admin/           # Overview, Operators, Updates, Snapshots, Quotas, Certificates, CRDs
 ├── components/          # Design system primitives, feedback, YAML editor, Terminal, Dock
 │   ├── primitives/      # Button, Card, Badge, Tabs, Input, Tooltip, DataTable, StatCard, SectionHeader
 │   ├── feedback/        # Toast, ConfirmDialog, ProgressModal, InlineFeedback
@@ -326,7 +331,7 @@ Browser --> OAuth Proxy (8443/TLS) --> nginx (8080) --> K8s API / Prometheus / A
 ---
 
 <p align="center">
-  <strong>1,882 unit + 16 Helm + 53 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>14 views</strong> &bull; <strong>105 AI tools</strong> &bull; <strong>500+ operators</strong>
+  <strong>1,882 unit + 13 Helm + 53 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>18 views</strong> &bull; <strong>102 AI tools</strong> &bull; <strong>500+ operators</strong>
 </p>
 
 <p align="center">
