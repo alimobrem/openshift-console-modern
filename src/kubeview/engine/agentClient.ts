@@ -27,6 +27,7 @@ export interface ResourceContext {
   name: string;
   namespace?: string;
   gvr?: string;
+  viewId?: string;
 }
 
 export interface ConfirmRequest {

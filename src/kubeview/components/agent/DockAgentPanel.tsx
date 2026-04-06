@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Send, StopCircle, Bot, Loader2, Wrench, Brain, AlertTriangle, Trash2, Shield } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useNavigateTab } from '../../hooks/useNavigateTab';
 import type { ComponentSpec } from '../../engine/agentComponents';
 import { useAgentStore } from '../../store/agentStore';
@@ -68,10 +68,16 @@ export function DockAgentPanel() {
     if (!streaming) inputRef.current?.focus();
   }, [streaming]);
 
+  // Detect custom view context from URL
+  const location = useLocation();
+  const viewMatch = location.pathname.match(/^\/custom\/([a-z0-9-]+)/);
+  const currentViewId = viewMatch ? viewMatch[1] : undefined;
+
   const handleSend = () => {
     const text = input.trim();
     if (!text || streaming || !connected) return;
-    sendMessage(text);
+    const ctx = currentViewId ? { kind: 'custom_view', name: '', viewId: currentViewId } : undefined;
+    sendMessage(text, ctx);
     setInput('');
     if (inputRef.current) inputRef.current.style.height = 'auto';
   };
