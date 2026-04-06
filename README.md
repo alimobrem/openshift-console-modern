@@ -299,7 +299,7 @@ ANTHROPIC_API_KEY=sk-ant-... ./deploy/deploy.sh
 
 **Other features**: `--dry-run` to preview, `--uninstall` to clean up, `--skip-build` to redeploy with existing images. Images tagged with git SHA for rollback safety. Proxy chain health check validates connectivity end-to-end.
 
-**Prerequisites**: `oc` (logged in), `helm`, `npm`, `podman` (logged in to `quay.io`).
+**Prerequisites**: `oc` (logged in), `helm`, `pnpm`, `podman` (logged in to your registry).
 
 ### Helm Charts
 
@@ -313,8 +313,8 @@ ANTHROPIC_API_KEY=sk-ant-... ./deploy/deploy.sh
 
 ```bash
 # UI only (skip agent rebuild)
-npm run build && podman build --platform linux/amd64 -t quay.io/amobrem/openshiftpulse:latest . \
-  && podman push quay.io/amobrem/openshiftpulse:latest \
+pnpm build && podman build --platform linux/amd64 -t ${PULSE_UI_IMAGE:-quay.io/your-org/openshiftpulse}:latest . \
+  && podman push ${PULSE_UI_IMAGE:-quay.io/your-org/openshiftpulse}:latest \
   && oc rollout restart deployment/openshiftpulse -n openshiftpulse
 
 # Config-only change (no rebuild)
