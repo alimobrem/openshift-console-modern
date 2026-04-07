@@ -77,6 +77,8 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView, refreshIn
       return <AgentNodeMap spec={spec} />;
     case 'bar_list':
       return <AgentBarList spec={spec} />;
+    case 'progress_list':
+      return <AgentProgressList spec={spec} />;
     default:
       return null;
   }
@@ -858,6 +860,53 @@ function AgentBarList({ spec }: { spec: BarListSpec }) {
             )}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+/** Utilization/capacity progress bars with auto-coloring */
+function AgentProgressList({ spec }: { spec: ProgressListSpec }) {
+  const warn = spec.thresholds?.warning ?? 70;
+  const crit = spec.thresholds?.critical ?? 90;
+
+  function barColor(pct: number): string {
+    if (pct >= crit) return '#ef4444';
+    if (pct >= warn) return '#f59e0b';
+    return '#10b981';
+  }
+
+  return (
+    <div className="my-2 border border-slate-700 rounded-lg overflow-hidden min-w-0">
+      {spec.title && (
+        <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700 text-xs font-medium text-slate-300">
+          <span>{spec.title}</span>
+          {spec.description && <span className="text-[10px] text-slate-500 ml-2">{spec.description}</span>}
+        </div>
+      )}
+      <div className="p-3 space-y-2.5">
+        {spec.items.map((item, i) => {
+          const pct = item.max > 0 ? (item.value / item.max) * 100 : 0;
+          return (
+            <div key={i}>
+              <div className="flex items-center justify-between text-xs mb-0.5">
+                <div>
+                  <span className="text-slate-300">{item.label}</span>
+                  {item.detail && <span className="text-[10px] text-slate-500 ml-1.5">{item.detail}</span>}
+                </div>
+                <span className="text-slate-400 tabular-nums">
+                  {item.value}/{item.max}{item.unit ? ` ${item.unit}` : ''}
+                </span>
+              </div>
+              <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all"
+                  style={{ width: `${Math.min(pct, 100)}%`, backgroundColor: barColor(pct) }}
+                />
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
