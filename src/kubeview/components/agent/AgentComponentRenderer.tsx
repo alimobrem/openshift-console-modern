@@ -24,6 +24,9 @@ import type {
   YamlViewerSpec,
   MetricCardSpec,
   NodeMapSpec,
+  BarListSpec,
+  ProgressListSpec,
+  StatCardSpec,
 } from '../../engine/agentComponents';
 import { AgentNodeMap } from './AgentNodeMap';
 import { Badge } from '../primitives/Badge';
@@ -72,6 +75,8 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView, refreshIn
       return <AgentMetricCard spec={spec} />;
     case 'node_map':
       return <AgentNodeMap spec={spec} />;
+    case 'bar_list':
+      return <AgentBarList spec={spec} />;
     default:
       return null;
   }
@@ -800,6 +805,60 @@ function AgentYamlViewer({ spec }: { spec: YamlViewerSpec }) {
         </div>
       )}
       <pre className="p-3 overflow-auto max-h-96 text-xs text-slate-300 font-mono leading-relaxed whitespace-pre-wrap">{spec.content}</pre>
+    </div>
+  );
+}
+
+/** Horizontal ranked bar chart — like "Top Tools" */
+function AgentBarList({ spec }: { spec: BarListSpec }) {
+  const maxItems = spec.maxItems ?? 10;
+  const items = spec.items.slice(0, maxItems);
+  const maxValue = Math.max(...items.map((i) => i.value), 1);
+
+  return (
+    <div className="my-2 border border-slate-700 rounded-lg overflow-hidden min-w-0">
+      {spec.title && (
+        <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700 text-xs font-medium text-slate-300">
+          <span>{spec.title}</span>
+          {spec.description && <span className="text-[10px] text-slate-500 ml-2">{spec.description}</span>}
+        </div>
+      )}
+      <div className="p-3 space-y-1.5">
+        {items.map((item, i) => (
+          <div key={i} className="flex items-center gap-2 text-xs">
+            {item.href || item.gvr ? (
+              <a
+                href={item.href || `#/resource/${item.gvr}`}
+                className="w-36 truncate font-mono text-slate-300 hover:text-blue-400 hover:underline cursor-pointer"
+                title={item.label}
+              >
+                {item.label}
+              </a>
+            ) : (
+              <span className="w-36 truncate font-mono text-slate-300" title={item.label}>{item.label}</span>
+            )}
+            <div className="flex-1 h-4 bg-slate-800 rounded-sm overflow-hidden">
+              <div
+                className="h-full rounded-sm"
+                style={{
+                  width: `${(item.value / maxValue) * 100}%`,
+                  backgroundColor: item.color || '#3b82f6',
+                }}
+              />
+            </div>
+            <span className="w-10 text-right text-slate-400 tabular-nums">{item.value}</span>
+            {item.badge && (
+              <span className={cn(
+                'text-[10px] font-medium',
+                item.badgeVariant === 'error' ? 'text-red-400' :
+                item.badgeVariant === 'warning' ? 'text-amber-400' : 'text-blue-400'
+              )}>
+                {item.badge}
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
