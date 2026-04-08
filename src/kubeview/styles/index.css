@@ -44,6 +44,27 @@
   --kv-term-text: #c9d1d9;
   --kv-term-prompt: #7ee787;
   --kv-term-error: #f85149;
+
+  /* Brand — Pulse Blue */
+  --kv-pulse: #2563eb;
+  --kv-pulse-light: #3b82f6;
+  --kv-pulse-dark: #1d4ed8;
+  --kv-pulse-glow: rgba(37, 99, 235, 0.15);
+
+  /* Semantic surfaces */
+  --kv-surface-elevated: #1e293b;
+  --kv-surface-sunken: #0c1220;
+  --kv-surface-overlay: rgba(15, 23, 42, 0.8);
+
+  /* Semantic intent */
+  --kv-intent-success: #10b981;
+  --kv-intent-warning: #f59e0b;
+  --kv-intent-danger: #ef4444;
+  --kv-intent-info: #06b6d4;
+
+  /* Interactive states */
+  --kv-interactive-hover: rgba(59, 130, 246, 0.08);
+  --kv-interactive-active: rgba(59, 130, 246, 0.15);
 }
 
 /* Base reset for OpenShift Pulse */
