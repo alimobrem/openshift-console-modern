@@ -3,6 +3,7 @@
  */
 
 import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { CheckCircle, AlertTriangle, XCircle, Clock, HelpCircle, ChevronDown, ChevronUp, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Eye, EyeOff, Filter } from 'lucide-react';
 
@@ -442,7 +443,26 @@ function _inferType(columnId: string, value: unknown): string {
 
 /** Smart cell renderer — dispatches to the right renderer based on column type */
 function CellValue({ value, columnId, columnType, row }: { value: unknown; columnId: string; columnType?: string; row?: Record<string, unknown> }) {
+  const navigate = useNavigate();
   const type = columnType || _inferType(columnId, value);
+
+  // resource_name with _gvr → in-app navigation
+  if (type === 'resource_name' && row) {
+    const str = String(value ?? '');
+    const gvr = row._gvr ? String(row._gvr) : '';
+    const ns = String(row.namespace || '');
+    if (gvr) {
+      return (
+        <button
+          onClick={() => navigate(`/r/${gvr}/${ns || '_'}/${str}`)}
+          className="text-blue-400 hover:text-blue-300 hover:underline text-left"
+        >
+          {str}
+        </button>
+      );
+    }
+  }
+
   const renderer = COLUMN_RENDERERS[type] || COLUMN_RENDERERS.text;
   return <>{renderer(value, row || {})}</>;
 }
