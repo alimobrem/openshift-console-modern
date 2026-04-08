@@ -3,6 +3,10 @@ export default {
   content: ['./src/**/*.{ts,tsx}', './public/index.html'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        mono: ['Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', 'monospace'],
+      },
       colors: {
         slate: {
           850: '#1a202e',
