@@ -220,7 +220,8 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(0); }}
               placeholder="Search..."
-              className="w-28 pl-5 pr-1.5 py-0.5 text-[10px] bg-slate-900 border border-slate-700 rounded text-slate-300 placeholder-slate-600 outline-none focus:border-violet-500 focus:w-40 transition-all"
+              className="w-28 pl-5 pr-1.5 py-0.5 text-xs bg-slate-900 border border-slate-700 rounded text-slate-300 placeholder-slate-600 outline-none focus:border-violet-500 focus:w-40 transition-all"
+              aria-label="Search table"
             />
           </div>
           {/* Export */}
@@ -229,8 +230,8 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
               <Download className="w-3.5 h-3.5" />
             </button>
             <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-700 rounded shadow-lg hidden group-hover/export:block z-20">
-              <button onClick={() => handleExport('csv')} className="block w-full px-3 py-1 text-[10px] text-slate-300 hover:bg-slate-700 whitespace-nowrap">Export CSV</button>
-              <button onClick={() => handleExport('json')} className="block w-full px-3 py-1 text-[10px] text-slate-300 hover:bg-slate-700 whitespace-nowrap">Export JSON</button>
+              <button onClick={() => handleExport('csv')} className="block w-full px-3 py-1 text-xs text-slate-300 hover:bg-slate-700 whitespace-nowrap">Export CSV</button>
+              <button onClick={() => handleExport('json')} className="block w-full px-3 py-1 text-xs text-slate-300 hover:bg-slate-700 whitespace-nowrap">Export JSON</button>
             </div>
           </div>
           <button
@@ -262,7 +263,7 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
                 key={col.id}
                 onClick={() => toggleCol(col.id)}
                 className={cn(
-                  'flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors',
+                  'flex items-center gap-1 px-2 py-0.5 rounded text-xs transition-colors',
                   hiddenCols.has(col.id)
                     ? 'bg-slate-900 text-slate-600'
                     : 'bg-slate-700 text-slate-300',
@@ -282,7 +283,7 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
                   placeholder={col.header}
                   value={filters[col.id] || ''}
                   onChange={(e) => setFilters((f) => ({ ...f, [col.id]: e.target.value }))}
-                  className="w-24 px-1.5 py-0.5 text-[10px] bg-slate-900 border border-slate-700 rounded text-slate-300 placeholder-slate-600 outline-none focus:border-violet-500"
+                  className="w-24 px-1.5 py-0.5 text-xs bg-slate-900 border border-slate-700 rounded text-slate-300 placeholder-slate-600 outline-none focus:border-violet-500"
                 />
               </div>
             ))}
@@ -291,8 +292,8 @@ function AgentDataTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToVie
       )}
 
       {/* Table */}
-      <div className="overflow-x-auto">
-        <table className="w-full text-xs">
+      <div className="overflow-x-auto" role="region" aria-label={spec.title || 'Data table'}>
+        <table className="w-full text-xs" role="table">
           <thead>
             <tr className="bg-slate-800/30 sticky top-0 z-[1]">
               {visibleColumns.map((col) => (
@@ -947,7 +948,7 @@ function AgentBarList({ spec }: { spec: BarListSpec }) {
   const maxValue = Math.max(...items.map((i) => i.value), 1);
 
   return (
-    <div className="my-2 border border-slate-700 rounded-lg overflow-hidden min-w-0">
+    <div className="my-2 border border-slate-700 rounded-lg overflow-hidden min-w-0" role="figure" aria-label={spec.title || 'Ranked bar chart'}>
       {spec.title && (
         <div className="px-3 py-1.5 bg-slate-800/50 border-b border-slate-700 text-xs font-medium text-slate-300">
           <span>{spec.title}</span>
