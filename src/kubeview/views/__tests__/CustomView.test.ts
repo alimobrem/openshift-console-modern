@@ -135,7 +135,7 @@ describe('positionsToLayout', () => {
     const positions = {}; // empty
     const layout = positionsToLayout(positions, specs);
     expect(layout[0].x).toBe(0);
-    expect(layout[0].w).toBe(4);
+    expect(layout[0].w).toBe(2); // idealWidth for chart
     expect(layout[0].h).toBe(10); // idealHeight for chart
   });
 });

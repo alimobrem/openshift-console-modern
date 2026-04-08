@@ -24,6 +24,15 @@ import { applyTemplate } from '../engine/layoutTemplates';
  *  If the view has a templateId, use template positions.
  *  Otherwise, stack full-width vertically.
  */
+/** Compute ideal width for a component spec (4-column grid) */
+function idealWidth(spec: ComponentSpec): number {
+  if (spec.kind === 'stat_card' || spec.kind === 'metric_card') return 1;
+  if (spec.kind === 'chart' || spec.kind === 'log_viewer') return 2;
+  if (spec.kind === 'key_value' || spec.kind === 'yaml_viewer' || spec.kind === 'relationship_tree') return 2;
+  if (spec.kind === 'bar_list' || spec.kind === 'progress_list') return 2;
+  return 4; // data_table, grid, status_list, tabs, section — full width
+}
+
 /** Compute ideal height for a component spec (rowHeight=30 units) */
 export function idealHeight(spec: ComponentSpec): number {
   const rows = spec.kind === 'data_table' ? (spec as any).rows?.length || 5 : 0;
@@ -62,11 +71,27 @@ function generateDefaultLayout(specs: ComponentSpec[], templateId?: string): Rea
     }
   }
 
+  // Pack widgets into a 4-column grid, placing small ones side by side
+  let x = 0;
   let y = 0;
+  let rowH = 0;
   return specs.map((spec, i) => {
+    const w = idealWidth(spec);
     const h = idealHeight(spec);
-    const layout = { i: String(i), x: 0, y, w: 4, h, minW: 1, minH: 2 };
-    y += h;
+    if (x + w > 4) {
+      // Wrap to next row
+      x = 0;
+      y += rowH;
+      rowH = 0;
+    }
+    const layout = { i: String(i), x, y, w, h, minW: 1, minH: 2 };
+    x += w;
+    rowH = Math.max(rowH, h);
+    if (x >= 4) {
+      x = 0;
+      y += rowH;
+      rowH = 0;
+    }
     return layout;
   });
 }
@@ -90,7 +115,7 @@ export function positionsToLayout(positions: Record<string | number, { x: number
     if (pos) {
       return { i: String(i), x: pos.x, y: pos.y, w: pos.w, h, minW: 1, minH: 2 };
     }
-    return { i: String(i), x: 0, y: i * 5, w: 4, h, minW: 1, minH: 2 };
+    return { i: String(i), x: 0, y: i * 5, w: idealWidth(specs[i]), h, minW: 1, minH: 2 };
   });
 }
 
