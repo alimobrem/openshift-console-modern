@@ -2,7 +2,7 @@
  * Renders agent ComponentSpec objects as interactive UI primitives.
  */
 
-import { useState, useMemo, useCallback, lazy, Suspense } from 'react';
+import { useState, useMemo, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { CheckCircle, AlertTriangle, XCircle, Clock, HelpCircle, ChevronDown, ChevronUp, Plus, ArrowUpDown, ArrowUp, ArrowDown, Settings2, Eye, EyeOff, Filter, Search, Download } from 'lucide-react';
@@ -1099,46 +1099,47 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 type TimelineGrouping = 'source' | 'severity';
 
+function _relativeTime(ts: number): string {
+  const diff = Date.now() - ts;
+  if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  return `${Math.floor(diff / 86400000)}d ago`;
+}
+
 function AgentTimeline({ spec }: { spec: TimelineSpec }) {
-  const [hoveredEvent, setHoveredEvent] = useState<{ x: number; y: number; event: TimelineSpec['lanes'][0]['events'][0] } | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(800);
+  const [hoveredEvent, setHoveredEvent] = useState<{ x: number; y: number; event: TimelineSpec['lanes'][0]['events'][0]; lane: string } | null>(null);
   const [grouping, setGrouping] = useState<TimelineGrouping>('source');
+
+  // Responsive width
+  useEffect(() => {
+    if (!containerRef.current) return;
+    const obs = new ResizeObserver((entries) => {
+      for (const entry of entries) setContainerWidth(entry.contentRect.width);
+    });
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, []);
 
   // Regroup lanes by severity when toggled
   const lanes = useMemo(() => {
     if (grouping === 'source') return spec.lanes;
-
-    // Flatten all events with their lane's category, then group by severity
-    const bySeverity: Record<string, Array<TimelineSpec['lanes'][0]['events'][0]>> = {
-      critical: [],
-      warning: [],
-      info: [],
-      normal: [],
-    };
+    const bySeverity: Record<string, Array<TimelineSpec['lanes'][0]['events'][0]>> = { critical: [], warning: [], info: [], normal: [] };
     for (const lane of spec.lanes) {
-      for (const evt of lane.events) {
-        bySeverity[evt.severity]?.push(evt);
-      }
+      for (const evt of lane.events) bySeverity[evt.severity]?.push(evt);
     }
-    const categoryForSeverity: Record<string, 'alert' | 'event' | 'rollout' | 'config'> = {
-      critical: 'alert',
-      warning: 'alert',
-      info: 'event',
-      normal: 'config',
-    };
+    const catMap: Record<string, 'alert' | 'event' | 'rollout' | 'config'> = { critical: 'alert', warning: 'alert', info: 'event', normal: 'config' };
     return Object.entries(bySeverity)
       .filter(([, events]) => events.length > 0)
-      .map(([severity, events]) => ({
-        label: severity.charAt(0).toUpperCase() + severity.slice(1),
-        category: categoryForSeverity[severity],
-        events,
-      }));
+      .map(([severity, events]) => ({ label: severity.charAt(0).toUpperCase() + severity.slice(1), category: catMap[severity], events }));
   }, [spec.lanes, grouping]);
 
-  // Compute time range from all events if not provided
+  // Compute time range
   const timeRange = useMemo(() => {
     if (spec.timeRange) return spec.timeRange;
-    let start = Infinity;
-    let end = -Infinity;
+    let start = Infinity, end = -Infinity;
     for (const lane of lanes) {
       for (const evt of lane.events) {
         start = Math.min(start, evt.timestamp);
@@ -1146,41 +1147,35 @@ function AgentTimeline({ spec }: { spec: TimelineSpec }) {
       }
     }
     if (!isFinite(start) || !isFinite(end)) return { start: Date.now() - 3600000, end: Date.now() };
-    // Add 5% padding on each side
     const padding = (end - start) * 0.05;
     return { start: start - padding, end: end + padding };
   }, [lanes, spec.timeRange]);
 
-  // SVG dimensions
-  const LABEL_WIDTH = 120;
-  const LANE_HEIGHT = 30;
-  const PADDING_TOP = 10;
-  const PADDING_BOTTOM = 30;
-  const PADDING_LEFT = 10;
-  const PADDING_RIGHT = 10;
-  const svgWidth = 800;
-  const chartWidth = svgWidth - LABEL_WIDTH - PADDING_LEFT - PADDING_RIGHT;
+  // SVG dimensions — responsive
+  const LABEL_WIDTH = 160;
+  const LANE_HEIGHT = 34;
+  const PADDING_TOP = 8;
+  const PADDING_BOTTOM = 28;
+  const svgWidth = Math.max(containerWidth - 24, 400); // 24px = p-3 padding
+  const chartWidth = svgWidth - LABEL_WIDTH - 20;
   const svgHeight = PADDING_TOP + lanes.length * LANE_HEIGHT + PADDING_BOTTOM;
 
-  // Time scale
   const timeSpan = timeRange.end - timeRange.start || 1;
-  const timeToX = (ts: number) => LABEL_WIDTH + PADDING_LEFT + ((ts - timeRange.start) / timeSpan) * chartWidth;
+  const timeToX = useCallback((ts: number) => LABEL_WIDTH + 10 + ((ts - timeRange.start) / timeSpan) * chartWidth, [timeRange, timeSpan, chartWidth]);
 
-  // Format timestamp for display
-  const formatTime = (ts: number) => {
-    const date = new Date(ts);
-    return date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-  };
+  const formatTime = (ts: number) => new Date(ts).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-  // Generate time markers (5 evenly spaced)
   const timeMarkers = useMemo(() => {
-    const markers = [];
-    for (let i = 0; i <= 4; i++) {
-      const ts = timeRange.start + (timeSpan * i) / 4;
-      markers.push({ x: timeToX(ts), label: formatTime(ts) });
-    }
-    return markers;
-  }, [timeRange, timeSpan]);
+    const count = Math.min(Math.floor(chartWidth / 100), 8);
+    return Array.from({ length: count + 1 }, (_, i) => {
+      const ts = timeRange.start + (timeSpan * i) / count;
+      return { x: timeToX(ts), label: formatTime(ts), ts };
+    });
+  }, [timeRange, timeSpan, timeToX, chartWidth]);
+
+  // "Now" line position
+  const now = Date.now();
+  const nowX = now >= timeRange.start && now <= timeRange.end ? timeToX(now) : null;
 
   return (
     <div className="my-2 border border-slate-700 rounded-lg overflow-hidden min-w-0 bg-slate-900/50">
@@ -1190,163 +1185,163 @@ function AgentTimeline({ spec }: { spec: TimelineSpec }) {
           {spec.title && <span>{spec.title}</span>}
           {spec.description && <span className="text-[10px] text-slate-500 ml-2">{spec.description}</span>}
         </div>
-        <div className="flex items-center gap-0.5 bg-slate-900 rounded px-0.5 py-0.5 flex-shrink-0">
-          <button
-            onClick={() => setGrouping('source')}
-            className={cn('px-2 py-0.5 text-[10px] rounded transition-colors', grouping === 'source' ? 'bg-slate-700 text-slate-200' : 'text-slate-500 hover:text-slate-300')}
-          >
-            By Source
-          </button>
-          <button
-            onClick={() => setGrouping('severity')}
-            className={cn('px-2 py-0.5 text-[10px] rounded transition-colors', grouping === 'severity' ? 'bg-slate-700 text-slate-200' : 'text-slate-500 hover:text-slate-300')}
-          >
-            By Severity
-          </button>
+        <div className="flex items-center gap-1 flex-shrink-0">
+          <div className="flex items-center bg-slate-900 rounded-md border border-slate-700 overflow-hidden">
+            <button
+              onClick={() => setGrouping('source')}
+              className={cn('px-2.5 py-1 text-[10px] font-medium transition-colors', grouping === 'source' ? 'bg-blue-600/20 text-blue-400 border-r border-slate-700' : 'text-slate-500 hover:text-slate-300 border-r border-slate-700')}
+            >
+              By Source
+            </button>
+            <button
+              onClick={() => setGrouping('severity')}
+              className={cn('px-2.5 py-1 text-[10px] font-medium transition-colors', grouping === 'severity' ? 'bg-blue-600/20 text-blue-400' : 'text-slate-500 hover:text-slate-300')}
+            >
+              By Severity
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Timeline */}
-      <div className="p-3 overflow-x-auto">
-        <div style={{ minWidth: svgWidth, position: 'relative' }}>
-          <svg width={svgWidth} height={svgHeight} className="overflow-visible">
-            {/* Time grid lines */}
-            {timeMarkers.map((marker, i) => (
-              <line
-                key={i}
-                x1={marker.x}
-                y1={PADDING_TOP}
-                x2={marker.x}
-                y2={svgHeight - PADDING_BOTTOM}
-                stroke="#334155"
-                strokeWidth="1"
-                strokeDasharray="2,2"
-                opacity="0.5"
-              />
-            ))}
+      <div ref={containerRef} className="p-3 overflow-x-auto">
+        <svg width={svgWidth} height={svgHeight} className="overflow-visible">
+          <defs>
+            <filter id="glow-critical">
+              <feGaussianBlur stdDeviation="2" result="blur" />
+              <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+            </filter>
+          </defs>
 
-            {/* Lanes */}
-            {lanes.map((lane, laneIdx) => {
-              const laneY = PADDING_TOP + laneIdx * LANE_HEIGHT + LANE_HEIGHT / 2;
+          {/* Time grid lines */}
+          {timeMarkers.map((marker, i) => (
+            <line key={i} x1={marker.x} y1={PADDING_TOP} x2={marker.x} y2={svgHeight - PADDING_BOTTOM} stroke="#1e293b" strokeWidth="1" strokeDasharray="3,3" />
+          ))}
 
-              return (
-                <g key={laneIdx}>
-                  {/* Lane background line */}
-                  <line
-                    x1={LABEL_WIDTH + PADDING_LEFT}
-                    y1={laneY}
-                    x2={svgWidth - PADDING_RIGHT}
-                    y2={laneY}
-                    stroke="#1e293b"
-                    strokeWidth="2"
-                  />
+          {/* Alternating lane backgrounds */}
+          {lanes.map((_, laneIdx) => (
+            <rect
+              key={`bg-${laneIdx}`}
+              x={0}
+              y={PADDING_TOP + laneIdx * LANE_HEIGHT}
+              width={svgWidth}
+              height={LANE_HEIGHT}
+              fill={laneIdx % 2 === 0 ? 'transparent' : '#0f172a'}
+              opacity={0.3}
+            />
+          ))}
 
-                  {/* Lane label */}
-                  <g>
-                    <circle
-                      cx={10}
-                      cy={laneY}
-                      r={3}
-                      fill={CATEGORY_COLORS[lane.category]}
-                    />
-                    <text
-                      x={18}
-                      y={laneY}
-                      fontSize="11"
-                      fill="#94a3b8"
-                      dominantBaseline="middle"
-                      className="select-none"
-                    >
-                      {lane.label}
-                    </text>
-                  </g>
-
-                  {/* Events */}
-                  {lane.events.map((evt, evtIdx) => {
-                    const x = timeToX(evt.timestamp);
-                    const isDuration = evt.endTimestamp !== undefined;
-                    const endX = isDuration ? timeToX(evt.endTimestamp!) : x;
-                    const width = isDuration ? endX - x : 0;
-                    const color = SEVERITY_COLORS[evt.severity];
-
-                    return (
-                      <g
-                        key={evtIdx}
-                        onMouseEnter={(e) => {
-                          const rect = (e.currentTarget as SVGGElement).getBoundingClientRect();
-                          setHoveredEvent({
-                            x: rect.left + rect.width / 2,
-                            y: rect.top,
-                            event: evt,
-                          });
-                        }}
-                        onMouseLeave={() => setHoveredEvent(null)}
-                        className="cursor-pointer"
-                      >
-                        {isDuration ? (
-                          <rect
-                            x={x}
-                            y={laneY - 6}
-                            width={Math.max(width, 2)}
-                            height={12}
-                            fill={color}
-                            rx={2}
-                            opacity={0.8}
-                          />
-                        ) : (
-                          <circle
-                            cx={x}
-                            cy={laneY}
-                            r={5}
-                            fill={color}
-                            stroke="#0f172a"
-                            strokeWidth="1"
-                          />
-                        )}
-                      </g>
-                    );
-                  })}
-                </g>
-              );
-            })}
-
-            {/* Time axis markers */}
-            {timeMarkers.map((marker, i) => (
-              <text
-                key={i}
-                x={marker.x}
-                y={svgHeight - 10}
-                fontSize="10"
-                fill="#64748b"
-                textAnchor="middle"
-                className="select-none"
-              >
-                {marker.label}
-              </text>
-            ))}
-          </svg>
-
-          {/* Tooltip */}
-          {hoveredEvent && (
-            <div
-              className="fixed z-50 px-2 py-1.5 rounded bg-slate-800 border border-slate-700 shadow-lg pointer-events-none"
-              style={{
-                left: hoveredEvent.x,
-                top: hoveredEvent.y - 10,
-                transform: 'translate(-50%, -100%)',
-              }}
-            >
-              <div className="text-xs font-medium text-slate-200">{hoveredEvent.event.label}</div>
-              {hoveredEvent.event.detail && (
-                <div className="text-[10px] text-slate-400">{hoveredEvent.event.detail}</div>
-              )}
-              <div className="text-[10px] text-slate-500 mt-0.5">
-                {formatTime(hoveredEvent.event.timestamp)}
-                {hoveredEvent.event.endTimestamp && ` - ${formatTime(hoveredEvent.event.endTimestamp)}`}
-              </div>
-            </div>
+          {/* "Now" indicator */}
+          {nowX && (
+            <g>
+              <line x1={nowX} y1={PADDING_TOP - 4} x2={nowX} y2={svgHeight - PADDING_BOTTOM} stroke="#10b981" strokeWidth="1.5" strokeDasharray="4,2" opacity={0.7} />
+              <text x={nowX} y={PADDING_TOP - 6} fontSize="9" fill="#10b981" textAnchor="middle" fontWeight="600">NOW</text>
+            </g>
           )}
-        </div>
+
+          {/* Lanes */}
+          {lanes.map((lane, laneIdx) => {
+            const laneY = PADDING_TOP + laneIdx * LANE_HEIGHT + LANE_HEIGHT / 2;
+
+            return (
+              <g key={laneIdx}>
+                {/* Lane track */}
+                <line x1={LABEL_WIDTH + 10} y1={laneY} x2={svgWidth - 10} y2={laneY} stroke="#1e293b" strokeWidth="1" />
+
+                {/* Lane label with category dot and event count */}
+                <circle cx={8} cy={laneY} r={3} fill={CATEGORY_COLORS[lane.category]} />
+                <text x={16} y={laneY - 1} fontSize="10" fill="#cbd5e1" dominantBaseline="middle" className="select-none" fontWeight="500">
+                  {lane.label.length > 18 ? lane.label.slice(0, 18) + '...' : lane.label}
+                </text>
+                <text x={LABEL_WIDTH - 8} y={laneY} fontSize="9" fill="#475569" dominantBaseline="middle" textAnchor="end" className="select-none">
+                  {lane.events.length}
+                </text>
+
+                {/* Events with jitter for overlapping */}
+                {lane.events.map((evt, evtIdx) => {
+                  const x = timeToX(evt.timestamp);
+                  const isDuration = evt.endTimestamp !== undefined;
+                  const endX = isDuration ? timeToX(evt.endTimestamp!) : x;
+                  const width = isDuration ? endX - x : 0;
+                  const color = SEVERITY_COLORS[evt.severity];
+                  const isCritical = evt.severity === 'critical';
+                  // Jitter overlapping events slightly
+                  const jitter = (evtIdx % 3 - 1) * 3;
+
+                  return (
+                    <g
+                      key={evtIdx}
+                      onMouseEnter={(e) => {
+                        const rect = (e.currentTarget as SVGGElement).getBoundingClientRect();
+                        setHoveredEvent({ x: rect.left + rect.width / 2, y: rect.top, event: evt, lane: lane.label });
+                      }}
+                      onMouseLeave={() => setHoveredEvent(null)}
+                      className="cursor-pointer"
+                    >
+                      {isDuration ? (
+                        <rect x={x} y={laneY - 7} width={Math.max(width, 4)} height={14} fill={color} rx={3} opacity={0.75} />
+                      ) : (
+                        <>
+                          {isCritical && <circle cx={x} cy={laneY + jitter} r={9} fill={color} opacity={0.15} filter="url(#glow-critical)" />}
+                          <circle cx={x} cy={laneY + jitter} r={isCritical ? 6 : 4} fill={color} stroke="#0f172a" strokeWidth="1.5" opacity={0.9} />
+                        </>
+                      )}
+                    </g>
+                  );
+                })}
+              </g>
+            );
+          })}
+
+          {/* Correlation arrows */}
+          {spec.correlations?.map((corr, i) => {
+            const fromLane = lanes[corr.from];
+            const toLane = lanes[corr.to];
+            if (!fromLane || !toLane) return null;
+            const fromY = PADDING_TOP + corr.from * LANE_HEIGHT + LANE_HEIGHT / 2;
+            const toY = PADDING_TOP + corr.to * LANE_HEIGHT + LANE_HEIGHT / 2;
+            const fromEvt = fromLane.events[0];
+            const toEvt = toLane.events[0];
+            if (!fromEvt || !toEvt) return null;
+            const x1 = timeToX(fromEvt.timestamp);
+            const x2 = timeToX(toEvt.timestamp);
+            const midX = (x1 + x2) / 2;
+            return (
+              <g key={`corr-${i}`} opacity={0.4}>
+                <path d={`M${x1},${fromY} C${midX},${fromY} ${midX},${toY} ${x2},${toY}`} fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3,2" />
+                <text x={midX} y={(fromY + toY) / 2 - 4} fontSize="8" fill="#f59e0b" textAnchor="middle">{corr.label}</text>
+              </g>
+            );
+          })}
+
+          {/* Time axis markers */}
+          {timeMarkers.map((marker, i) => (
+            <text key={i} x={marker.x} y={svgHeight - 8} fontSize="9" fill="#475569" textAnchor="middle" className="select-none">{marker.label}</text>
+          ))}
+        </svg>
+
+        {/* Tooltip */}
+        {hoveredEvent && (
+          <div
+            className="fixed z-50 px-3 py-2 rounded-lg bg-slate-800 border border-slate-600 shadow-xl pointer-events-none max-w-xs"
+            style={{ left: hoveredEvent.x, top: hoveredEvent.y - 12, transform: 'translate(-50%, -100%)' }}
+          >
+            <div className="flex items-center gap-1.5 mb-1">
+              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: SEVERITY_COLORS[hoveredEvent.event.severity] }} />
+              <span className="text-[10px] font-medium uppercase" style={{ color: SEVERITY_COLORS[hoveredEvent.event.severity] }}>{hoveredEvent.event.severity}</span>
+              <span className="text-[10px] text-slate-600">|</span>
+              <span className="text-[10px] text-slate-400">{hoveredEvent.lane}</span>
+            </div>
+            <div className="text-xs font-medium text-slate-200">{hoveredEvent.event.label}</div>
+            {hoveredEvent.event.detail && hoveredEvent.event.detail !== hoveredEvent.event.label && (
+              <div className="text-[10px] text-slate-400 mt-0.5">{hoveredEvent.event.detail}</div>
+            )}
+            <div className="text-[10px] text-slate-500 mt-1">
+              {formatTime(hoveredEvent.event.timestamp)} ({_relativeTime(hoveredEvent.event.timestamp)})
+              {hoveredEvent.event.endTimestamp && ` — ${formatTime(hoveredEvent.event.endTimestamp)}`}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Legend */}
