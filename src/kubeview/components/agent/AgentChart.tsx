@@ -227,7 +227,7 @@ export default function AgentChart({ spec, onAddToView, refreshInterval }: { spe
   };
 
   return (
-    <div className="my-2 border border-slate-700 rounded-lg overflow-hidden bg-slate-900/50 min-w-0">
+    <div className="my-2 border border-slate-700 rounded-lg overflow-hidden bg-gradient-to-b from-slate-900/80 to-slate-900/40 min-w-0">
       <div className="px-3 py-1.5 border-b border-slate-700 flex items-center justify-between">
         <div className="truncate flex items-center gap-2">
           <span className="text-xs font-medium text-slate-300">{spec.title || 'Chart'}</span>

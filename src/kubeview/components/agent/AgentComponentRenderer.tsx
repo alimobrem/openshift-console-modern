@@ -1021,7 +1021,7 @@ function AgentStatCard({ spec }: { spec: StatCardSpec }) {
 
   return (
     <div className={cn(
-      'bg-slate-900 rounded-lg border p-4 flex flex-col items-center justify-center text-center',
+      'bg-gradient-to-br from-slate-900 to-slate-900/70 rounded-lg border p-4 flex flex-col items-center justify-center text-center transition-all duration-200 hover:shadow-[0_0_12px_rgba(37,99,235,0.08)]',
       METRIC_STATUS_BORDER[spec.status || ''] || 'border-slate-800'
     )}>
       <span className="text-xs text-slate-400 mb-1">{spec.title}</span>
@@ -1069,7 +1069,7 @@ function AgentMetricCard({ spec }: { spec: MetricCardSpec }) {
 
   // Static metric card (no query — just value + optional sparkline data)
   return (
-    <div className={cn('bg-slate-900 rounded-lg border p-3', METRIC_STATUS_BORDER[spec.status || ''] || 'border-slate-800')}>
+    <div className={cn('bg-gradient-to-br from-slate-900 to-slate-900/70 rounded-lg border p-3 transition-all duration-200 hover:shadow-[0_0_12px_rgba(37,99,235,0.08)]', METRIC_STATUS_BORDER[spec.status || ''] || 'border-slate-800')}>
       <div className="flex items-center justify-between mb-1">
         <span className="text-xs text-slate-400">{spec.title}</span>
         <span className="text-sm font-mono font-bold" style={{ color }}>
