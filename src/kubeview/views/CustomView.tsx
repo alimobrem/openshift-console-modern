@@ -389,9 +389,8 @@ export default function CustomView() {
               <div key={String(i)} className={`rounded-lg border bg-slate-900/80 p-3 relative group overflow-y-auto overflow-x-hidden transition-colors ${editMode ? 'border-slate-700 border-dashed' : 'border-slate-800 hover:border-slate-700'}`}>
                 {editMode && (
                   <>
-                    <div className="widget-drag-handle absolute inset-x-0 top-0 h-10 cursor-grab active:cursor-grabbing flex items-center px-3 bg-slate-800/50 rounded-t-lg border-b border-slate-700/50">
-                      <GripVertical className="w-4 h-4 text-slate-500" />
-                      <span className="text-[10px] text-slate-500 ml-1.5 select-none">Drag to move</span>
+                    <div className="widget-drag-handle absolute inset-x-0 top-0 h-6 cursor-grab active:cursor-grabbing flex items-center px-2 bg-slate-800/30 rounded-t-lg z-10">
+                      <GripVertical className="w-3 h-3 text-slate-600" />
                     </div>
                     <div className="absolute top-1.5 right-2 flex items-center gap-1 z-10">
                       <button
@@ -413,7 +412,7 @@ export default function CustomView() {
                     <Trash2 className="w-3 h-3" />
                   </button>
                 )}
-                <div className={editMode ? 'pt-10' : ''}>
+                <div className={editMode ? 'pt-6' : ''}>
                   {/* Editable widget title and description in edit mode */}
                   {editMode && (
                     <>
@@ -429,17 +428,19 @@ export default function CustomView() {
                           className="w-full text-xs font-medium text-slate-300 bg-transparent border-b border-slate-700 focus:border-violet-500 outline-none mb-1 px-1 py-0.5"
                         />
                       )}
-                      <input
-                        defaultValue={(spec as any).description || ''}
-                        placeholder="Add description..."
-                        onBlur={(e) => {
-                          if (e.target.value !== ((spec as any).description || '')) {
-                            updateWidget(view.id, i, { description: e.target.value } as any);
-                          }
-                        }}
-                        onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
-                        className="w-full text-[10px] text-slate-500 bg-transparent border-b border-slate-700/50 focus:border-violet-500 outline-none mb-1 px-1 py-0.5"
-                      />
+                      {((spec as any).description || (spec as any).title) && (
+                        <input
+                          defaultValue={(spec as any).description || ''}
+                          placeholder="Add description..."
+                          onBlur={(e) => {
+                            if (e.target.value !== ((spec as any).description || '')) {
+                              updateWidget(view.id, i, { description: e.target.value } as any);
+                            }
+                          }}
+                          onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                          className="w-full text-[10px] text-slate-500 bg-transparent border-b border-slate-700/50 focus:border-violet-500 outline-none mb-1 px-1 py-0.5"
+                        />
+                      )}
                     </>
                   )}
                   <ErrorBoundary>
