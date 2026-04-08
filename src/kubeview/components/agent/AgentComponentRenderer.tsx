@@ -1248,8 +1248,8 @@ function AgentTimeline({ spec }: { spec: TimelineSpec }) {
                 {/* Lane track */}
                 <line x1={LABEL_WIDTH + 10} y1={laneY} x2={svgWidth - 10} y2={laneY} stroke="#1e293b" strokeWidth="1" />
 
-                {/* Lane label with category dot and event count */}
-                <circle cx={8} cy={laneY} r={3} fill={CATEGORY_COLORS[lane.category]} />
+                {/* Lane label with colored dot and event count */}
+                <circle cx={8} cy={laneY} r={3} fill={grouping === 'severity' ? (SEVERITY_COLORS[lane.label.toLowerCase()] || CATEGORY_COLORS[lane.category]) : CATEGORY_COLORS[lane.category]} />
                 <text x={16} y={laneY - 1} fontSize="10" fill="#cbd5e1" dominantBaseline="middle" className="select-none" fontWeight="500">
                   {lane.label.length > 18 ? lane.label.slice(0, 18) + '...' : lane.label}
                 </text>
