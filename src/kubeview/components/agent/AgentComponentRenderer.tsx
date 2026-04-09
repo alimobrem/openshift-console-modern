@@ -899,7 +899,7 @@ function AgentLogViewer({ spec }: { spec: LogViewerSpec }) {
           </button>
         ))}
       </div>
-      <div className="max-h-80 overflow-auto font-mono text-xs">
+      <div className="max-h-[500px] overflow-auto font-mono text-xs">
         {filtered.map((line, i) => (
           <div key={i} className="px-3 py-0.5 hover:bg-slate-900 flex gap-2 border-b border-slate-800/50">
             {line.timestamp && <span className="text-slate-600 whitespace-nowrap shrink-0">{line.timestamp}</span>}
@@ -961,13 +961,13 @@ function AgentBarList({ spec }: { spec: BarListSpec }) {
             {item.href || item.gvr ? (
               <a
                 href={item.href || `#/resource/${item.gvr}`}
-                className="w-36 truncate font-mono text-slate-300 hover:text-blue-400 hover:underline cursor-pointer"
+                className="w-40 min-w-[100px] truncate font-mono text-slate-300 hover:text-blue-400 hover:underline cursor-pointer"
                 title={item.label}
               >
                 {item.label}
               </a>
             ) : (
-              <span className="w-36 truncate font-mono text-slate-300" title={item.label}>{item.label}</span>
+              <span className="w-40 min-w-[100px] truncate font-mono text-slate-300" title={item.label}>{item.label}</span>
             )}
             <div className="flex-1 h-4 bg-slate-800 rounded-sm overflow-hidden">
               <div

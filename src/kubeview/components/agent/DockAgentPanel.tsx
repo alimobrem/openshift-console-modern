@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Send, StopCircle, Bot, Loader2, Wrench, Brain, AlertTriangle, Trash2, Shield } from 'lucide-react';
+import { Send, StopCircle, Bot, Loader2, Wrench, Brain, AlertTriangle, Trash2, Shield, Download } from 'lucide-react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useNavigateTab } from '../../hooks/useNavigateTab';
 import type { ComponentSpec } from '../../engine/agentComponents';
@@ -206,14 +206,31 @@ export function DockAgentPanel() {
           {mode.toUpperCase()} · L{trustLevel}
         </div>
         {messages.length > 0 && !streaming && (
-          <button
-            onClick={() => setConfirmClear(true)}
-            className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
-            title="Clear chat"
-            aria-label="Clear agent chat"
-          >
-            <Trash2 className="h-3 w-3" />
-          </button>
+          <>
+            <button
+              onClick={() => {
+                const md = messages.map((m) => `### ${m.role === 'user' ? 'You' : 'Agent'} (${new Date(m.timestamp).toLocaleTimeString()})\n\n${m.content}\n`).join('\n---\n\n');
+                const blob = new Blob([md], { type: 'text/markdown' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = `pulse-chat-${new Date().toISOString().slice(0, 10)}.md`;
+                a.click();
+              }}
+              className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+              title="Export conversation"
+              aria-label="Export agent conversation"
+            >
+              <Download className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="p-1 text-slate-500 hover:text-slate-300 transition-colors"
+              title="Clear chat"
+              aria-label="Clear agent chat"
+            >
+              <Trash2 className="h-3 w-3" />
+            </button>
+          </>
         )}
         <div className="flex-1 relative">
           <textarea

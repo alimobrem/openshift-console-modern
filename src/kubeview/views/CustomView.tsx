@@ -430,15 +430,7 @@ export default function CustomView() {
                     </div>
                   </>
                 )}
-                {!editMode && (
-                  <button
-                    onClick={() => setWidgetToRemove(i)}
-                    className="absolute top-2 right-2 p-1 rounded bg-slate-800 text-slate-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="Remove widget"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                )}
+                {/* Widget removal only in edit mode — prevents accidental deletes during incidents */}
                 <div className={editMode ? 'pt-6' : ''}>
                   {/* Editable widget title and description in edit mode (skip for self-titled components) */}
                   {editMode && spec.kind !== 'stat_card' && spec.kind !== 'metric_card' && (

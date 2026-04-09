@@ -121,16 +121,20 @@ export const useAgentStore = create<AgentState>()(
         if (state.connected && client) {
           state.sendMessage(content, context);
         } else {
-          // Connect first, then send once connected
+          // Connect first, queue message for delivery on connect
           state.connect();
-          const checkInterval = setInterval(() => {
-            if (get().connected && client) {
-              clearInterval(checkInterval);
+          const unsub = useAgentStore.subscribe((s) => {
+            if (s.connected) {
+              unsub();
               clearTimeout(safetyTimeout);
-              get().sendMessage(content, context);
+              s.sendMessage(content, context);
             }
-          }, 50);
-          const safetyTimeout = setTimeout(() => clearInterval(checkInterval), 5000);
+          });
+          // Safety timeout — warn user instead of silently dropping
+          const safetyTimeout = setTimeout(() => {
+            unsub();
+            console.warn('Agent connection timed out after 15s — message not sent');
+          }, 15000);
         }
       },
 

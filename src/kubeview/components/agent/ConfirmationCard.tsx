@@ -118,16 +118,23 @@ export function ConfirmationCard({ confirm, onConfirm }: ConfirmationCardProps) 
   };
 
   const [simulationError, setSimulationError] = useState(false);
+  const simulationDone = useRef(false);
+
+  // Track when simulation completes
+  useEffect(() => {
+    if (simulationResult) simulationDone.current = true;
+  }, [simulationResult]);
 
   const handleSimulate = () => {
     setShowSimulation(true);
     setSimulationResult(null);
     setSimulationError(false);
+    simulationDone.current = false;
     simulation.send(`What would happen if I ${description}? Don't execute — just predict the impact on the cluster. Be specific about affected resources and risks.`);
 
-    // Timeout after 30s
+    // Timeout after 30s — use ref to avoid stale closure
     setTimeout(() => {
-      if (!simulationResult) {
+      if (!simulationDone.current) {
         setSimulationError(true);
       }
     }, 30000);
