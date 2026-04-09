@@ -13,6 +13,7 @@ import { useUIStore } from '../store/uiStore';
 import { useCustomViewStore } from '../store/customViewStore';
 import { registerBuiltinEnhancers } from '../engine/enhancers/register';
 import { startAgentNotifications, stopAgentNotifications } from '../engine/agentNotifications';
+import { useAgentStore } from '../store/agentStore';
 import { useEffect } from 'react';
 
 // Register enhancers once at module load
@@ -34,6 +35,12 @@ export function Shell() {
   // Load custom views from backend on mount
   useEffect(() => {
     useCustomViewStore.getState().loadViews();
+  }, []);
+
+  // Auto-connect agent WebSocket so it's always ready
+  useEffect(() => {
+    const state = useAgentStore.getState();
+    if (!state.connected) state.connect();
   }, []);
 
   // Get overlay state
