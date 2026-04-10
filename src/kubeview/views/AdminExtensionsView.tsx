@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Puzzle, Server, Layers, RefreshCw, CheckCircle2, XCircle,
   AlertTriangle, BarChart3, ArrowRight, Play, X, FileText, ChevronDown,
+  Save, History, GitCompareArrows, Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -212,17 +213,91 @@ const SKILL_FILES: Array<{ key: SkillFile; label: string; filename: string }> = 
   { key: 'components_content', label: 'components.yaml', filename: 'components.yaml' },
 ];
 
+type DrawerPanel = 'editor' | 'versions' | 'diff';
+
+interface VersionEntry {
+  version: number;
+  label: string;
+  filename: string;
+  timestamp: string;
+  current: boolean;
+}
+
 function SkillDetailDrawer({ name, onClose }: { name: string; onClose: () => void }) {
+  const queryClient = useQueryClient();
   const [activeFile, setActiveFile] = useState<SkillFile>('raw_content');
+  const [panel, setPanel] = useState<DrawerPanel>('editor');
+  const [editContent, setEditContent] = useState('');
+  const [dirty, setDirty] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [diffFiles, setDiffFiles] = useState<{ v1: string; v2: string } | null>(null);
+  const [diffResult, setDiffResult] = useState('');
 
   const { data: detail, isLoading } = useQuery({
     queryKey: ['admin', 'skill-detail', name],
     queryFn: async () => {
       const res = await fetch(`/api/agent/skills/${name}`);
       if (!res.ok) return null;
-      return res.json();
+      const data = await res.json();
+      // Seed editor content on first load
+      if (!dirty) setEditContent(data.raw_content || '');
+      return data;
     },
   });
+
+  const { data: versionsData } = useQuery({
+    queryKey: ['admin', 'skill-versions', name],
+    queryFn: async () => {
+      const res = await fetch(`/api/agent/admin/skills/${name}/versions`);
+      if (!res.ok) return { versions: [] };
+      return res.json() as Promise<{ versions: VersionEntry[] }>;
+    },
+    enabled: panel === 'versions' || panel === 'diff',
+  });
+
+  const versions = versionsData?.versions || [];
+
+  const handleSave = async () => {
+    setSaveStatus('saving');
+    try {
+      const res = await fetch(`/api/agent/admin/skills/${name}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: editContent }),
+      });
+      if (res.ok) {
+        setSaveStatus('saved');
+        setDirty(false);
+        queryClient.invalidateQueries({ queryKey: ['admin', 'skill-detail', name] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'skill-versions', name] });
+        queryClient.invalidateQueries({ queryKey: ['admin', 'skills'] });
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        const err = await res.json().catch(() => ({ detail: 'Save failed' }));
+        alert(err.detail || 'Save failed');
+        setSaveStatus('idle');
+      }
+    } catch {
+      alert('Network error');
+      setSaveStatus('idle');
+    }
+  };
+
+  const loadDiff = async (v1: string, v2: string) => {
+    setDiffFiles({ v1, v2 });
+    setDiffResult('Loading...');
+    try {
+      const res = await fetch(`/api/agent/admin/skills/${name}/diff?v1=${encodeURIComponent(v1)}&v2=${encodeURIComponent(v2)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setDiffResult(data.diff || '(no changes)');
+      } else {
+        setDiffResult('Failed to load diff');
+      }
+    } catch {
+      setDiffResult('Network error');
+    }
+  };
 
   const availableFiles = SKILL_FILES.filter((f) => detail?.[f.key]);
 
@@ -230,107 +305,278 @@ function SkillDetailDrawer({ name, onClose }: { name: string; onClose: () => voi
     <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>
       <div className="absolute inset-0 bg-black/50" />
       <div
-        className="relative w-full max-w-2xl bg-slate-950 border-l border-slate-800 h-full overflow-auto shadow-2xl"
+        className="relative w-full max-w-3xl bg-slate-950 border-l border-slate-800 h-full overflow-auto shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-slate-950 border-b border-slate-800 px-5 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Puzzle className="w-5 h-5 text-violet-400" />
-            <div>
-              <h2 className="text-base font-semibold text-slate-100">{name}</h2>
-              {detail && (
-                <p className="text-xs text-slate-500">v{detail.version} &middot; {detail.description}</p>
+        <div className="sticky top-0 z-10 bg-slate-950 border-b border-slate-800 px-5 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <Puzzle className="w-5 h-5 text-violet-400" />
+              <div>
+                <h2 className="text-base font-semibold text-slate-100">{name}</h2>
+                {detail && (
+                  <p className="text-xs text-slate-500">v{detail.version} &middot; {detail.description}</p>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {dirty && (
+                <button
+                  onClick={handleSave}
+                  disabled={saveStatus === 'saving'}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-md disabled:opacity-50"
+                >
+                  {saveStatus === 'saving' ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                  Save
+                </button>
               )}
+              {saveStatus === 'saved' && (
+                <span className="flex items-center gap-1 text-xs text-emerald-400"><Check className="w-3.5 h-3.5" /> Saved</span>
+              )}
+              <button onClick={onClose} className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-200">
+                <X className="w-4 h-4" />
+              </button>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-200">
-            <X className="w-4 h-4" />
-          </button>
+
+          {/* Panel tabs */}
+          <div className="flex gap-1">
+            {([
+              { id: 'editor' as const, label: 'Editor', icon: <FileText className="w-3.5 h-3.5" /> },
+              { id: 'versions' as const, label: 'Versions', icon: <History className="w-3.5 h-3.5" /> },
+              { id: 'diff' as const, label: 'Diff', icon: <GitCompareArrows className="w-3.5 h-3.5" /> },
+            ]).map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setPanel(t.id)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 text-xs rounded-md transition-colors',
+                  panel === t.id ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200 bg-slate-900',
+                )}
+              >
+                {t.icon}{t.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         {isLoading ? (
           <div className="flex justify-center py-12"><div className="kv-skeleton w-8 h-8 rounded-full" /></div>
         ) : detail ? (
           <div className="p-5 space-y-4">
-            {/* Metadata */}
-            <div className="grid grid-cols-2 gap-3">
-              <MetaCard label="Keywords" value={detail.keywords?.length ?? 0} />
-              <MetaCard label="Categories" value={detail.categories?.join(', ') || 'none'} />
-              <MetaCard label="Priority" value={detail.priority} />
-              <MetaCard label="Write Tools" value={detail.write_tools ? 'Yes' : 'No'} />
-            </div>
+            {panel === 'editor' && (
+              <>
+                {/* Metadata */}
+                <div className="grid grid-cols-2 gap-3">
+                  <MetaCard label="Keywords" value={detail.keywords?.length ?? 0} />
+                  <MetaCard label="Categories" value={detail.categories?.join(', ') || 'none'} />
+                  <MetaCard label="Priority" value={detail.priority} />
+                  <MetaCard label="Write Tools" value={detail.write_tools ? 'Yes' : 'No'} />
+                </div>
 
-            {detail.degraded && (
-              <div className="flex items-center gap-2 px-3 py-2 bg-amber-950/30 border border-amber-800/30 rounded-md text-xs text-amber-400">
-                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                {detail.degraded_reason}
-              </div>
-            )}
+                {detail.degraded && (
+                  <div className="flex items-center gap-2 px-3 py-2 bg-amber-950/30 border border-amber-800/30 rounded-md text-xs text-amber-400">
+                    <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
+                    {detail.degraded_reason}
+                  </div>
+                )}
 
-            {/* Handoff rules */}
-            {detail.handoff_to && Object.keys(detail.handoff_to).length > 0 && (
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
-                <h3 className="text-xs font-medium text-slate-300 mb-2">Handoff Rules</h3>
-                <div className="space-y-1">
-                  {Object.entries(detail.handoff_to).map(([target, keywords]) => (
-                    <div key={target} className="flex items-center gap-2 text-xs">
-                      <ArrowRight className="w-3 h-3 text-blue-400" />
-                      <span className="text-slate-200 font-medium">{target}</span>
-                      <span className="text-slate-500">when: {(keywords as string[]).join(', ')}</span>
+                {/* Handoff rules */}
+                {detail.handoff_to && Object.keys(detail.handoff_to).length > 0 && (
+                  <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
+                    <h3 className="text-xs font-medium text-slate-300 mb-2">Handoff Rules</h3>
+                    <div className="space-y-1">
+                      {Object.entries(detail.handoff_to).map(([target, keywords]) => (
+                        <div key={target} className="flex items-center gap-2 text-xs">
+                          <ArrowRight className="w-3 h-3 text-blue-400" />
+                          <span className="text-slate-200 font-medium">{target}</span>
+                          <span className="text-slate-500">when: {(keywords as string[]).join(', ')}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </div>
+                  </div>
+                )}
+
+                {/* Required tools */}
+                {detail.requires_tools?.length > 0 && (
+                  <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
+                    <h3 className="text-xs font-medium text-slate-300 mb-2">Required Tools</h3>
+                    <div className="flex flex-wrap gap-1">
+                      {detail.requires_tools.map((t: string) => (
+                        <span key={t} className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded font-mono">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* File tabs + editor */}
+                {availableFiles.length > 0 && (
+                  <div>
+                    <div className="flex gap-1 mb-2 overflow-x-auto">
+                      {availableFiles.map((f) => (
+                        <button
+                          key={f.key}
+                          onClick={() => {
+                            setActiveFile(f.key);
+                            if (f.key === 'raw_content') setEditContent(detail.raw_content || '');
+                          }}
+                          className={cn(
+                            'flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-md whitespace-nowrap transition-colors',
+                            activeFile === f.key ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200 bg-slate-900',
+                          )}
+                        >
+                          <FileText className="w-3 h-3" />
+                          {f.label}
+                        </button>
+                      ))}
+                    </div>
+                    {activeFile === 'raw_content' ? (
+                      <textarea
+                        value={editContent}
+                        onChange={(e) => { setEditContent(e.target.value); setDirty(true); setSaveStatus('idle'); }}
+                        className="w-full h-[500px] px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-800 rounded-lg text-slate-300 resize-y focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        spellCheck={false}
+                      />
+                    ) : (
+                      <textarea
+                        readOnly
+                        value={detail[activeFile] || ''}
+                        className="w-full h-96 px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-800 rounded-lg text-slate-300 resize-y focus:outline-none"
+                      />
+                    )}
+                  </div>
+                )}
+
+                {/* Configurable fields */}
+                {detail.configurable?.length > 0 && (
+                  <SkillConfigSection configurable={detail.configurable} />
+                )}
+              </>
             )}
 
-            {/* Required tools */}
-            {detail.requires_tools?.length > 0 && (
-              <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
-                <h3 className="text-xs font-medium text-slate-300 mb-2">Required Tools</h3>
-                <div className="flex flex-wrap gap-1">
-                  {detail.requires_tools.map((t: string) => (
-                    <span key={t} className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded font-mono">{t}</span>
-                  ))}
-                </div>
-              </div>
-            )}
+            {panel === 'versions' && <VersionsPanel versions={versions} onDiff={(v1, v2) => { setPanel('diff'); loadDiff(v1, v2); }} />}
 
-            {/* File tabs */}
-            {availableFiles.length > 0 && (
-              <div>
-                <div className="flex gap-1 mb-2 overflow-x-auto">
-                  {availableFiles.map((f) => (
-                    <button
-                      key={f.key}
-                      onClick={() => setActiveFile(f.key)}
-                      className={cn(
-                        'flex items-center gap-1 px-2.5 py-1 text-[11px] rounded-md whitespace-nowrap transition-colors',
-                        activeFile === f.key ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200 bg-slate-900',
-                      )}
-                    >
-                      <FileText className="w-3 h-3" />
-                      {f.label}
-                    </button>
-                  ))}
-                </div>
-                <textarea
-                  readOnly
-                  value={detail[activeFile] || ''}
-                  className="w-full h-96 px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-800 rounded-lg text-slate-300 resize-y focus:outline-none focus:ring-1 focus:ring-blue-500"
-                />
-              </div>
-            )}
-
-            {/* Configurable fields */}
-            {detail.configurable?.length > 0 && (
-              <SkillConfigSection configurable={detail.configurable} />
+            {panel === 'diff' && (
+              <DiffPanel
+                versions={versions}
+                diffFiles={diffFiles}
+                diffResult={diffResult}
+                onLoadDiff={loadDiff}
+              />
             )}
           </div>
         ) : (
           <div className="flex justify-center py-12 text-sm text-slate-500">Skill not found</div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Versions Panel                                                      */
+/* ------------------------------------------------------------------ */
+
+function VersionsPanel({ versions, onDiff }: { versions: VersionEntry[]; onDiff: (v1: string, v2: string) => void }) {
+  if (versions.length === 0) {
+    return (
+      <div className="text-center py-8 text-sm text-slate-500">
+        <History className="w-8 h-8 mx-auto mb-2 text-slate-600" />
+        No version history yet. Edit and save the skill to create versions.
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <h3 className="text-xs font-medium text-slate-300">Version History</h3>
+      {versions.map((v, i) => (
+        <div key={v.filename} className={cn(
+          'bg-slate-900 border rounded-lg p-3 flex items-center justify-between',
+          v.current ? 'border-blue-800/50' : 'border-slate-800',
+        )}>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-slate-100">{v.label}</span>
+              {v.current && <span className="text-[10px] px-1.5 py-0.5 bg-blue-900/40 text-blue-400 rounded">current</span>}
+            </div>
+            <div className="text-[10px] text-slate-500 mt-0.5">
+              {new Date(v.timestamp).toLocaleString()}
+            </div>
+          </div>
+          {!v.current && i > 0 && (
+            <button
+              onClick={() => onDiff(v.filename, 'skill.md')}
+              className="flex items-center gap-1 px-2 py-1 text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 rounded"
+            >
+              <GitCompareArrows className="w-3 h-3" /> Diff vs current
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Diff Panel                                                          */
+/* ------------------------------------------------------------------ */
+
+function DiffPanel({
+  versions, diffFiles, diffResult, onLoadDiff,
+}: {
+  versions: VersionEntry[];
+  diffFiles: { v1: string; v2: string } | null;
+  diffResult: string;
+  onLoadDiff: (v1: string, v2: string) => void;
+}) {
+  const archived = versions.filter((v) => !v.current);
+
+  return (
+    <div className="space-y-3">
+      <h3 className="text-xs font-medium text-slate-300">Compare Versions</h3>
+
+      {/* Quick selectors */}
+      {archived.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {archived.map((v) => (
+            <button
+              key={v.filename}
+              onClick={() => onLoadDiff(v.filename, 'skill.md')}
+              className={cn(
+                'px-2.5 py-1 text-[11px] rounded-md transition-colors',
+                diffFiles?.v1 === v.filename
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-900 text-slate-400 hover:text-slate-200',
+              )}
+            >
+              {v.label} vs current
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="text-xs text-slate-500">No previous versions to compare. Edit and save the skill to start tracking versions.</div>
+      )}
+
+      {/* Diff output */}
+      {diffResult && (
+        <pre className="w-full max-h-[600px] overflow-auto px-3 py-2 text-xs font-mono bg-slate-900 border border-slate-800 rounded-lg whitespace-pre-wrap">
+          {diffResult.split('\n').map((line, i) => (
+            <div
+              key={i}
+              className={cn(
+                line.startsWith('+') && !line.startsWith('+++') ? 'text-emerald-400 bg-emerald-950/30' :
+                line.startsWith('-') && !line.startsWith('---') ? 'text-red-400 bg-red-950/30' :
+                line.startsWith('@@') ? 'text-blue-400' :
+                'text-slate-400',
+              )}
+            >
+              {line}
+            </div>
+          ))}
+        </pre>
+      )}
     </div>
   );
 }
@@ -380,6 +626,8 @@ function SkillConfigSection({ configurable }: { configurable: Array<Record<strin
 /* ------------------------------------------------------------------ */
 
 function MCPTab() {
+  const [expandedServer, setExpandedServer] = useState<number | null>(null);
+
   const { data: connections = [], isLoading } = useQuery({
     queryKey: ['admin', 'mcp'],
     queryFn: async () => {
@@ -391,7 +639,7 @@ function MCPTab() {
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-slate-400">{connections.length} MCP servers configured</div>
+      <div className="text-sm text-slate-400">{connections.length} MCP server{connections.length !== 1 ? 's' : ''} configured</div>
 
       {connections.length === 0 ? (
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-8 text-center">
@@ -402,18 +650,54 @@ function MCPTab() {
         </div>
       ) : (
         <div className="space-y-3">
-          {connections.map((conn: Record<string, unknown>, i: number) => (
-            <div key={i} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-              <div className="flex items-center gap-2">
-                {conn.connected ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
-                <span className="text-sm font-medium text-slate-100">{String(conn.name)}</span>
-                <span className="text-[10px] text-slate-500">{String(conn.transport)}</span>
+          {connections.map((conn: Record<string, unknown>, i: number) => {
+            const tools = (conn.tools as string[]) || [];
+            const toolsets = (conn.toolsets as string[]) || [];
+            const expanded = expandedServer === i;
+
+            return (
+              <div key={i} className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+                <button
+                  onClick={() => setExpandedServer(expanded ? null : i)}
+                  className="w-full p-4 text-left hover:bg-slate-800/30 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      {conn.connected ? <CheckCircle2 className="w-4 h-4 text-emerald-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
+                      <span className="text-sm font-medium text-slate-100">{String(conn.name)}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 rounded text-slate-500">{String(conn.transport)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-slate-400">{tools.length} tools</span>
+                      <ChevronDown className={cn('w-3.5 h-3.5 text-slate-500 transition-transform', expanded && 'rotate-180')} />
+                    </div>
+                  </div>
+                  <div className="text-xs text-slate-500 mt-1 font-mono">{String(conn.url)}</div>
+                  {toolsets.length > 0 && (
+                    <div className="flex gap-1 mt-2">
+                      {toolsets.map((ts) => (
+                        <span key={ts} className="text-[10px] px-1.5 py-0.5 bg-blue-900/20 text-blue-400 rounded border border-blue-800/30">{ts}</span>
+                      ))}
+                    </div>
+                  )}
+                  {Boolean(conn.error) && <div className="text-[10px] text-red-400 mt-2">{String(conn.error)}</div>}
+                </button>
+
+                {expanded && tools.length > 0 && (
+                  <div className="border-t border-slate-800 px-4 py-3">
+                    <h4 className="text-[10px] font-medium text-slate-400 uppercase tracking-wider mb-2">Available Tools</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                      {tools.map((tool) => (
+                        <div key={tool} className="text-[11px] font-mono text-slate-300 bg-slate-800/50 rounded px-2 py-1 truncate" title={tool}>
+                          {tool}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="text-xs text-slate-400 mt-1">{String(conn.url)}</div>
-              {Boolean(conn.tools) && <div className="text-[10px] text-slate-500 mt-1">{(conn.tools as string[]).length} tools</div>}
-              {Boolean(conn.error) && <div className="text-[10px] text-red-400 mt-1">{String(conn.error)}</div>}
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
