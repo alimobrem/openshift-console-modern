@@ -173,13 +173,38 @@ export function renderAge(value: unknown): ReactNode {
   );
 }
 
-export function renderOwner(value: unknown): ReactNode {
+const OWNER_KIND_COLORS: Record<string, string> = {
+  ReplicaSet: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
+  Deployment: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+  StatefulSet: 'text-violet-400 bg-violet-500/10 border-violet-500/20',
+  DaemonSet: 'text-amber-400 bg-amber-500/10 border-amber-500/20',
+  Job: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/20',
+  CronJob: 'text-pink-400 bg-pink-500/10 border-pink-500/20',
+  Node: 'text-orange-400 bg-orange-500/10 border-orange-500/20',
+};
+const OWNER_KIND_ABBREV: Record<string, string> = {
+  ReplicaSet: 'RS', Deployment: 'Deploy', StatefulSet: 'STS',
+  DaemonSet: 'DS', Job: 'Job', CronJob: 'CJ', Node: 'Node',
+};
+
+export function renderOwner(value: unknown, resource?: K8sResource): ReactNode {
   if (!value || !Array.isArray(value) || value.length === 0) return null;
-  const owners = value as Array<{ kind: string; name: string }>;
+  const owners = value as Array<{ kind: string; name: string; apiVersion?: string }>;
+  const owner = owners[0];
+  const colorClass = OWNER_KIND_COLORS[owner.kind] || 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+  const abbrev = OWNER_KIND_ABBREV[owner.kind] || owner.kind;
+  const plural = kindToPlural(owner.kind);
+  const apiVersion = owner.apiVersion || 'apps/v1';
+  const [group, version] = apiVersion.includes('/') ? apiVersion.split('/') : ['', apiVersion];
+  const gvrUrl = group ? `${group}~${version}~${plural}` : `${version}~${plural}`;
+  const ns = resource?.metadata?.namespace;
+  const href = ns ? `/r/${gvrUrl}/${ns}/${owner.name}` : `/r/${gvrUrl}/_/${owner.name}`;
+
   return (
-    <span className="text-sm text-slate-400 truncate max-w-[200px]" title={owners.map(o => `${o.kind}/${o.name}`).join(', ')}>
-      {owners.map(o => `${o.kind}/${o.name}`).join(', ')}
-    </span>
+    <Link to={href} className="inline-flex items-center gap-1.5 group max-w-[220px]" title={`${owner.kind}/${owner.name}`}>
+      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${colorClass}`}>{abbrev}</span>
+      <span className="text-sm text-slate-400 group-hover:text-slate-200 truncate transition-colors">{owner.name}</span>
+    </Link>
   );
 }
 
