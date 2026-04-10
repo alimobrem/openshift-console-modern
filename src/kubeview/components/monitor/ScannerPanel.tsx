@@ -57,10 +57,24 @@ export function ScannerPanel() {
   const scanReport = useMonitorStore((s) => (s as any).scanReport as { scanId: number; duration_ms: number; total_findings: number; scanners: ScannerResult[] } | null);
 
   useEffect(() => {
-    fetch('/api/agent/monitor/scanners')
-      .then((r) => r.json())
-      .then((data) => { setScanners(data.scanners || []); setLoading(false); })
-      .catch(() => setLoading(false));
+    let cancelled = false;
+    const load = () =>
+      fetch('/api/agent/monitor/scanners')
+        .then((r) => r.json())
+        .then((data) => {
+          if (!cancelled) { setScanners(data.scanners || []); setLoading(false); }
+        })
+        .catch(() => {
+          // Retry once after 2s — initial page load may race with agent startup
+          if (!cancelled) setTimeout(() => {
+            fetch('/api/agent/monitor/scanners')
+              .then((r) => r.json())
+              .then((data) => { if (!cancelled) { setScanners(data.scanners || []); setLoading(false); } })
+              .catch(() => { if (!cancelled) setLoading(false); });
+          }, 2000);
+        });
+    load();
+    return () => { cancelled = true; };
   }, []);
 
   const toggleExpand = (id: string) => {
@@ -92,6 +106,10 @@ export function ScannerPanel() {
 
   if (loading) {
     return <div className="p-4 text-xs text-slate-500">Loading scanners...</div>;
+  }
+
+  if (scanners.length === 0) {
+    return <div className="p-4 text-xs text-slate-500">No scanners available. The agent may still be starting up.</div>;
   }
 
   // Group by category
