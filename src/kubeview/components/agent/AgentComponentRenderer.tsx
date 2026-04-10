@@ -1113,7 +1113,7 @@ function AgentMetricCard({ spec }: { spec: MetricCardSpec }) {
     );
     if (clickable) {
       return (
-        <button onClick={handleClick} className="w-full text-left hover:ring-1 hover:ring-blue-500/50 rounded-lg transition-all">
+        <button onClick={handleClick} className="w-full h-full text-left hover:ring-1 hover:ring-blue-500/50 rounded-lg transition-all">
           {card}
         </button>
       );
@@ -1127,7 +1127,7 @@ function AgentMetricCard({ spec }: { spec: MetricCardSpec }) {
     <Tag
       onClick={clickable ? handleClick : undefined}
       className={cn(
-        'bg-gradient-to-br from-slate-900 to-slate-900/70 rounded-lg border p-3 transition-all duration-200 hover:shadow-[0_0_12px_rgba(37,99,235,0.08)]',
+        'bg-gradient-to-br from-slate-900 to-slate-900/70 rounded-lg border p-3 transition-all duration-200 hover:shadow-[0_0_12px_rgba(37,99,235,0.08)] h-full',
         METRIC_STATUS_BORDER[spec.status || ''] || 'border-slate-800',
         clickable && 'cursor-pointer hover:ring-1 hover:ring-blue-500/50 w-full text-left',
       )}

@@ -37,12 +37,24 @@ function idealWidth(spec: ComponentSpec): number {
 /** Compute ideal height for a component spec (rowHeight=30 units) */
 export function idealHeight(spec: ComponentSpec): number {
   const rows = spec.kind === 'data_table' ? (spec as any).rows?.length || 5 : 0;
-  const gridItems = spec.kind === 'grid' ? ((spec as any).items?.length || 0) : 0;
-  const gridCols = spec.kind === 'grid' ? ((spec as any).columns || 2) : 1;
-  const gridRows = Math.ceil(gridItems / gridCols);
+  if (spec.kind === 'grid') {
+    const items: any[] = (spec as any).items || [];
+    const cols = (spec as any).columns || 2;
+    // Calculate height per visual row based on item kinds
+    let totalH = 1; // title/padding
+    const fullSpanKinds = new Set(['resource_counts', 'data_table', 'status_list']);
+    const fullSpan = items.filter(i => fullSpanKinds.has(i.kind));
+    const cards = items.filter(i => !fullSpanKinds.has(i.kind));
+    // Full-span items get their own row
+    for (const item of fullSpan) {
+      totalH += item.kind === 'resource_counts' ? 2 : 3;
+    }
+    // Card items pack into columns
+    const cardRows = Math.ceil(cards.length / cols);
+    totalH += cardRows * 3;
+    return totalH;
+  }
   return (
-    spec.kind === 'info_card_grid' ? 4 :
-    spec.kind === 'grid' ? (2 + gridRows * 3) :
     spec.kind === 'metric_card' ? 3 :
     spec.kind === 'status_list' ? Math.min(2 + Math.ceil(((spec as any).items?.length || 3) * 0.8), 8) :
     spec.kind === 'badge_list' ? 2 :

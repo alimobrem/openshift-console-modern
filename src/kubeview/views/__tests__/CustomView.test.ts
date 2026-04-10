@@ -14,8 +14,8 @@ describe('idealHeight', () => {
         { kind: 'metric_card', title: 'D', value: '4' },
       ],
     };
-    // 4 items / 4 cols = 1 row → 2 + 1*3 = 5
-    expect(idealHeight(spec)).toBe(5);
+    // 4 cards / 4 cols = 1 row → 1 (padding) + 1*3 = 4
+    expect(idealHeight(spec)).toBe(4);
   });
 
   it('returns correct height for grid with 4 cards in 2 columns', () => {
@@ -29,8 +29,25 @@ describe('idealHeight', () => {
         { kind: 'metric_card', title: 'D', value: '4' },
       ],
     };
-    // 4 items / 2 cols = 2 rows → 2 + 2*3 = 8
-    expect(idealHeight(spec)).toBe(8);
+    // 4 cards / 2 cols = 2 rows → 1 (padding) + 2*3 = 7
+    expect(idealHeight(spec)).toBe(7);
+
+  });
+
+  it('returns correct height for grid with resource_counts + metric cards', () => {
+    const spec: ComponentSpec = {
+      kind: 'grid',
+      columns: 4,
+      items: [
+        { kind: 'resource_counts', items: [] },
+        { kind: 'metric_card', title: 'A', value: '1' },
+        { kind: 'metric_card', title: 'B', value: '2' },
+        { kind: 'metric_card', title: 'C', value: '3' },
+        { kind: 'metric_card', title: 'D', value: '4' },
+      ],
+    };
+    // 1 full-span (resource_counts=2) + 4 cards/4 cols = 1 row*3 → 1 + 2 + 3 = 6
+    expect(idealHeight(spec)).toBe(6);
   });
 
   it('returns correct height for chart', () => {
@@ -101,10 +118,10 @@ describe('positionsToLayout', () => {
         ],
       },
     ];
-    // Backend saved h=12, but idealHeight should be 5
+    // Backend saved h=12, but idealHeight should be 4
     const positions = { '0': { x: 0, y: 0, w: 4, h: 12 } };
     const layout = positionsToLayout(positions, specs);
-    expect(layout[0].h).toBe(5); // idealHeight, NOT saved h=12
+    expect(layout[0].h).toBe(4); // idealHeight, NOT saved h=12
   });
 
   it('preserves x, y, w from saved positions', () => {
