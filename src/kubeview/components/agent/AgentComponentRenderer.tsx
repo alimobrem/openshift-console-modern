@@ -810,9 +810,14 @@ function AgentGrid({ spec, depth = 0 }: { spec: GridSpec; depth?: number }) {
         className="grid gap-3"
         style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
       >
-        {spec.items.map((item, i) => (
-          <AgentComponentRenderer key={i} spec={item} depth={depth + 1} />
-        ))}
+        {spec.items.map((item, i) => {
+          const spanFull = item.kind === 'resource_counts' || item.kind === 'data_table' || item.kind === 'status_list';
+          return (
+            <div key={i} style={spanFull ? { gridColumn: `1 / -1` } : undefined}>
+              <AgentComponentRenderer spec={item} depth={depth + 1} />
+            </div>
+          );
+        })}
       </div>
     </div>
   );
