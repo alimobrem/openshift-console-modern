@@ -23,7 +23,8 @@ export type ComponentSpec =
   | BarListSpec
   | ProgressListSpec
   | StatCardSpec
-  | TimelineSpec;
+  | TimelineSpec
+  | ResourceCountsSpec;
 
 export interface RelationshipTreeSpec {
   kind: 'relationship_tree';
@@ -297,4 +298,16 @@ export function truncateForPersistence(spec: ComponentSpec): ComponentSpec {
     return { ...spec, components: spec.components.map(truncateForPersistence) };
   }
   return spec;
+}
+
+export interface ResourceCountsSpec {
+  kind: 'resource_counts';
+  title?: string;
+  namespace?: string;
+  items: Array<{
+    resource: string;
+    count: number;
+    gvr?: string;
+    status?: 'healthy' | 'warning' | 'error';
+  }>;
 }

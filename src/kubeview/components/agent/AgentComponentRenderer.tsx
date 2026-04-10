@@ -29,6 +29,7 @@ import type {
   ProgressListSpec,
   StatCardSpec,
   TimelineSpec,
+  ResourceCountsSpec,
 } from '../../engine/agentComponents';
 import { AgentNodeMap } from './AgentNodeMap';
 import { Badge } from '../primitives/Badge';
@@ -85,6 +86,8 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView, refreshIn
       return <AgentStatCard spec={spec} />;
     case 'timeline':
       return <AgentTimeline spec={spec} />;
+    case 'resource_counts':
+      return <AgentResourceCounts spec={spec} />;
     default:
       return null;
   }
@@ -1387,6 +1390,76 @@ function AgentTimeline({ spec }: { spec: TimelineSpec }) {
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Resource Counts                                                     */
+/* ------------------------------------------------------------------ */
+
+const RESOURCE_ICONS: Record<string, string> = {
+  pods: '⊞',
+  deployments: '⬡',
+  statefulsets: '≡',
+  daemonsets: '◈',
+  services: '⊕',
+  configmaps: '⊡',
+  events: '△',
+  secrets: '⊠',
+  ingresses: '⇄',
+  routes: '⇆',
+  jobs: '▷',
+  cronjobs: '↻',
+  persistentvolumeclaims: '⊟',
+  namespaces: '▣',
+};
+
+const RESOURCE_COLORS: Record<string, string> = {
+  pods: 'text-emerald-400',
+  deployments: 'text-blue-400',
+  statefulsets: 'text-violet-400',
+  daemonsets: 'text-amber-400',
+  services: 'text-cyan-400',
+  configmaps: 'text-slate-400',
+  events: 'text-amber-400',
+  secrets: 'text-red-400',
+};
+
+function AgentResourceCounts({ spec }: { spec: ResourceCountsSpec }) {
+  const navigate = useNavigate();
+  const ns = spec.namespace;
+
+  return (
+    <div>
+      {spec.title && <div className="text-xs font-medium text-slate-400 mb-2">{spec.title}</div>}
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+        {spec.items.map((item) => {
+          const icon = RESOURCE_ICONS[item.resource] || '□';
+          const color = RESOURCE_COLORS[item.resource] || 'text-slate-400';
+          const statusColor = item.status === 'error' ? 'border-red-800/50' : item.status === 'warning' ? 'border-amber-800/50' : 'border-slate-800';
+          const path = item.gvr ? (ns ? `/r/${item.gvr}?ns=${ns}` : `/r/${item.gvr}`) : undefined;
+
+          return (
+            <button
+              key={item.resource}
+              onClick={() => path && navigate(path)}
+              disabled={!path}
+              className={cn(
+                'bg-slate-900 rounded-lg border p-3 text-center transition-colors',
+                statusColor,
+                path ? 'hover:bg-slate-800/80 hover:border-slate-600 cursor-pointer' : 'cursor-default',
+              )}
+            >
+              <div className={cn('flex items-center justify-center gap-1.5 mb-1', color)}>
+                <span className="text-base">{icon}</span>
+                <span className="text-xl font-bold text-slate-100">{item.count}</span>
+              </div>
+              <div className="text-xs text-slate-500 capitalize">{item.resource}</div>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
