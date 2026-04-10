@@ -328,7 +328,7 @@ export default function TableView({ gvrKey, namespace: namespaceProp }: TableVie
 
   const handleCreate = React.useCallback(() => {
     const gvrUrl = gvrKey.replace(/\//g, '~');
-    const path = `/create/${gvrUrl}`;
+    const path = `/create/${gvrUrl}?tab=yaml`;
     addTab({ title: `Create ${resourceKind}`, path, pinned: false, closable: true });
     navigate(path);
   }, [gvrKey, resourceKind, addTab, navigate]);

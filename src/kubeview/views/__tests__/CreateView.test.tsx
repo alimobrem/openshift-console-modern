@@ -77,6 +77,8 @@ function renderCreateView(props: { gvrKey: string } = { gvrKey: 'v1/pods' }) {
 describe('CreateView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset URL state so ?tab= doesn't leak between tests
+    window.history.replaceState(null, '', '/');
     // Default fetch mock for Helm releases query
     mockFetch.mockResolvedValue({
       ok: true,
@@ -102,6 +104,23 @@ describe('CreateView', () => {
 
     expect(screen.getByText('Software')).toBeDefined();
     expect(screen.getByText(/Manage installed software/)).toBeDefined();
+  });
+
+  it('goes straight to YAML editor for non-pod resources', () => {
+    renderCreateView({ gvrKey: 'apps/v1/deployments' });
+    expect(screen.getByTestId('yaml-editor')).toBeDefined();
+  });
+
+  it('goes to YAML editor for pods when tab=yaml is in URL', () => {
+    window.history.replaceState(null, '', '?tab=yaml');
+    renderCreateView({ gvrKey: 'v1/pods' });
+    expect(screen.getByTestId('yaml-editor')).toBeDefined();
+  });
+
+  it('shows catalog tabs for pods without tab=yaml', () => {
+    renderCreateView({ gvrKey: 'v1/pods' });
+    expect(screen.getByText('Quick Deploy')).toBeDefined();
+    expect(screen.getByText('Helm Charts')).toBeDefined();
   });
 
   it('shows Quick Deploy form fields', () => {

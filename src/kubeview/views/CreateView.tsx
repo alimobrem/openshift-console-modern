@@ -101,9 +101,9 @@ export default function CreateView({ gvrKey }: CreateViewProps) {
   const resourceType = registry?.get(activeGvr) ?? (activeGvr.split('/').length === 2 ? registry?.get(`core/${activeGvr}`) : undefined);
   const kind = resourceType?.kind || resourcePlural.replace(/s$/, '').replace(/^./, (c) => c.toUpperCase());
 
-  // If we came with a specific GVR (not the default), go straight to YAML editor
+  // If we came with a specific GVR (not the default catalog) or ?tab=yaml, go straight to YAML editor
   useMemo(() => {
-    if (gvrKey !== 'v1/pods') {
+    if (gvrKey !== 'v1/pods' || urlTab === 'yaml') {
       const shortName = resourcePlural.replace(/s$/, '').toLowerCase();
       const snips = getSnippetSuggestions(shortName);
       if (snips.length > 0) {
