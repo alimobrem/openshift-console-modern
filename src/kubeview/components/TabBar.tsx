@@ -81,12 +81,19 @@ export function TabBar() {
   const pendingNavigate = useUIStore((s) => s._pendingNavigate);
 
   // Handle navigation after tab close (via React Router, not full reload)
+  // Clear _pendingNavigate only after the route has actually changed,
+  // otherwise the sync-tab useEffect may re-create the closed tab.
   useEffect(() => {
     if (pendingNavigate) {
       navigate(pendingNavigate);
-      useUIStore.setState({ _pendingNavigate: null });
     }
   }, [pendingNavigate, navigate]);
+
+  useEffect(() => {
+    if (pendingNavigate && location.pathname === pendingNavigate) {
+      useUIStore.setState({ _pendingNavigate: null });
+    }
+  }, [location.pathname, pendingNavigate]);
 
   const [draggedIdx, setDraggedIdx] = React.useState<number | null>(null);
   const [dragOverIdx, setDragOverIdx] = React.useState<number | null>(null);
