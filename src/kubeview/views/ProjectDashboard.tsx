@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Package, Server, Globe, Shield, Clock, AlertTriangle, CheckCircle, XCircle,
-  Activity, Layers, FileText, ChevronDown,
+  Layers, FileText, BarChart3,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card } from '../components/primitives/Card';
 import { MetricGrid } from '../components/primitives/MetricGrid';
 import { MetricCard } from '../components/metrics/Sparkline';
+import { MetricsChart } from '../components/metrics/MetricsChart';
+import { getMetricsForResource, resolveQuery, formatYAxisValue } from '../components/metrics/AutoMetrics';
+import { CHART_COLOR_SEQUENCE, CHART_COLORS } from '../engine/colors';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { useNavigateTab } from '../hooks/useNavigateTab';
-import { CHART_COLORS } from '../engine/colors';
 import { formatRelativeTime } from '../engine/formatters';
 import { sanitizePromQL } from '../engine/query';
 import type { Pod, Deployment, StatefulSet, DaemonSet, Service } from '../engine/types';
@@ -19,13 +22,9 @@ import { getPodStatus } from '../engine/renderers/statusUtils';
 
 export default function ProjectDashboard() {
   const { namespace } = useParams<{ namespace: string }>();
-  const navigate = useNavigate();
   const go = useNavigateTab();
   const ns = namespace || 'default';
   const safeNs = sanitizePromQL(ns);
-
-  // Fetch all namespaces for the dropdown
-  const { data: allNamespaces = [] } = useK8sListWatch<K8sResource>({ apiPath: '/api/v1/namespaces' });
 
   const { data: pods = [] } = useK8sListWatch<Pod>({ apiPath: '/api/v1/pods', namespace: ns });
   const { data: deployments = [] } = useK8sListWatch<Deployment>({ apiPath: '/apis/apps/v1/deployments', namespace: ns });
@@ -55,31 +54,13 @@ export default function ProjectDashboard() {
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header with namespace selector */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
-              <Layers className="w-6 h-6 text-blue-500" />
-              {ns}
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">Project overview — all resources at a glance</p>
-          </div>
-          <div className="relative">
-            <select
-              value={ns}
-              onChange={(e) => navigate(`/project/${e.target.value}`)}
-              className="appearance-none bg-slate-900 border border-slate-700 rounded-lg pl-3 pr-8 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
-            >
-              {allNamespaces
-                .map((n: any) => n.metadata?.name)
-                .filter(Boolean)
-                .sort()
-                .map((name: string) => (
-                  <option key={name} value={name}>{name}</option>
-                ))}
-            </select>
-            <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          </div>
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-bold text-slate-100 flex items-center gap-2">
+            <Layers className="w-6 h-6 text-blue-500" />
+            {ns}
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">Project overview — all resources at a glance</p>
         </div>
 
         {/* Summary cards */}
@@ -119,6 +100,9 @@ export default function ProjectDashboard() {
             thresholds={{ warning: 5, critical: 20 }}
           />
         </MetricGrid>
+
+        {/* Time-series metrics */}
+        <NamespaceCharts namespace={ns} />
 
         {/* Pods */}
         <Card>
@@ -218,6 +202,119 @@ export default function ProjectDashboard() {
           </Card>
         )}
       </div>
+    </div>
+  );
+}
+
+function NamespaceCharts({ namespace }: { namespace: string }) {
+  const [timeRange, setTimeRange] = useState<'1h' | '6h' | '24h'>('6h');
+  const [hoverTime, setHoverTime] = useState<number | null>(null);
+
+  const rangeSeconds = { '1h': 3600, '6h': 21600, '24h': 86400 }[timeRange];
+  const end = Math.floor(Date.now() / 1000);
+  const start = end - rangeSeconds;
+  const step = Math.max(15, Math.floor(rangeSeconds / 200));
+
+  const metricQueries = useMemo(
+    () => getMetricsForResource('v1/namespaces', { metadata: { name: namespace } }),
+    [namespace],
+  );
+
+  const vars = useMemo(() => ({ name: namespace, namespace }), [namespace]);
+
+  // Show first 4 charts (CPU, CPU by pod, Memory, Memory by pod)
+  const charts = metricQueries.slice(0, 4);
+
+  if (charts.length === 0) return null;
+
+  return (
+    <Card>
+      <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+        <h2 className="text-sm font-semibold text-slate-100 flex items-center gap-2">
+          <BarChart3 className="w-4 h-4 text-cyan-400" />
+          Resource Metrics
+        </h2>
+        <div className="flex bg-slate-800 rounded text-xs">
+          {(['1h', '6h', '24h'] as const).map((range) => (
+            <button
+              key={range}
+              onClick={() => setTimeRange(range)}
+              className={cn(
+                'px-2.5 py-1 rounded transition-colors',
+                timeRange === range ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200',
+              )}
+            >
+              {range}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4">
+        {charts.map((mq, i) => (
+          <NsMetricPanel
+            key={mq.id}
+            query={resolveQuery(mq.query, vars)}
+            title={mq.title}
+            yAxisLabel={mq.yAxisLabel}
+            yAxisFormat={mq.yAxisFormat}
+            colorIndex={i}
+            start={start}
+            end={end}
+            step={step}
+            hoverTime={hoverTime}
+            onHover={setHoverTime}
+          />
+        ))}
+      </div>
+    </Card>
+  );
+}
+
+function NsMetricPanel({ query, title, yAxisLabel, yAxisFormat, colorIndex, start, end, step, hoverTime, onHover }: {
+  query: string; title: string; yAxisLabel: string; yAxisFormat: string; colorIndex: number;
+  start: number; end: number; step: number; hoverTime: number | null; onHover: (t: number | null) => void;
+}) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['prometheus', query, start, end, step],
+    queryFn: async () => {
+      const params = new URLSearchParams({ query, start: String(start), end: String(end), step: String(step) });
+      const res = await fetch(`/api/prometheus/api/v1/query_range?${params}`);
+      if (!res.ok) return null;
+      const json = await res.json();
+      if (json.status !== 'success') return null;
+      return json.data?.result || [];
+    },
+    refetchInterval: 60000,
+  });
+
+  const series = useMemo(() => {
+    if (!data || !Array.isArray(data)) return [];
+    return data.map((result: { metric: Record<string, string>; values: [number, string][] }, idx: number) => ({
+      id: `series-${idx}`,
+      label: Object.values(result.metric || {}).join(', ') || title,
+      data: (result.values || []).map(([ts, val]: [number, string]) => ({ timestamp: ts, value: parseFloat(val) })),
+      color: CHART_COLOR_SEQUENCE[(colorIndex + idx) % CHART_COLOR_SEQUENCE.length],
+      type: 'line' as const,
+    }));
+  }, [data, title, colorIndex]);
+
+  if (isLoading) {
+    return <div className="h-48 flex items-center justify-center"><div className="kv-skeleton w-6 h-6 rounded-full" /></div>;
+  }
+
+  return (
+    <div className="h-48">
+      <MetricsChart
+        series={series}
+        height={180}
+        timeRange={[start, end]}
+        yAxisLabel={yAxisLabel}
+        yAxisFormat={(v: number) => formatYAxisValue(v, yAxisFormat)}
+        showLegend={series.length > 1 && series.length <= 5}
+        hoverTimestamp={hoverTime}
+        onHover={onHover}
+      />
+      <div className="text-[11px] text-slate-500 text-center mt-1">{title}</div>
     </div>
   );
 }
