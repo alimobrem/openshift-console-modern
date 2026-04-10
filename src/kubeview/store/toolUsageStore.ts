@@ -141,7 +141,9 @@ export const useToolUsageStore = create<ToolUsageState>()((set, get) => ({
 
   loadUsage: async (overrides) => {
     const filters = { ...get().filters, ...overrides };
-    set({ usageLoading: true, filters });
+    const isBackgroundPoll = !overrides;
+    if (!isBackgroundPoll) set({ usageLoading: true });
+    set({ filters });
     const params = new URLSearchParams();
     if (filters.tool_name) params.set('tool_name', filters.tool_name);
     if (filters.agent_mode) params.set('agent_mode', filters.agent_mode);
@@ -154,21 +156,32 @@ export const useToolUsageStore = create<ToolUsageState>()((set, get) => ({
     const data = await apiFetch<{ entries: ToolUsageEntry[]; total: number; page: number; per_page: number }>(
       `/tools/usage?${params}`,
     );
+    // Skip re-render if data hasn't changed (prevents flickering on background polls)
+    const prev = get().usage;
+    if (prev && data && prev.total === data.total && prev.entries.length === data.entries.length && prev.entries[0]?.id === data.entries[0]?.id) {
+      if (!isBackgroundPoll) set({ usageLoading: false });
+      return;
+    }
     set({ usage: data, usageLoading: false });
   },
 
   loadStats: async (from, to) => {
-    set({ statsLoading: true });
+    const isBackground = !from && !to;
+    if (!isBackground) set({ statsLoading: true });
     const params = new URLSearchParams();
     if (from) params.set('from', from);
     if (to) params.set('to', to);
     const qs = params.toString();
     const data = await apiFetch<UsageStats>(`/tools/usage/stats${qs ? `?${qs}` : ''}`);
+    const prev = get().stats;
+    if (prev && data && prev.total_calls === data.total_calls) {
+      if (!isBackground) set({ statsLoading: false });
+      return;
+    }
     set({ stats: data, statsLoading: false });
   },
 
   loadChains: async () => {
-    set({ chainsLoading: true });
     const data = await apiFetch<ChainData>('/tools/usage/chains');
     set({ chains: data, chainsLoading: false });
   },
