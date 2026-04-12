@@ -1668,7 +1668,7 @@ function PromptAuditSection() {
 
   if (!promptStats) return null;
 
-  const sectionEntries = Object.entries(promptStats.section_avg).sort(([, a], [, b]) => b - a);
+  const sectionEntries = Object.entries(promptStats.section_avg || {}).sort(([, a], [, b]) => b - a);
   const staticDynamic = promptStats.static_chars + promptStats.dynamic_chars > 0
     ? `${Math.round((promptStats.static_chars / (promptStats.static_chars + promptStats.dynamic_chars)) * 100)}% / ${Math.round((promptStats.dynamic_chars / (promptStats.static_chars + promptStats.dynamic_chars)) * 100)}%`
     : '- / -';
