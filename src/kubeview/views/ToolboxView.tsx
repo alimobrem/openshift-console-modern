@@ -1619,6 +1619,8 @@ interface PromptStats {
   cache_hit_rate: number;
   static_chars: number;
   dynamic_chars: number;
+  avg_static_chars: number;
+  avg_dynamic_chars: number;
   total_prompts: number;
   section_avg: Record<string, number>;
 }
@@ -1669,12 +1671,17 @@ function PromptAuditSection() {
   if (!promptStats) return null;
 
   const sectionEntries = Object.entries(promptStats.section_avg || {}).sort(([, a], [, b]) => b - a);
-  const staticDynamic = promptStats.static_chars + promptStats.dynamic_chars > 0
-    ? `${Math.round((promptStats.static_chars / (promptStats.static_chars + promptStats.dynamic_chars)) * 100)}% / ${Math.round((promptStats.dynamic_chars / (promptStats.static_chars + promptStats.dynamic_chars)) * 100)}%`
+  const sc = promptStats.avg_static_chars || promptStats.static_chars || 0;
+  const dc = promptStats.avg_dynamic_chars || promptStats.dynamic_chars || 0;
+  const staticDynamic = sc + dc > 0
+    ? `${Math.round((sc / (sc + dc)) * 100)}% / ${Math.round((dc / (sc + dc)) * 100)}%`
     : '- / -';
 
-  // Derive skill names from section_avg keys for the versions picker
-  const skillNames = [...new Set(sectionEntries.map(([name]) => name.split('.')[0]).filter(Boolean))];
+  // Use skill names from API (or derive from section keys as fallback)
+  const statsAny = promptStats as unknown as Record<string, unknown>;
+  const skillNames = Array.isArray(statsAny.skill_names)
+    ? (statsAny.skill_names as string[])
+    : [...new Set(sectionEntries.map(([name]) => name.split('.')[0]).filter(Boolean))];
 
   return (
     <div className="border-t border-slate-800 pt-6 space-y-4">
