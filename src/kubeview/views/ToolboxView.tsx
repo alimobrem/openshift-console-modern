@@ -1553,10 +1553,10 @@ function AnalyticsTab() {
 }
 
 function UnusedToolsSection({ tools, usedTools }: { tools: { sre: ToolInfo[]; security: ToolInfo[] }; usedTools: Array<{ tool_name: string; count: number }> }) {
-  const usedNames = new Set(usedTools.map((t) => t.tool_name));
+  const usedNames = new Set((usedTools || []).map((t) => t.tool_name));
   const allTools: Array<{ name: string; category: string; mode: string }> = [];
-  for (const t of tools.sre) allTools.push({ name: t.name, category: t.category || '', mode: 'sre' });
-  for (const t of tools.security) {
+  for (const t of (tools.sre || [])) allTools.push({ name: t.name, category: t.category || '', mode: 'sre' });
+  for (const t of (tools.security || [])) {
     if (!allTools.some((x) => x.name === t.name)) allTools.push({ name: t.name, category: t.category || '', mode: 'security' });
   }
 
