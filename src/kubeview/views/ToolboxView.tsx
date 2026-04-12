@@ -1369,7 +1369,8 @@ function AnalyticsTab() {
     return <div className="text-center py-12 text-sm text-slate-500">No usage data yet. Tool calls will appear here once the agent is used.</div>;
   }
 
-  const maxCount = Math.max(...stats.by_tool.slice(0, 10).map((t) => t.count), 1);
+  const byTool = stats.by_tool || [];
+  const maxCount = Math.max(...byTool.slice(0, 10).map((t) => t.count), 1);
   const bySource = (stats as unknown as { by_source?: Array<{ source: string; count: number }> }).by_source;
 
   const skills = skillStats?.skills || [];
@@ -1389,7 +1390,7 @@ function AnalyticsTab() {
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
         <h3 className="text-xs font-medium text-slate-300 mb-3">Top Tools</h3>
         <div className="space-y-1.5">
-          {stats.by_tool.slice(0, 10).map((t) => (
+          {byTool.slice(0, 10).map((t) => (
             <div key={t.tool_name} className="flex items-center gap-2 text-xs">
               <span className="w-36 truncate font-mono text-slate-300">{t.tool_name}</span>
               <div
@@ -1417,7 +1418,7 @@ function AnalyticsTab() {
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
           <h3 className="text-xs font-medium text-slate-300 mb-3">By Mode</h3>
           <div className="space-y-1">
-            {stats.by_mode.map((m) => (
+            {(stats.by_mode || []).map((m) => (
               <div key={m.mode} className="flex items-center justify-between text-xs">
                 <span className="text-slate-300 capitalize flex items-center gap-1.5">
                   {MODE_ICONS[m.mode] || <Bot className="w-3 h-3 text-slate-500" />}
@@ -1431,7 +1432,7 @@ function AnalyticsTab() {
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
           <h3 className="text-xs font-medium text-slate-300 mb-3">By Category</h3>
           <div className="space-y-1">
-            {stats.by_category.map((c) => (
+            {(stats.by_category || []).map((c) => (
               <div key={c.category} className="flex items-center justify-between text-xs">
                 <span className="text-slate-300">{c.category}</span>
                 <span className="text-slate-400">{c.count}</span>
@@ -1462,7 +1463,7 @@ function AnalyticsTab() {
       <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
         <h3 className="text-xs font-medium text-slate-300 mb-3">Largest Results (Context Usage)</h3>
         <div className="space-y-1">
-          {[...stats.by_tool].sort((a, b) => b.avg_result_bytes - a.avg_result_bytes).slice(0, 5).map((t) => (
+          {[...byTool].sort((a, b) => b.avg_result_bytes - a.avg_result_bytes).slice(0, 5).map((t) => (
             <div key={t.tool_name} className="flex items-center justify-between text-xs">
               <span className="font-mono text-slate-300">{t.tool_name}</span>
               <span className="text-slate-400">{(t.avg_result_bytes / 1024).toFixed(1)} KB avg</span>
@@ -1491,7 +1492,7 @@ function AnalyticsTab() {
       )}
 
       {/* Unused Tools */}
-      {tools && stats && <UnusedToolsSection tools={tools} usedTools={stats.by_tool} />}
+      {tools && stats && <UnusedToolsSection tools={tools} usedTools={byTool} />}
 
       {/* Skill Usage (from AdminExtensionsView analytics) */}
       {!skillStatsLoading && skills.length > 0 && (
