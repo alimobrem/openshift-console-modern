@@ -6,7 +6,7 @@ import {
   AlertTriangle, CheckCircle2, Clock, Database, Bot, Shield, Palette, ArrowRight,
   Puzzle, Server, Layers, RefreshCw, XCircle,
   Play, X, FileText, ChevronDown, Save, GitCompareArrows, Check,
-  Cable, Trash2, Copy,
+  Cable, Trash2, Copy, Hash,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToolUsageStore } from '../store/toolUsageStore';
@@ -1438,6 +1438,9 @@ function AnalyticsTab() {
           )}
         </>
       )}
+
+      {/* Prompt Audit */}
+      <PromptAuditSection />
     </div>
   );
 }
@@ -1497,6 +1500,153 @@ function StatCard({ label, value, icon }: { label: string; value: string; icon: 
     <div className="bg-slate-900 border border-slate-800 rounded-lg p-3">
       <div className="flex items-center gap-1.5 mb-1">{icon}<span className="text-[11px] text-slate-400">{label}</span></div>
       <div className="text-lg font-semibold text-slate-100">{value}</div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Prompt Audit Section                                                */
+/* ------------------------------------------------------------------ */
+
+interface PromptStats {
+  avg_tokens: number;
+  cache_hit_rate: number;
+  static_chars: number;
+  dynamic_chars: number;
+  total_prompts: number;
+  section_avg: Record<string, number>;
+}
+
+interface PromptVersion {
+  hash: string;
+  first_seen: string;
+  last_seen: string;
+  count: number;
+}
+
+function PromptAuditSection() {
+  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+
+  const { data: promptStats, isLoading } = useQuery({
+    queryKey: ['admin', 'prompt-stats'],
+    queryFn: async () => {
+      const res = await fetch('/api/agent/prompt/stats?days=30');
+      if (!res.ok) return null;
+      return res.json() as Promise<PromptStats>;
+    },
+    refetchInterval: 30_000,
+  });
+
+  const { data: promptVersions, isLoading: versionsLoading } = useQuery({
+    queryKey: ['admin', 'prompt-versions', selectedSkill],
+    queryFn: async () => {
+      if (!selectedSkill) return null;
+      const res = await fetch(`/api/agent/prompt/versions/${encodeURIComponent(selectedSkill)}`);
+      if (!res.ok) return null;
+      return res.json() as Promise<{ versions: PromptVersion[] }>;
+    },
+    enabled: !!selectedSkill,
+  });
+
+  if (isLoading) {
+    return (
+      <div className="border-t border-slate-800 pt-6">
+        <h2 className="text-sm font-semibold text-slate-200 mb-4 flex items-center gap-2">
+          <FileText className="w-4 h-4 text-cyan-400" />
+          Prompt Audit (30 days)
+        </h2>
+        <div className="flex justify-center py-8"><div className="kv-skeleton w-8 h-8 rounded-full" /></div>
+      </div>
+    );
+  }
+
+  if (!promptStats) return null;
+
+  const sectionEntries = Object.entries(promptStats.section_avg).sort(([, a], [, b]) => b - a);
+  const staticDynamic = promptStats.static_chars + promptStats.dynamic_chars > 0
+    ? `${Math.round((promptStats.static_chars / (promptStats.static_chars + promptStats.dynamic_chars)) * 100)}% / ${Math.round((promptStats.dynamic_chars / (promptStats.static_chars + promptStats.dynamic_chars)) * 100)}%`
+    : '- / -';
+
+  // Derive skill names from section_avg keys for the versions picker
+  const skillNames = [...new Set(sectionEntries.map(([name]) => name.split('.')[0]).filter(Boolean))];
+
+  return (
+    <div className="border-t border-slate-800 pt-6 space-y-4">
+      <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+        <FileText className="w-4 h-4 text-cyan-400" />
+        Prompt Audit (30 days)
+      </h2>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <StatCard label="Avg Prompt Tokens" value={promptStats.avg_tokens.toLocaleString()} icon={<Hash className="w-4 h-4 text-cyan-400" />} />
+        <StatCard label="Cache Hit Rate" value={`${(promptStats.cache_hit_rate * 100).toFixed(1)}%`} icon={<Database className="w-4 h-4 text-emerald-400" />} />
+        <StatCard label="Static / Dynamic" value={staticDynamic} icon={<BarChart3 className="w-4 h-4 text-violet-400" />} />
+        <StatCard label="Prompts Logged" value={promptStats.total_prompts.toLocaleString()} icon={<FileText className="w-4 h-4 text-blue-400" />} />
+      </div>
+
+      {/* Section Breakdown */}
+      {sectionEntries.length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 className="text-xs font-medium text-slate-300 mb-3">Section Breakdown</h3>
+          <div className="space-y-1">
+            {sectionEntries.map(([name, avgChars]) => (
+              <div key={name} className="flex items-center justify-between text-xs">
+                <span className="text-slate-300 font-mono truncate mr-2">{name}</span>
+                <span className="text-slate-400 whitespace-nowrap">{Math.round(avgChars).toLocaleString()} chars avg</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Versions */}
+      <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+        <h3 className="text-xs font-medium text-slate-300 mb-3">Prompt Versions</h3>
+        <p className="text-[10px] text-slate-500 mb-3">Click a skill to see distinct prompt hashes and when each was first/last seen.</p>
+        <div className="flex flex-wrap gap-1.5 mb-3">
+          {skillNames.map((name) => (
+            <button
+              key={name}
+              onClick={() => setSelectedSkill(selectedSkill === name ? null : name)}
+              className={cn(
+                'px-2.5 py-1 text-[11px] rounded-md transition-colors',
+                selectedSkill === name
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-slate-800 text-slate-400 hover:text-slate-200',
+              )}
+            >
+              {name}
+            </button>
+          ))}
+        </div>
+
+        {selectedSkill && (
+          <div>
+            {versionsLoading ? (
+              <div className="flex justify-center py-4"><div className="kv-skeleton w-6 h-6 rounded-full" /></div>
+            ) : promptVersions && promptVersions.versions.length > 0 ? (
+              <div className="space-y-1.5">
+                {promptVersions.versions.map((v) => (
+                  <div key={v.hash} className="flex items-center justify-between text-xs bg-slate-800/50 rounded px-3 py-2">
+                    <div className="flex items-center gap-2">
+                      <Hash className="w-3 h-3 text-slate-500" />
+                      <span className="font-mono text-slate-300">{v.hash.slice(0, 12)}</span>
+                      <span className="text-slate-500">{v.count} uses</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-slate-500">
+                      <span>first: {new Date(v.first_seen).toLocaleDateString()}</span>
+                      <span>last: {new Date(v.last_seen).toLocaleDateString()}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-xs text-slate-500 text-center py-4">No version data for {selectedSkill}</div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
