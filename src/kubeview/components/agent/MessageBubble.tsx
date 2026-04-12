@@ -1,5 +1,5 @@
 import { useState, useCallback, memo } from 'react';
-import { Clock, Copy, Check, Maximize2, Minimize2, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Clock, Copy, Check, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Puzzle, Wrench } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
 import type { AgentMode, AgentMessage } from '../../engine/agentClient';
 import type { ComponentSpec } from '../../engine/agentComponents';
@@ -171,6 +171,26 @@ export const MessageBubble = memo(function MessageBubble({ message, mode, onAddT
           <pre className="whitespace-pre-wrap font-sans">{message.content}</pre>
         ) : (
           <RichContent content={message.content} components={message.components} onAddToView={onAddToView} />
+        )}
+        {message.role === 'assistant' && message.skillName && (
+          <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-800/50 text-[11px] text-slate-500">
+            <span className="flex items-center gap-1">
+              <Puzzle className="w-3 h-3" />
+              {message.skillName}
+            </span>
+            {(message.toolCount ?? 0) > 0 && (
+              <span className="flex items-center gap-1">
+                <Wrench className="w-3 h-3" />
+                {message.toolCount} tools
+              </span>
+            )}
+            {(message.durationMs ?? 0) > 0 && (
+              <span>{(message.durationMs! / 1000).toFixed(1)}s</span>
+            )}
+            {(message.inputTokens ?? 0) > 0 && (
+              <span>{Math.round((message.inputTokens! + (message.outputTokens || 0)) / 1000)}K tokens</span>
+            )}
+          </div>
         )}
         <div className="flex items-center justify-between mt-1.5 pt-1 border-t border-slate-700/50">
           <span className="text-xs text-slate-500 flex items-center gap-1">

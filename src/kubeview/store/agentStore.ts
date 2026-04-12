@@ -213,6 +213,11 @@ export const useAgentStore = create<AgentState>()(
                 content: event.full_response,
                 timestamp: Date.now(),
                 components: components.length > 0 ? components : undefined,
+                skillName: event.skill_name,
+                toolCount: event.tool_count,
+                durationMs: event.duration_ms,
+                inputTokens: event.input_tokens,
+                outputTokens: event.output_tokens,
               };
               set((s) => ({
                 messages: trimMessages([...s.messages, msg]),

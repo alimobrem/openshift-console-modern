@@ -20,6 +20,16 @@ export interface AgentMessage {
   context?: ResourceContext;
   /** Structured UI components from tool results */
   components?: ComponentSpec[];
+  /** Skill that handled this message (from done event) */
+  skillName?: string;
+  /** Number of tools invoked during this response */
+  toolCount?: number;
+  /** Total response time in milliseconds */
+  durationMs?: number;
+  /** Input tokens consumed */
+  inputTokens?: number;
+  /** Output tokens generated */
+  outputTokens?: number;
 }
 
 export interface ResourceContext {
@@ -42,7 +52,7 @@ export type AgentEvent =
   | { type: 'tool_use'; tool: string }
   | { type: 'component'; spec: ComponentSpec; tool: string }
   | { type: 'confirm_request'; tool: string; input: Record<string, unknown>; nonce: string }
-  | { type: 'done'; full_response: string }
+  | { type: 'done'; full_response: string; skill_name?: string; tool_count?: number; duration_ms?: number; input_tokens?: number; output_tokens?: number }
   | { type: 'error'; message: string }
   | { type: 'feedback_ack'; resolved: boolean; score: number; runbookExtracted: boolean }
   | { type: 'view_spec'; spec: import('./agentComponents').ViewSpec }
