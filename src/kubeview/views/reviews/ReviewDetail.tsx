@@ -5,27 +5,46 @@ import type { ReviewItem } from '../../store/reviewStore';
 import { useReviewStore } from '../../store/reviewStore';
 import { DiffViewer } from './DiffViewer';
 
-function toKubectlCommand(review: ReviewItem): string | null {
-  const ns = review.namespace;
-  const name = review.resourceName;
+function extractResource(review: ReviewItem): { name: string; ns: string } {
+  // Try to extract real resource name from description or diff text
+  // e.g., "Auto-fix for workloads: Deployment demo-bad-image degraded (0/1)"
+  const desc = review.description || '';
+  const diff = review.diff?.before || '';
+  const all = `${desc} ${diff}`;
+
+  // Match "Deployment <name>" or "Pod <name>" patterns
+  const depMatch = all.match(/Deployment\s+([a-z0-9][-a-z0-9]*)/i);
+  const podMatch = all.match(/Pod\s+([a-z0-9][-a-z0-9]*)/i);
+  const resourceName = depMatch?.[1] || podMatch?.[1] || review.resourceName;
+
+  // Match "in <namespace>" or namespace from diff
+  const nsMatch = all.match(/\bin\s+([a-z0-9][-a-z0-9]*?)[\s:,)]/i);
+  const ns = nsMatch?.[1] || review.namespace || '';
+
+  return { name: resourceName, ns };
+}
+
+function toOcCommand(review: ReviewItem): string | null {
+  const { name, ns } = extractResource(review);
   const tool = review.diff?.before?.split('\n')[0] || '';
+  const nsFlag = ns ? ` -n ${ns}` : '';
 
   if (review.title === 'Delete Pod' || tool.includes('delete_pod')) {
-    return `kubectl delete pod ${name} -n ${ns}`;
+    return `oc delete pod ${name}${nsFlag}`;
   }
   if (review.title === 'Restart Deployment' || tool.includes('restart_deployment') || review.description?.includes('rolling restart')) {
-    return `kubectl rollout restart deployment/${name} -n ${ns}`;
+    return `oc rollout restart deployment/${name}${nsFlag}`;
   }
   if (review.title === 'Scale Deployment' || tool.includes('scale_deployment')) {
     const match = review.description?.match(/to (\d+) replicas/);
     const replicas = match ? match[1] : '?';
-    return `kubectl scale deployment/${name} --replicas=${replicas} -n ${ns}`;
+    return `oc scale deployment/${name} --replicas=${replicas}${nsFlag}`;
   }
   if (review.title === 'Cordon Node' || tool.includes('cordon_node')) {
-    return `kubectl cordon ${name}`;
+    return `oc cordon ${name}`;
   }
   if (review.title === 'Drain Node' || tool.includes('drain_node')) {
-    return `kubectl drain ${name} --ignore-daemonsets --delete-emptydir-data`;
+    return `oc drain ${name} --ignore-daemonsets --delete-emptydir-data`;
   }
   return null;
 }
@@ -45,7 +64,7 @@ export function ReviewDetail({ review }: ReviewDetailProps) {
       <p className="text-sm text-slate-300 leading-relaxed">{review.description}</p>
 
       {(() => {
-        const cmd = toKubectlCommand(review);
+        const cmd = toOcCommand(review);
         return cmd ? (
           <div className="rounded-lg border border-slate-800 bg-slate-950 p-3">
             <div className="flex items-center gap-2 mb-1.5">
