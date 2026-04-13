@@ -1591,7 +1591,7 @@ function AnalyticsTab() {
             <h3 className="text-xs font-medium text-slate-300">Harness Effectiveness</h3>
           </div>
           <div className="text-sm text-slate-200">
-            Tool selection accuracy: <span className="font-semibold">{(intelligence.harness_effectiveness.accuracy * 100).toFixed(0)}%</span>
+            Tool selection accuracy: <span className="font-semibold">{intelligence.harness_effectiveness.accuracy.toFixed(0)}%</span>
           </div>
           {intelligence.harness_effectiveness.wasted.length > 0 && (
             <div className="mt-2 space-y-1">
@@ -1633,7 +1633,7 @@ function AnalyticsTab() {
       )}
 
       {/* PromQL Reliability */}
-      {intelligence?.query_reliability && (
+      {intelligence?.query_reliability && (intelligence.query_reliability.preferred.length > 0 || intelligence.query_reliability.unreliable.length > 0) && (
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
             <Database className="w-4 h-4 text-cyan-400" />
