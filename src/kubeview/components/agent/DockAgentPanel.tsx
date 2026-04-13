@@ -72,7 +72,8 @@ async function renameSession(sessionId: string, title: string): Promise<void> {
 const FOLLOW_UP_MAP: Record<string, string[]> = {
   diagnose: ['Build me a dashboard for this', 'Check if this happened before', 'What metrics should I monitor?'],
   security: ['Build a security findings dashboard', 'Check RBAC for this namespace', 'Are there network policies?'],
-  dashboard: ['Add a memory chart', 'Change the layout', 'Clone this dashboard'],
+  dashboard_created: ['Add a memory chart', 'Change the layout', 'Clone this dashboard'],
+  dashboard_requested: ['Show me the production namespace', 'What metrics should I include?', 'Add CPU and memory charts'],
   general: ['What else can you do?', 'Show me available PromQL recipes', 'Are there any deprecated APIs?'],
 };
 
@@ -93,8 +94,13 @@ function FollowUpSuggestions({
   const hasComponents = Array.isArray(lastAssistant.components) && lastAssistant.components.length > 0;
   let suggestions: string[];
 
-  if (hasComponents || text.includes('dashboard') || text.includes('view') || text.includes('create_dashboard')) {
-    suggestions = FOLLOW_UP_MAP.dashboard;
+  const dashboardCreated = hasComponents || text.includes('dashboard created') || text.includes('successfully created') || text.includes('here\'s your dashboard');
+  const dashboardRequested = !dashboardCreated && (text.includes('dashboard') || text.includes('view') || text.includes('create_dashboard'));
+
+  if (dashboardCreated) {
+    suggestions = FOLLOW_UP_MAP.dashboard_created;
+  } else if (dashboardRequested) {
+    suggestions = FOLLOW_UP_MAP.dashboard_requested;
   } else if (text.includes('security') || text.includes('rbac') || text.includes('scan')) {
     suggestions = FOLLOW_UP_MAP.security;
   } else if (text.includes('crash') || text.includes('error') || text.includes('restart') || text.includes('oom')) {
