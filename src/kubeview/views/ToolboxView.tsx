@@ -940,6 +940,7 @@ function SkillConfigSection({ configurable }: { configurable: Array<Record<strin
 
 function ConnectionsTab() {
   const queryClient = useQueryClient();
+  const loadTools = useToolUsageStore((s) => s.loadTools);
   const [expandedServer, setExpandedServer] = useState<number | null>(null);
   const [updating, setUpdating] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -981,6 +982,7 @@ function ConnectionsTab() {
       if (res.ok) {
         queryClient.invalidateQueries({ queryKey: ['admin', 'mcp'] });
         queryClient.invalidateQueries({ queryKey: ['admin', 'skills'] });
+        loadTools();
         setMcpStatus({ type: 'success', message: `Toolsets updated — ${data.tools_registered} tools registered` });
       } else {
         setMcpStatus({ type: 'error', message: data.detail || 'Failed to update toolsets' });
