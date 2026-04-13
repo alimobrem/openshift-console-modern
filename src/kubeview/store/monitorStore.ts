@@ -15,6 +15,7 @@ import {
   type InvestigationReport,
   type VerificationReport,
   type Resolution,
+  type ScanReport,
 } from '../engine/monitorClient';
 import {
   fetchFixHistory,
@@ -36,7 +37,7 @@ interface MonitorState {
   lastScanTime: number;
   nextScanTime: number;
   activeWatches: string[];
-  scanReport: any;
+  scanReport: ScanReport | null;
 
   // Data
   findings: Finding[];

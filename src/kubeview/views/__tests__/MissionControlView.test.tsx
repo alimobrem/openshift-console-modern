@@ -82,10 +82,10 @@ describe('MissionControlView', () => {
 
   it('renders agent health section', async () => {
     await renderView();
-    expect(screen.getByText('Agent Health')).toBeDefined();
-    expect(screen.getByText('Quality Gate')).toBeDefined();
-    expect(screen.getByText('Coverage')).toBeDefined();
-    expect(screen.getByText('Outcomes')).toBeDefined();
+    expect(await screen.findByText('Agent Health')).toBeDefined();
+    expect(await screen.findByText('Quality Gate')).toBeDefined();
+    expect(await screen.findByText('Coverage')).toBeDefined();
+    expect(await screen.findByText('Outcomes')).toBeDefined();
   });
 
   it('renders agent accuracy section', async () => {
@@ -106,14 +106,14 @@ describe('MissionControlView', () => {
 
   it('opens eval drawer when quality card is clicked', async () => {
     await renderView();
-    const qualityCard = screen.getByText('Quality Gate').closest('[class*="cursor-pointer"]');
+    const qualityCard = (await screen.findByText('Quality Gate')).closest('[class*="cursor-pointer"]');
     if (qualityCard) fireEvent.click(qualityCard);
     expect(await screen.findByText('Quality Gate Details')).toBeDefined();
   });
 
   it('opens scanner drawer when coverage card is clicked', async () => {
     await renderView();
-    const coverageCard = screen.getByText('Coverage').closest('[class*="cursor-pointer"]');
+    const coverageCard = (await screen.findByText('Coverage')).closest('[class*="cursor-pointer"]');
     if (coverageCard) fireEvent.click(coverageCard);
     expect(await screen.findByText('Scanner Coverage')).toBeDefined();
   });
@@ -121,10 +121,7 @@ describe('MissionControlView', () => {
   it('shows error banner when a query fails', async () => {
     mockAnalytics.fetchFixHistorySummary.mockRejectedValueOnce(new Error('fail'));
     await renderView();
-    // The .catch(() => null) swallows the error, so isError won't fire from the mock.
-    // This test verifies the banner element exists in the component.
-    // Full error-state testing requires disabling the .catch wrapper.
-    expect(screen.getByText('Mission Control')).toBeDefined();
+    expect(await screen.findByText(/Some analytics data is unavailable/)).toBeDefined();
   });
 });
 

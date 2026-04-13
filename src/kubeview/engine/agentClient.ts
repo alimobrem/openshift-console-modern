@@ -145,8 +145,12 @@ export class AgentClient {
 
     this.ws.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data) as AgentEvent;
-        this.emit(data);
+        const data = JSON.parse(event.data);
+        if (!data || typeof data !== 'object' || !('type' in data) || typeof data.type !== 'string') {
+          console.warn('Invalid agent event:', data);
+          return;
+        }
+        this.emit(data as AgentEvent);
       } catch {
         console.error('Failed to parse agent message:', event.data);
       }

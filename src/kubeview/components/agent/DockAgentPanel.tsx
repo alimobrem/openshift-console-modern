@@ -5,6 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigateTab } from '../../hooks/useNavigateTab';
 import type { ComponentSpec } from '../../engine/agentComponents';
 import type { AgentVersionInfo } from '../../hooks/useCapabilityDetection';
+import { useShallow } from 'zustand/react/shallow';
 import { useAgentStore } from '../../store/agentStore';
 import { useCustomViewStore } from '../../store/customViewStore';
 import { useUIStore } from '../../store/uiStore';
@@ -254,7 +255,14 @@ export function DockAgentPanel() {
     connected, mode, messages, streaming, streamingText, thinkingText,
     activeTools, streamingComponents, pendingConfirm, error, feedbackToast,
     connect, sendMessage, confirmAction, cancelQuery, clearChat,
-  } = useAgentStore();
+  } = useAgentStore(useShallow((s) => ({
+    connected: s.connected, mode: s.mode, messages: s.messages,
+    streaming: s.streaming, streamingText: s.streamingText, thinkingText: s.thinkingText,
+    activeTools: s.activeTools, streamingComponents: s.streamingComponents,
+    pendingConfirm: s.pendingConfirm, error: s.error, feedbackToast: s.feedbackToast,
+    connect: s.connect, sendMessage: s.sendMessage, confirmAction: s.confirmAction,
+    cancelQuery: s.cancelQuery, clearChat: s.clearChat,
+  })));
 
   const trustLevel = useTrustStore((s) => s.trustLevel);
   const smartPrompts = useSmartPrompts();

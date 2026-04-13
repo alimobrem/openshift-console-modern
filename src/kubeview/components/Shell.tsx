@@ -10,6 +10,7 @@ import { ErrorBoundary, CssHealthCheck } from './ErrorBoundary';
 import { SaveViewWatcher } from './agent/SaveViewWatcher';
 import { useKeyboardShortcuts, useDiscovery } from '../hooks';
 import { useCapabilityDetection } from '../hooks/useCapabilityDetection';
+import { useShallow } from 'zustand/react/shallow';
 import { useUIStore } from '../store/uiStore';
 import { useCustomViewStore } from '../store/customViewStore';
 import { registerBuiltinEnhancers } from '../engine/enhancers/register';
@@ -48,14 +49,17 @@ export function Shell() {
   }, []);
 
   // Get overlay state
-  const commandPaletteOpen = useUIStore((s) => s.commandPaletteOpen);
-  const browserOpen = useUIStore((s) => s.browserOpen);
-  const dockPanel = useUIStore((s) => s.dockPanel);
-  const viewBuilderMode = useUIStore((s) => s.viewBuilderMode);
-  const exitViewBuilder = useUIStore((s) => s.exitViewBuilder);
-  const impersonateUser = useUIStore((s) => s.impersonateUser);
-  const clearImpersonation = useUIStore((s) => s.clearImpersonation);
-  const sessionExpired = useUIStore((s) => s.degradedReasons.has('session_expired'));
+  const { commandPaletteOpen, browserOpen, dockPanel, viewBuilderMode, exitViewBuilder, impersonateUser, clearImpersonation, sessionExpired } =
+    useUIStore(useShallow((s) => ({
+      commandPaletteOpen: s.commandPaletteOpen,
+      browserOpen: s.browserOpen,
+      dockPanel: s.dockPanel,
+      viewBuilderMode: s.viewBuilderMode,
+      exitViewBuilder: s.exitViewBuilder,
+      impersonateUser: s.impersonateUser,
+      clearImpersonation: s.clearImpersonation,
+      sessionExpired: s.degradedReasons.has('session_expired'),
+    })));
   return (
     <div className="flex h-screen flex-col bg-slate-900 text-slate-100">
       {/* Session expired banner */}

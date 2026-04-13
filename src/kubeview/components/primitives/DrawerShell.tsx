@@ -10,8 +10,10 @@ interface DrawerShellProps {
 export function DrawerShell({ title, onClose, children }: DrawerShellProps) {
   const closeRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
+  const previousFocus = useRef<Element | null>(null);
 
   useEffect(() => {
+    previousFocus.current = document.activeElement;
     closeRef.current?.focus();
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,7 +38,10 @@ export function DrawerShell({ title, onClose, children }: DrawerShellProps) {
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      (previousFocus.current as HTMLElement)?.focus?.();
+    };
   }, [onClose]);
 
   return (

@@ -26,72 +26,67 @@ export default function MissionControlView() {
 
   const evalQ = useQuery({
     queryKey: ['agent', 'eval-status'],
-    queryFn: () => fetchAgentEvalStatus().catch(() => null),
+    queryFn: fetchAgentEvalStatus,
     refetchInterval: 60_000,
   });
 
   const fixQ = useQuery({
     queryKey: ['agent', 'fix-history-summary'],
-    queryFn: () => fetchFixHistorySummary().catch(() => null),
+    queryFn: () => fetchFixHistorySummary(),
     staleTime: 60_000,
   });
 
   const coverageQ = useQuery({
     queryKey: ['agent', 'scanner-coverage'],
-    queryFn: () => fetchScannerCoverage().catch(() => null),
+    queryFn: () => fetchScannerCoverage(),
     staleTime: 60_000,
   });
 
   const confidenceQ = useQuery({
     queryKey: ['agent', 'confidence'],
-    queryFn: () => fetchConfidenceCalibration().catch(() => null),
+    queryFn: () => fetchConfidenceCalibration(),
     staleTime: 60_000,
   });
 
   const accuracyQ = useQuery({
     queryKey: ['agent', 'accuracy'],
-    queryFn: () => fetchAccuracyStats().catch(() => null),
+    queryFn: () => fetchAccuracyStats(),
     staleTime: 60_000,
   });
 
   const costQ = useQuery({
     queryKey: ['agent', 'cost'],
-    queryFn: () => fetchCostStats().catch(() => null),
+    queryFn: () => fetchCostStats(),
     staleTime: 60_000,
   });
 
   const recsQ = useQuery({
     queryKey: ['agent', 'recommendations'],
-    queryFn: () => fetchRecommendations().catch(() => null),
+    queryFn: fetchRecommendations,
     staleTime: 5 * 60_000,
   });
 
   const readinessQ = useQuery({
     queryKey: ['agent', 'readiness-summary'],
-    queryFn: () => fetchReadinessSummary().catch(() => null),
+    queryFn: () => fetchReadinessSummary(),
     staleTime: 60_000,
   });
 
-  const { evalStatus, fixSummary, coverage, confidence, accuracy, costStats, recommendations, readiness } = {
-    evalStatus: evalQ.data, fixSummary: fixQ.data, coverage: coverageQ.data,
-    confidence: confidenceQ.data, accuracy: accuracyQ.data, costStats: costQ.data,
-    recommendations: recsQ.data, readiness: readinessQ.data,
-  };
-
-  const anyError = [evalQ, fixQ, coverageQ, confidenceQ, accuracyQ, costQ, recsQ, readinessQ]
-    .some((q) => q.isError);
-
-  const { data: capabilities } = useQuery({
+  const capQ = useQuery({
     queryKey: ['agent', 'capabilities'],
     queryFn: fetchCapabilities,
     staleTime: 60_000,
   });
 
-  const { data: version } = useQuery({
+  const versionQ = useQuery({
     queryKey: ['agent', 'version'],
     queryFn: fetchAgentVersion,
     staleTime: 5 * 60_000,
   });
+
+  const dataQueries = [evalQ, fixQ, coverageQ, confidenceQ, accuracyQ, costQ, recsQ, readinessQ];
+  const anyError = dataQueries.some((q) => q.isError);
+  const anyLoading = dataQueries.every((q) => q.isLoading);
 
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">
@@ -99,9 +94,9 @@ export default function MissionControlView() {
         <div className="flex items-center gap-3">
           <Bot className="w-6 h-6 text-violet-400" />
           <h1 className="text-lg font-semibold text-slate-100">Mission Control</h1>
-          {version && (
+          {versionQ.data && (
             <span className="text-xs text-slate-500">
-              v{version.agent} &middot; Protocol v{version.protocol} &middot; {version.tools} tools
+              v{versionQ.data.agent} &middot; Protocol v{versionQ.data.protocol} &middot; {versionQ.data.tools} tools
             </span>
           )}
         </div>
@@ -114,36 +109,40 @@ export default function MissionControlView() {
         )}
 
         <TrustPolicy
-          maxTrustLevel={capabilities?.max_trust_level ?? 0}
-          scannerCount={coverage?.active_scanners ?? 0}
-          fixSummary={fixSummary ?? null}
+          maxTrustLevel={capQ.data?.max_trust_level ?? 0}
+          scannerCount={coverageQ.data?.active_scanners ?? 0}
+          fixSummary={fixQ.data ?? null}
         />
 
-        <AgentHealth
-          evalStatus={evalStatus}
-          coverage={coverage ?? null}
-          fixSummary={fixSummary ?? null}
-          confidence={confidence ?? null}
-          costStats={costStats ?? null}
-          readiness={readiness ?? null}
-          onOpenScannerDrawer={() => setDrawerOpen('scanner')}
-          onOpenEvalDrawer={() => setDrawerOpen('eval')}
-          onOpenMemoryDrawer={() => setDrawerOpen('memory')}
-          memoryPatternCount={accuracy?.learning?.total_patterns ?? 0}
-        />
+        {!anyLoading && (
+          <>
+            <AgentHealth
+              evalStatus={evalQ.data ?? null}
+              coverage={coverageQ.data ?? null}
+              fixSummary={fixQ.data ?? null}
+              confidence={confidenceQ.data ?? null}
+              costStats={costQ.data ?? null}
+              readiness={readinessQ.data ?? null}
+              onOpenScannerDrawer={() => setDrawerOpen('scanner')}
+              onOpenEvalDrawer={() => setDrawerOpen('eval')}
+              onOpenMemoryDrawer={() => setDrawerOpen('memory')}
+              memoryPatternCount={accuracyQ.data?.learning?.total_patterns ?? 0}
+            />
 
-        <AgentAccuracy
-          accuracy={accuracy ?? null}
-          onOpenMemoryDrawer={() => setDrawerOpen('memory')}
-        />
+            <AgentAccuracy
+              accuracy={accuracyQ.data ?? null}
+              onOpenMemoryDrawer={() => setDrawerOpen('memory')}
+            />
 
-        {recommendations?.recommendations && (
-          <CapabilityDiscovery recommendations={recommendations.recommendations} />
+            {recsQ.data?.recommendations && (
+              <CapabilityDiscovery recommendations={recsQ.data.recommendations} />
+            )}
+          </>
         )}
       </div>
 
-      {drawerOpen === 'scanner' && <ScannerDrawer coverage={coverage ?? null} onClose={() => setDrawerOpen(null)} />}
-      {drawerOpen === 'eval' && <EvalDrawer evalStatus={evalStatus} onClose={() => setDrawerOpen(null)} />}
+      {drawerOpen === 'scanner' && <ScannerDrawer coverage={coverageQ.data ?? null} onClose={() => setDrawerOpen(null)} />}
+      {drawerOpen === 'eval' && <EvalDrawer evalStatus={evalQ.data} onClose={() => setDrawerOpen(null)} />}
       {drawerOpen === 'memory' && <MemoryDrawer onClose={() => setDrawerOpen(null)} />}
     </div>
   );

@@ -74,8 +74,8 @@ describe('AgentSettingsView (redirects to MissionControl)', () => {
     expect(screen.getByText('Trust Level')).toBeDefined();
   });
 
-  it('renders agent health section', () => {
+  it('renders agent health section', async () => {
     renderView();
-    expect(screen.getByText('Agent Health')).toBeDefined();
+    expect(await screen.findByText('Agent Health')).toBeDefined();
   });
 });

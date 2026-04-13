@@ -3,6 +3,7 @@ import { Shield, Eye, MessageSquare, Zap, Activity, AlertTriangle, Info } from '
 import { cn } from '@/lib/utils';
 import { Card } from '../../components/primitives/Card';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
+import { useShallow } from 'zustand/react/shallow';
 import { useTrustStore, TRUST_LABELS, TRUST_DESCRIPTIONS, type TrustLevel, type CommunicationStyle } from '../../store/trustStore';
 import type { FixHistorySummary } from '../../engine/analyticsApi';
 
@@ -35,12 +36,12 @@ interface TrustPolicyProps {
 }
 
 export function TrustPolicy({ maxTrustLevel, scannerCount, fixSummary }: TrustPolicyProps) {
-  const trustLevel = useTrustStore((s) => s.trustLevel);
-  const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
-  const autoFixCategories = useTrustStore((s) => s.autoFixCategories);
-  const setAutoFixCategories = useTrustStore((s) => s.setAutoFixCategories);
-  const communicationStyle = useTrustStore((s) => s.communicationStyle);
-  const setCommunicationStyle = useTrustStore((s) => s.setCommunicationStyle);
+  const { trustLevel, setTrustLevel, autoFixCategories, setAutoFixCategories, communicationStyle, setCommunicationStyle } =
+    useTrustStore(useShallow((s) => ({
+      trustLevel: s.trustLevel, setTrustLevel: s.setTrustLevel,
+      autoFixCategories: s.autoFixCategories, setAutoFixCategories: s.setAutoFixCategories,
+      communicationStyle: s.communicationStyle, setCommunicationStyle: s.setCommunicationStyle,
+    })));
 
   const [confirmLevel, setConfirmLevel] = useState<TrustLevel | null>(null);
   const [hoveredLevel, setHoveredLevel] = useState<TrustLevel | null>(null);

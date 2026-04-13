@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import type { K8sResource } from '../engine/renderers';
 import { useUIStore } from '../store/uiStore';
 import { useFleetStore } from '../store/fleetStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useMonitorStore } from '../store/monitorStore';
 import { useTrustStore } from '../store/trustStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
@@ -36,16 +37,18 @@ export default function PulseView() {
   const { data: events = [] } = useK8sListWatch({ apiPath: '/api/v1/events', namespace: nsFilter });
 
   const isLoading = nodesLoading || podsLoading || deploysLoading || pvcsLoading || opsLoading;
-  const pendingReviews = useMonitorStore((s) => s.pendingActions.length);
-  const monitorConnected = useMonitorStore((s) => s.connected);
-  const activeSkill = useMonitorStore((s) => s.activeSkill);
-  const monitorEnabled = useMonitorStore((s) => s.monitorEnabled);
-  const setMonitorEnabled = useMonitorStore((s) => s.setMonitorEnabled);
-  const triggerScan = useMonitorStore((s) => s.triggerScan);
+  const { pendingReviews, monitorConnected, activeSkill, monitorEnabled, setMonitorEnabled, triggerScan, findings } =
+    useMonitorStore(useShallow((s) => ({
+      pendingReviews: s.pendingActions.length,
+      monitorConnected: s.connected,
+      activeSkill: s.activeSkill,
+      monitorEnabled: s.monitorEnabled,
+      setMonitorEnabled: s.setMonitorEnabled,
+      triggerScan: s.triggerScan,
+      findings: s.findings,
+    })));
   const trustLevel = useTrustStore((s) => s.trustLevel);
   const { counts: incidentCounts } = useIncidentFeed({ limit: 0 });
-
-  const findings = useMonitorStore((s) => s.findings);
 
   const { data: briefing } = useQuery<BriefingResponse>({
     queryKey: ['briefing'],
