@@ -20,6 +20,11 @@ const queryClient = new QueryClient({
   },
 });
 
+function DefaultRedirect() {
+  const onboarded = localStorage.getItem('openshiftpulse-onboarding-complete') === 'true';
+  return <Navigate to={onboarded ? '/pulse' : '/welcome'} replace />;
+}
+
 export default function OpenshiftPulseApp() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -27,7 +32,7 @@ export default function OpenshiftPulseApp() {
         <Routes>
           <Route path="/" element={<Shell />}>
             {/* Home */}
-            <Route index element={<Navigate to="/welcome" replace />} />
+            <Route index element={<DefaultRedirect />} />
             <Route path="welcome" element={<WelcomeView />} />
             <Route path="pulse" element={<PulseView />} />
 

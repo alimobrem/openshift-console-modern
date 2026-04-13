@@ -7,10 +7,11 @@ import {
   AlertTriangle, CheckCircle2, Clock, Database, Bot, Shield, Palette, ArrowRight,
   Puzzle, Server, Layers, RefreshCw, XCircle,
   Play, X, FileText, ChevronDown, Save, GitCompareArrows, Check,
-  Cable, Trash2, Copy, Hash,
+  Cable, Trash2, Copy, Hash, TrendingUp, Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToolUsageStore } from '../store/toolUsageStore';
+import { fetchIntelligenceSections, fetchPromptStats, type IntelligenceSections, type PromptAnalytics } from '../engine/analyticsApi';
 import type { ToolInfo, ToolUsageEntry } from '../store/toolUsageStore';
 
 type ToolboxTab = 'catalog' | 'skills' | 'connections' | 'components' | 'usage' | 'analytics';
@@ -1349,6 +1350,18 @@ function UsageRow({ entry: e }: { entry: ToolUsageEntry }) {
 function AnalyticsTab() {
   const { stats, statsLoading, loadStats, chains, chainsLoading, loadChains, tools, loadTools } = useToolUsageStore();
 
+  const { data: intelligence } = useQuery({
+    queryKey: ['analytics', 'intelligence'],
+    queryFn: () => fetchIntelligenceSections().catch(() => null),
+    staleTime: 60_000,
+  });
+
+  const { data: promptAnalytics } = useQuery({
+    queryKey: ['analytics', 'prompt'],
+    queryFn: () => fetchPromptStats().catch(() => null),
+    staleTime: 60_000,
+  });
+
   const { data: skillStats, isLoading: skillStatsLoading } = useQuery({
     queryKey: ['admin', 'skill-usage'],
     queryFn: async () => {
@@ -1544,6 +1557,103 @@ function AnalyticsTab() {
             </div>
           )}
         </>
+      )}
+
+      {/* Harness Effectiveness */}
+      {intelligence?.harness_effectiveness && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Target className="w-4 h-4 text-blue-400" />
+            <h3 className="text-xs font-medium text-slate-300">Harness Effectiveness</h3>
+          </div>
+          <div className="text-sm text-slate-200">
+            Tool selection accuracy: <span className="font-semibold">{(intelligence.harness_effectiveness.accuracy * 100).toFixed(0)}%</span>
+          </div>
+          {intelligence.harness_effectiveness.wasted.length > 0 && (
+            <div className="mt-2 space-y-1">
+              <div className="text-xs text-slate-400">Wasted tools (offered frequently, rarely used):</div>
+              {intelligence.harness_effectiveness.wasted.map((w) => (
+                <div key={w.tool} className="text-xs text-amber-400/80">
+                  {w.tool}: offered {w.offered}&times;, used {w.used}&times;
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Prompt Analytics */}
+      {promptAnalytics?.stats && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <FileText className="w-4 h-4 text-green-400" />
+            <h3 className="text-xs font-medium text-slate-300">Prompt Analytics</h3>
+          </div>
+          <div className="text-sm text-slate-200">
+            Avg tokens: {promptAnalytics.stats.avg_tokens.toLocaleString()} &middot; Cache hit rate: {(promptAnalytics.stats.cache_hit_rate * 100).toFixed(0)}%
+          </div>
+          {Object.keys(promptAnalytics.stats.section_avg).length > 0 && (
+            <div className="mt-2 space-y-1">
+              {Object.entries(promptAnalytics.stats.section_avg).map(([section, avg]) => (
+                <div key={section} className="flex items-center gap-2 text-xs">
+                  <span className="w-24 text-slate-500 truncate">{section}</span>
+                  <div className="flex-1 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500/60 rounded-full" style={{ width: `${Math.min((avg as number) / 100, 100)}%` }} />
+                  </div>
+                  <span className="w-12 text-right text-slate-500">{(avg as number).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* PromQL Reliability */}
+      {intelligence?.query_reliability && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Database className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-xs font-medium text-slate-300">PromQL Reliability</h3>
+          </div>
+          <div className="text-xs text-slate-400 mb-2">
+            {intelligence.query_reliability.preferred.length} reliable &middot; {intelligence.query_reliability.unreliable.length} unreliable
+          </div>
+          {intelligence.query_reliability.unreliable.map((q) => (
+            <div key={q.query} className="text-xs text-red-400/80 truncate">
+              {q.query} &mdash; {(q.success_rate * 100).toFixed(0)}% success ({q.total} calls)
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Token Trending */}
+      {intelligence?.token_trending && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <TrendingUp className="w-4 h-4 text-amber-400" />
+            <h3 className="text-xs font-medium text-slate-300">Token Trending (week-over-week)</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-4 text-center text-xs">
+            <div>
+              <div className="text-slate-400">Input</div>
+              <div className={intelligence.token_trending.input_delta_pct > 0 ? 'text-red-400' : 'text-emerald-400'}>
+                {intelligence.token_trending.input_delta_pct > 0 ? '+' : ''}{intelligence.token_trending.input_delta_pct.toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <div className="text-slate-400">Output</div>
+              <div className={intelligence.token_trending.output_delta_pct > 0 ? 'text-red-400' : 'text-emerald-400'}>
+                {intelligence.token_trending.output_delta_pct > 0 ? '+' : ''}{intelligence.token_trending.output_delta_pct.toFixed(1)}%
+              </div>
+            </div>
+            <div>
+              <div className="text-slate-400">Cache</div>
+              <div className={intelligence.token_trending.cache_delta_pct > 0 ? 'text-emerald-400' : 'text-red-400'}>
+                {intelligence.token_trending.cache_delta_pct > 0 ? '+' : ''}{intelligence.token_trending.cache_delta_pct.toFixed(1)}%
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Prompt Audit */}

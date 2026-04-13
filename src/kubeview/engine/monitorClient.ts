@@ -125,6 +125,7 @@ export type MonitorEvent =
   | ({ type: 'scan_report' } & ScanReport)
   | ({ type: 'monitor_status' } & MonitorStatus)
   | { type: 'findings_snapshot'; activeIds: string[]; timestamp: number }
+  | { type: 'skill_activity'; skill_name: string; status: string; timestamp: number; handoff_from?: string; handoff_to?: string }
   | { type: 'connected' }
   | { type: 'disconnected' }
   | { type: 'error'; message: string };

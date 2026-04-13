@@ -54,6 +54,10 @@ interface MonitorState {
   fixHistoryPage: number;
   fixHistoryLoading: boolean;
 
+  // Skill activity
+  activeSkill: string | null;
+  skillHandoffs: Array<{ from: string; to: string; timestamp: number }>;
+
   // Preferences
   monitorEnabled: boolean;
 
@@ -109,6 +113,10 @@ export const useMonitorStore = create<MonitorState>()(
       fixHistoryTotal: 0,
       fixHistoryPage: 1,
       fixHistoryLoading: false,
+
+      // Skill activity
+      activeSkill: null,
+      skillHandoffs: [],
 
       // Preferences
       monitorEnabled: true,
@@ -244,6 +252,16 @@ export const useMonitorStore = create<MonitorState>()(
 
             case 'scan_report': {
               set({ scanReport: event });
+              break;
+            }
+
+            case 'skill_activity': {
+              set((s) => ({
+                activeSkill: event.skill_name,
+                ...(event.handoff_from && event.handoff_to ? {
+                  skillHandoffs: [...s.skillHandoffs.slice(-19), { from: event.handoff_from, to: event.handoff_to, timestamp: event.timestamp }],
+                } : {}),
+              }));
               break;
             }
 

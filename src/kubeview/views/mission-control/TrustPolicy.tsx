@@ -1,0 +1,231 @@
+import { useState } from 'react';
+import { Shield, Eye, MessageSquare, Zap, Activity, AlertTriangle, Info } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Card } from '../../components/primitives/Card';
+import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
+import { useTrustStore, TRUST_LABELS, TRUST_DESCRIPTIONS, type TrustLevel, type CommunicationStyle } from '../../store/trustStore';
+import type { FixHistorySummary } from '../../engine/analyticsApi';
+
+const TRUST_ICONS = [Eye, MessageSquare, Shield, Zap, Activity] as const;
+
+const AUTOFIX_CATEGORIES = [
+  { id: 'crashloop', label: 'Crashlooping pods', description: 'Delete crashlooping pods (controller recreates)' },
+  { id: 'workloads', label: 'Failed deployments', description: 'Rolling restart for degraded deployments' },
+  { id: 'image_pull', label: 'Image pull errors', description: 'Restart deployment to clear image pull errors' },
+] as const;
+
+const COMM_STYLES: Array<{ id: CommunicationStyle; label: string; description: string }> = [
+  { id: 'brief', label: 'Brief', description: 'Short, actionable answers' },
+  { id: 'detailed', label: 'Detailed', description: 'Full explanations with context' },
+  { id: 'technical', label: 'Technical', description: 'Deep detail, CLI examples' },
+];
+
+const LEVEL_CATEGORIES: Record<number, string[]> = {
+  0: [],
+  1: [],
+  2: [],
+  3: ['crashloop', 'workloads'],
+  4: ['crashloop', 'workloads', 'image_pull'],
+};
+
+interface TrustPolicyProps {
+  maxTrustLevel: number;
+  scannerCount: number;
+  fixSummary: FixHistorySummary | null;
+}
+
+export function TrustPolicy({ maxTrustLevel, scannerCount, fixSummary }: TrustPolicyProps) {
+  const trustLevel = useTrustStore((s) => s.trustLevel);
+  const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
+  const autoFixCategories = useTrustStore((s) => s.autoFixCategories);
+  const setAutoFixCategories = useTrustStore((s) => s.setAutoFixCategories);
+  const communicationStyle = useTrustStore((s) => s.communicationStyle);
+  const setCommunicationStyle = useTrustStore((s) => s.setCommunicationStyle);
+
+  const [confirmLevel, setConfirmLevel] = useState<TrustLevel | null>(null);
+  const [hoveredLevel, setHoveredLevel] = useState<TrustLevel | null>(null);
+
+  const handleLevelClick = (level: TrustLevel) => {
+    if (level > maxTrustLevel) return;
+    if (level >= 3 && trustLevel < 3) {
+      setConfirmLevel(level);
+    } else {
+      setTrustLevel(level);
+    }
+  };
+
+  const previewLevel = hoveredLevel ?? trustLevel;
+  const policySummary = buildPolicySummary(previewLevel, scannerCount, autoFixCategories, communicationStyle);
+  const impactPreview = hoveredLevel !== null && hoveredLevel !== trustLevel
+    ? buildImpactPreview(trustLevel, hoveredLevel, fixSummary)
+    : null;
+
+  return (
+    <Card>
+      <div className="p-5 space-y-5">
+        {/* Trust Level Selector */}
+        <div>
+          <h2 className="text-sm font-semibold text-slate-200 mb-3">Trust Level</h2>
+          <div className="flex gap-1">
+            {([0, 1, 2, 3, 4] as TrustLevel[]).map((level) => {
+              const Icon = TRUST_ICONS[level];
+              const disabled = level > maxTrustLevel;
+              const active = level === trustLevel;
+              return (
+                <button
+                  key={level}
+                  onClick={() => handleLevelClick(level)}
+                  onMouseEnter={() => !disabled && setHoveredLevel(level)}
+                  onMouseLeave={() => setHoveredLevel(null)}
+                  disabled={disabled}
+                  className={cn(
+                    'flex-1 flex flex-col items-center gap-1 rounded-lg px-3 py-3 text-xs transition-all border',
+                    active
+                      ? 'bg-violet-500/20 border-violet-500 text-violet-300'
+                      : disabled
+                        ? 'opacity-30 cursor-not-allowed border-slate-800'
+                        : 'border-slate-800 hover:border-slate-600 text-slate-400 hover:text-slate-200 cursor-pointer',
+                  )}
+                  title={disabled ? `Capped by server (max: ${maxTrustLevel})` : TRUST_DESCRIPTIONS[level]}
+                >
+                  <Icon className="w-4 h-4" />
+                  <span className="font-medium">{TRUST_LABELS[level]}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Policy Summary */}
+        <p className="text-sm text-slate-300 leading-relaxed">{policySummary}</p>
+
+        {/* Impact Preview (on hover) */}
+        {impactPreview && (
+          <div className="flex items-start gap-2 text-xs text-amber-300/80 bg-amber-500/5 rounded-md px-3 py-2 border border-amber-500/10">
+            <Info className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>{impactPreview}</span>
+          </div>
+        )}
+
+        {/* Auto-fix Categories */}
+        <div className={cn('space-y-2', trustLevel < 2 && 'opacity-40')}>
+          <h3 className="text-xs font-medium text-slate-400 uppercase tracking-wider">Auto-fix categories</h3>
+          <div className="flex flex-wrap gap-2">
+            {AUTOFIX_CATEGORIES.map((cat) => {
+              const enabled = autoFixCategories.includes(cat.id);
+              const disabled = trustLevel < 2;
+              return (
+                <button
+                  key={cat.id}
+                  disabled={disabled}
+                  onClick={() => {
+                    if (disabled) return;
+                    setAutoFixCategories(
+                      enabled
+                        ? autoFixCategories.filter((c) => c !== cat.id)
+                        : [...autoFixCategories, cat.id],
+                    );
+                  }}
+                  className={cn(
+                    'px-3 py-1.5 rounded-md text-xs border transition-colors',
+                    enabled && !disabled
+                      ? 'bg-violet-500/20 border-violet-500/50 text-violet-300'
+                      : 'border-slate-700 text-slate-500',
+                    !disabled && 'hover:border-slate-500 cursor-pointer',
+                  )}
+                  title={cat.description}
+                >
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Communication Style */}
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-slate-500">Style:</span>
+          <div className="flex gap-1">
+            {COMM_STYLES.map((style) => (
+              <button
+                key={style.id}
+                onClick={() => setCommunicationStyle(style.id)}
+                className={cn(
+                  'px-2.5 py-1 rounded text-xs transition-colors',
+                  communicationStyle === style.id
+                    ? 'bg-slate-700 text-slate-200'
+                    : 'text-slate-500 hover:text-slate-300',
+                )}
+                title={style.description}
+              >
+                {style.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Warning banner for trust >= 3 */}
+        {trustLevel >= 3 && (
+          <div className="flex items-start gap-2 text-xs text-amber-400 bg-amber-500/5 rounded-md px-3 py-2 border border-amber-500/10">
+            <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+            <span>Auto-fixes execute automatically and are recorded in Fix History. Some actions cannot be rolled back.</span>
+          </div>
+        )}
+      </div>
+
+      {/* Confirmation dialog for level 3+ */}
+      <ConfirmDialog
+        open={confirmLevel !== null}
+        onClose={() => setConfirmLevel(null)}
+        onConfirm={() => { if (confirmLevel !== null) setTrustLevel(confirmLevel); setConfirmLevel(null); }}
+        title="Enable Auto-Fix?"
+        description={`At Trust Level ${confirmLevel ?? 3}, the agent will automatically fix certain issues without asking. You can configure which categories below.`}
+        confirmLabel="Enable"
+        variant="warning"
+      />
+    </Card>
+  );
+}
+
+function buildPolicySummary(level: TrustLevel, scanners: number, categories: string[], style: CommunicationStyle): string {
+  const catNames = categories.length > 0 ? categories.join(', ').replace(/_/g, ' ') : 'none';
+
+  switch (level) {
+    case 0:
+      return `Your agent monitors ${scanners} scanners and reports findings. It takes no actions. Communication: ${style}.`;
+    case 1:
+      return `Your agent monitors ${scanners} scanners and suggests fixes with dry-run previews. It never acts without your approval. Communication: ${style}.`;
+    case 2:
+      return `Your agent monitors ${scanners} scanners and proposes fixes for your review before acting. Communication: ${style}.`;
+    case 3:
+      return `Your agent monitors ${scanners} scanners, auto-fixes ${catNames}, and asks before anything risky. Communication: ${style}.`;
+    case 4:
+      return `Your agent monitors ${scanners} scanners and auto-fixes all enabled categories (${catNames}). All actions are logged. Communication: ${style}.`;
+    default:
+      return '';
+  }
+}
+
+function buildImpactPreview(current: TrustLevel, target: TrustLevel, fixSummary: FixHistorySummary | null): string | null {
+  if (!fixSummary || fixSummary.total_actions === 0) {
+    if (target > current) {
+      const newCats = LEVEL_CATEGORIES[target]?.filter((c) => !(LEVEL_CATEGORIES[current] || []).includes(c)) || [];
+      if (newCats.length > 0) {
+        return `Moving to Level ${target} would also auto-fix: ${newCats.join(', ').replace(/_/g, ' ')}.`;
+      }
+    }
+    return `Level ${target}: ${TRUST_DESCRIPTIONS[target]}`;
+  }
+
+  if (target > current) {
+    const newCats = LEVEL_CATEGORIES[target]?.filter((c) => !(LEVEL_CATEGORIES[current] || []).includes(c)) || [];
+    const additionalFixes = fixSummary.by_category
+      .filter((c) => newCats.includes(c.category))
+      .reduce((sum, c) => sum + c.confirmation_required, 0);
+
+    if (additionalFixes > 0) {
+      return `Moving to Level ${target} would also auto-fix ${newCats.join(', ').replace(/_/g, ' ')}. Last week, this would have resolved ${additionalFixes} additional incidents without asking.`;
+    }
+  }
+  return `Level ${target}: ${TRUST_DESCRIPTIONS[target]}`;
+}

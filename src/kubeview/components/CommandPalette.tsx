@@ -392,7 +392,7 @@ function getCommandItems(
       { type: 'nav', id: 'fleet', title: 'Fleet', subtitle: 'Multi-cluster dashboard, health scores, comparison', icon: 'Globe', path: '/fleet' },
       { type: 'nav', id: 'admin', title: 'Administration', subtitle: 'Operators, config, updates, quotas, certificates, CRDs', icon: 'Settings', path: '/admin' },
       { type: 'nav', id: 'readiness', title: 'Production Readiness', subtitle: 'Readiness wizard — security, reliability, observability gates', icon: 'Shield', path: '/readiness' },
-      { type: 'nav', id: 'agent', title: 'Agent Settings', subtitle: 'Trust level, scanners, memory, views, tools', icon: 'Bot', path: '/agent' },
+      { type: 'nav', id: 'agent', title: 'Mission Control', subtitle: 'Agent policy, health, accuracy, capability discovery', icon: 'Bot', path: '/agent' },
       { type: 'nav', id: 'toolbox', title: 'Toolbox', subtitle: 'Tools, skills, connections, and analytics', icon: 'Wrench', path: '/toolbox' },
     ];
 

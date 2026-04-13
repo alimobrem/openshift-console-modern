@@ -1,11 +1,12 @@
 import React, { lazy, Suspense } from 'react';
-import { HeartPulse, ArrowRight, Bell, GitPullRequest, Shield } from 'lucide-react';
+import { HeartPulse, ArrowRight, Bell, GitPullRequest, Shield, Bot } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import type { K8sResource } from '../engine/renderers';
 import { useUIStore } from '../store/uiStore';
 import { useFleetStore } from '../store/fleetStore';
 import { useMonitorStore } from '../store/monitorStore';
+import { useTrustStore } from '../store/trustStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { useIncidentFeed } from '../hooks/useIncidentFeed';
@@ -36,6 +37,12 @@ export default function PulseView() {
 
   const isLoading = nodesLoading || podsLoading || deploysLoading || pvcsLoading || opsLoading;
   const pendingReviews = useMonitorStore((s) => s.pendingActions.length);
+  const monitorConnected = useMonitorStore((s) => s.connected);
+  const activeSkill = useMonitorStore((s) => s.activeSkill);
+  const monitorEnabled = useMonitorStore((s) => s.monitorEnabled);
+  const setMonitorEnabled = useMonitorStore((s) => s.setMonitorEnabled);
+  const triggerScan = useMonitorStore((s) => s.triggerScan);
+  const trustLevel = useTrustStore((s) => s.trustLevel);
   const { counts: incidentCounts } = useIncidentFeed({ limit: 0 });
 
   const findings = useMonitorStore((s) => s.findings);
@@ -93,6 +100,27 @@ export default function PulseView() {
                 onClick={() => go('/reviews', 'Reviews')}
               />
             )}
+            <button
+              onClick={() => go('/agent', 'Mission Control')}
+              className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800 text-xs text-slate-300 hover:bg-slate-700 transition-colors"
+            >
+              <div className={cn('w-1.5 h-1.5 rounded-full', monitorConnected ? 'bg-emerald-400' : 'bg-slate-600')} />
+              Agent &middot; Trust {trustLevel}
+              {activeSkill && <span className="text-violet-400">&middot; {activeSkill}</span>}
+            </button>
+            <button
+              onClick={triggerScan}
+              disabled={!monitorConnected}
+              className="px-2.5 py-1 rounded bg-violet-500/10 text-xs text-violet-400 hover:bg-violet-500/20 disabled:opacity-40"
+            >
+              Scan Now
+            </button>
+            <button
+              onClick={() => setMonitorEnabled(!monitorEnabled)}
+              className={cn('px-2.5 py-1 rounded text-xs', monitorEnabled ? 'bg-emerald-500/10 text-emerald-400' : 'bg-slate-800 text-slate-500')}
+            >
+              {monitorEnabled ? 'Monitoring On' : 'Monitoring Off'}
+            </button>
           </div>
         </div>
 

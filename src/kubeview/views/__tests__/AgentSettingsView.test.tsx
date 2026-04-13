@@ -1,73 +1,46 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup, fireEvent } from '@testing-library/react';
+import { render, screen, cleanup } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import React from 'react';
 
 vi.mock('@/lib/utils', () => ({ cn: (...args: any[]) => args.filter(Boolean).join(' ') }));
 
+vi.mock('../../store/trustStore', () => ({
+  useTrustStore: Object.assign(
+    (selector: any) => selector({
+      trustLevel: 1,
+      autoFixCategories: [],
+      communicationStyle: 'brief',
+      setTrustLevel: vi.fn(),
+      setAutoFixCategories: vi.fn(),
+      setCommunicationStyle: vi.fn(),
+    }),
+    { getState: () => ({ trustLevel: 1 }) },
+  ),
+  TRUST_LABELS: { 0: 'Observe', 1: 'Confirm', 2: 'Batch', 3: 'Bounded', 4: 'Autonomous' },
+  TRUST_DESCRIPTIONS: { 0: '', 1: '', 2: '', 3: '', 4: '' },
+}));
+
 vi.mock('../../store/monitorStore', () => ({
   useMonitorStore: Object.assign(
-    (selector: any) => {
-      const state = {
-        connected: false,
-        monitorEnabled: true,
-        setMonitorEnabled: vi.fn(),
-        triggerScan: vi.fn(),
-        lastScanTime: null,
-        findings: [],
-      };
-      return selector(state);
-    },
+    (selector: any) => selector({ connected: false, findings: [] }),
     { getState: () => ({ findings: [] }) },
   ),
 }));
 
-vi.mock('../../store/uiStore', () => ({
-  useUIStore: Object.assign(
-    (selector: any) => {
-      const state = { addToast: vi.fn() };
-      return selector(state);
-    },
-    { getState: () => ({ addToast: vi.fn() }) },
-  ),
-}));
-
-vi.mock('../../store/trustStore', () => ({
-  useTrustStore: (selector: any) => {
-    const state = {
-      trustLevel: 0,
-      setTrustLevel: vi.fn(),
-      autoFixCategories: [],
-      setAutoFixCategories: vi.fn(),
-      communicationStyle: 'brief',
-      setCommunicationStyle: vi.fn(),
-    };
-    return selector(state);
-  },
-  TRUST_LABELS: {},
-  TRUST_DESCRIPTIONS: {},
-}));
-
-vi.mock('../../store/agentStore', () => ({
-  useAgentStore: (selector: any) => {
-    const state = { connected: false };
-    return selector(state);
-  },
+vi.mock('../../engine/analyticsApi', () => ({
+  fetchFixHistorySummary: vi.fn().mockResolvedValue({ total_actions: 0, completed: 0, failed: 0, rolled_back: 0, success_rate: 0, rollback_rate: 0, avg_resolution_ms: 0, by_category: [], trend: { current_week: 0, previous_week: 0, delta: 0 } }),
+  fetchScannerCoverage: vi.fn().mockResolvedValue({ active_scanners: 0, total_scanners: 0, coverage_pct: 0, categories: [], per_scanner: [] }),
+  fetchConfidenceCalibration: vi.fn().mockResolvedValue({ accuracy_pct: 0, rating: 'insufficient_data', brier_score: 0, total_predictions: 0, buckets: [] }),
+  fetchAccuracyStats: vi.fn().mockResolvedValue(null),
+  fetchCostStats: vi.fn().mockResolvedValue(null),
+  fetchRecommendations: vi.fn().mockResolvedValue({ recommendations: [] }),
+  fetchReadinessSummary: vi.fn().mockResolvedValue(null),
 }));
 
 vi.mock('../../engine/evalStatus', () => ({
   fetchAgentEvalStatus: vi.fn().mockResolvedValue(null),
-}));
-
-// Mock lazy-loaded tabs
-vi.mock('../MemoryView', () => ({
-  default: () => <div data-testid="memory-view">MemoryView</div>,
-}));
-
-vi.mock('../ViewsManagement', () => ({
-  default: () => <div data-testid="views-management">ViewsManagement</div>,
 }));
 
 import AgentSettingsView from '../AgentSettingsView';
@@ -76,65 +49,31 @@ function createQueryClient() {
   return new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } });
 }
 
-function renderView(initialRoute = '/agent') {
+function renderView() {
   return render(
     <QueryClientProvider client={createQueryClient()}>
-      <MemoryRouter initialEntries={[initialRoute]}>
+      <MemoryRouter initialEntries={['/agent']}>
         <AgentSettingsView />
       </MemoryRouter>
     </QueryClientProvider>,
   );
 }
 
-describe('AgentSettingsView', () => {
+describe('AgentSettingsView (redirects to MissionControl)', () => {
   afterEach(cleanup);
 
-  it('renders page header', () => {
+  it('renders Mission Control page header', () => {
     renderView();
-    expect(screen.getByText('Agent')).toBeDefined();
+    expect(screen.getByText('Mission Control')).toBeDefined();
   });
 
-  it('renders all 3 tab buttons', () => {
+  it('renders trust level selector', () => {
     renderView();
-    expect(screen.getByRole('tab', { name: /Settings/ })).toBeDefined();
-    expect(screen.getByRole('tab', { name: /Memory/ })).toBeDefined();
-    expect(screen.getByRole('tab', { name: /Views/ })).toBeDefined();
+    expect(screen.getByText('Trust Level')).toBeDefined();
   });
 
-  it('shows settings tab by default', () => {
+  it('renders agent health section', () => {
     renderView();
-    expect(screen.getByText('Continuous Monitoring')).toBeDefined();
-  });
-
-  it('switches to memory tab without crashing', async () => {
-    renderView('/agent?tab=memory');
-    expect(await screen.findByTestId('memory-view')).toBeDefined();
-  });
-
-  it('switches to views tab without crashing', async () => {
-    renderView('/agent?tab=views');
-    expect(await screen.findByTestId('views-management')).toBeDefined();
-  });
-
-  it('clicking memory tab shows memory view', async () => {
-    renderView();
-    fireEvent.click(screen.getByRole('tab', { name: /Memory/ }));
-    expect(await screen.findByTestId('memory-view')).toBeDefined();
-  });
-
-  it('clicking views tab shows views management', async () => {
-    renderView();
-    fireEvent.click(screen.getByRole('tab', { name: /Views/ }));
-    expect(await screen.findByTestId('views-management')).toBeDefined();
-  });
-
-  it('shows connection status', () => {
-    renderView();
-    expect(screen.getByText('Disconnected')).toBeDefined();
-  });
-
-  it('has tablist role for accessibility', () => {
-    renderView();
-    expect(screen.getByRole('tablist', { name: /Agent tabs/ })).toBeDefined();
+    expect(screen.getByText('Agent Health')).toBeDefined();
   });
 });
