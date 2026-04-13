@@ -23,6 +23,7 @@ import {
   type FixHistoryFilters,
 } from '../engine/fixHistory';
 import { useTrustStore } from './trustStore';
+import { useUIStore } from './uiStore';
 
 const MAX_FINDINGS = 200;
 const MAX_PREDICTIONS = 50;
@@ -231,6 +232,13 @@ export const useMonitorStore = create<MonitorState>()(
                 findings: s.findings.filter((f) => f.id !== resolution.findingId),
                 unreadCount: s.unreadCount + 1,
               }));
+              // Toast so the user knows an issue resolved
+              const resolvedLabel = resolution.resolvedBy === 'auto-fix' ? 'Auto-fixed' : 'Self-healed';
+              useUIStore.getState().addToast({
+                type: 'success',
+                title: `${resolution.title || 'Issue resolved'}`,
+                detail: resolvedLabel,
+              });
               break;
             }
 
