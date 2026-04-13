@@ -605,19 +605,50 @@ function AgentStatusList({ spec }: { spec: StatusListSpec }) {
     Pod: 'v1~pods',
     Route: 'route.openshift.io~v1~routes',
     PVC: 'v1~persistentvolumeclaims',
+    PersistentVolumeClaim: 'v1~persistentvolumeclaims',
   };
 
-  function handleItemClick(name: string) {
-    // Parse "Kind/name" pattern
-    const match = name.match(/^(\w+)\/(.+)$/);
-    if (match) {
-      const [, kind, resourceName] = match;
-      const gvr = KIND_GVR_MAP[kind];
-      if (gvr) {
-        navigate(`/r/${gvr}/_/${resourceName}`);
-        return;
+  // Detect resource type from title context or item content
+  const TITLE_KIND_MAP: Record<string, string> = {
+    'pvc': 'PVC',
+    'persistentvolumeclaim': 'PVC',
+    'service': 'Service',
+    'deployment': 'Deployment',
+    'pod': 'Pod',
+    'statefulset': 'StatefulSet',
+    'daemonset': 'DaemonSet',
+    'route': 'Route',
+  };
+
+  function inferKind(titleLower: string): string | null {
+    for (const [keyword, kind] of Object.entries(TITLE_KIND_MAP)) {
+      if (titleLower.includes(keyword)) return kind;
+    }
+    return null;
+  }
+
+  const titleKind = inferKind((spec.title || '').toLowerCase());
+
+  function resolveClickTarget(item: { name: string; detail?: string }): string | null {
+    // 1. Explicit "Kind/name" pattern
+    const explicit = item.name.match(/^(\w+)\/(.+)$/);
+    if (explicit) {
+      const gvr = KIND_GVR_MAP[explicit[1]];
+      if (gvr) return `/r/${gvr}/_/${explicit[2]}`;
+    }
+
+    // 2. Infer kind from section title (e.g., "PVC Status" → PVC, "Services" → Service)
+    if (titleKind) {
+      // Extract resource name from detail text (e.g., "5Gi gp3-csi (PostgreSQL data)" has no name)
+      // or from name if it looks like a K8s resource name (lowercase, dashes, no spaces in first word)
+      const nameMatch = item.name.match(/^([a-z][a-z0-9-]+(?:\.[a-z0-9-]+)*)/);
+      if (nameMatch) {
+        const gvr = KIND_GVR_MAP[titleKind];
+        if (gvr) return `/r/${gvr}/_/${nameMatch[1]}`;
       }
     }
+
+    return null;
   }
 
   return (
@@ -630,22 +661,22 @@ function AgentStatusList({ spec }: { spec: StatusListSpec }) {
       <div className="divide-y divide-slate-800/60">
         {spec.items.map((item, i) => {
           const Icon = STATUS_ICONS[item.status] || HelpCircle;
-          const isClickable = /^\w+\//.test(item.name);
+          const clickTarget = resolveClickTarget(item);
           return (
             <div
               key={i}
               className={cn(
                 'flex items-center gap-3 px-3 py-2.5 transition-colors',
-                isClickable && 'cursor-pointer hover:bg-slate-800/60 group',
+                clickTarget && 'cursor-pointer hover:bg-slate-800/60 group',
               )}
-              onClick={() => isClickable && handleItemClick(item.name)}
+              onClick={() => clickTarget && navigate(clickTarget)}
             >
               <div className={cn('flex items-center justify-center w-5 h-5 rounded-full shrink-0', STATUS_LIST_BG[item.status] || 'bg-slate-800')}>
                 <Icon className={cn('h-3 w-3', STATUS_LIST_COLORS[item.status])} />
               </div>
-              <span className={cn('text-sm font-medium', isClickable ? 'text-blue-400 group-hover:text-blue-300' : 'text-slate-200')}>{item.name}</span>
+              <span className={cn('text-sm font-medium', clickTarget ? 'text-blue-400 group-hover:text-blue-300' : 'text-slate-200')}>{item.name}</span>
               {item.detail && <span className="text-xs text-slate-500 truncate ml-auto">{item.detail}</span>}
-              {isClickable && <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 shrink-0 ml-1" />}
+              {clickTarget && <ChevronRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-slate-400 shrink-0 ml-1" />}
             </div>
           );
         })}
