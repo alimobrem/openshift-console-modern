@@ -1651,7 +1651,7 @@ function AnalyticsTab() {
       )}
 
       {/* Token Trending */}
-      {intelligence?.token_trending && (
+      {intelligence?.token_trending && (intelligence.token_trending.input_delta_pct !== 0 || intelligence.token_trending.output_delta_pct !== 0 || intelligence.token_trending.cache_delta_pct !== 0) && (
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
           <div className="flex items-center gap-2 mb-3">
             <TrendingUp className="w-4 h-4 text-amber-400" />
