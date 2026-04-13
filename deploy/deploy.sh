@@ -488,6 +488,13 @@ chmod 600 "$VALUES_FILE"
 # Rebuild chart dependencies to pick up subchart version changes
 helm dependency update deploy/helm/pulse/ >/dev/null 2>&1 || true
 
+# Delete MCP deployment before upgrade to avoid field manager conflicts.
+# The toolset toggle API patches .args at runtime, which creates field ownership
+# under "OpenAPI-Generator" that conflicts with Helm on the next upgrade.
+# MCP server is stateless — Helm recreates it with clean ownership.
+oc delete deployment -l app.kubernetes.io/component=mcp-server \
+  -n "$NAMESPACE" --ignore-not-found 2>/dev/null || true
+
 helm upgrade --install "$RELEASE" deploy/helm/pulse/ \
   -n "$NAMESPACE" --create-namespace \
   --values "$VALUES_FILE" \
