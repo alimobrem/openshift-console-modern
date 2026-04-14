@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, ChevronRight, ChevronDown, Activity, Package, Globe, Server, HardDrive, Shield, Bell, Settings, LayoutDashboard, ShieldCheck, GitBranch, Layers, Rocket } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, Activity, Package, Globe, Server, HardDrive, Shield, Bell, Settings, LayoutDashboard, ShieldCheck, GitBranch, Layers, Rocket, Network } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useClusterStore } from '../store/clusterStore';
 import { useCustomViewStore } from '../store/customViewStore';
@@ -153,6 +153,7 @@ export function ResourceBrowser() {
               section: 'OPERATIONS',
               items: [
                 { label: 'Incidents', icon: Bell, path: '/incidents', color: 'text-red-400' },
+                { label: 'Impact Analysis', icon: Network, path: '/topology', color: 'text-cyan-400' },
                 { label: 'Security', icon: ShieldCheck, path: '/security', color: 'text-red-400' },
                 { label: 'GitOps', icon: GitBranch, path: '/gitops', color: 'text-green-400' },
                 { label: 'Fleet', icon: Layers, path: '/fleet', color: 'text-indigo-400' },
