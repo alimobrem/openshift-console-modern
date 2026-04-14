@@ -2258,34 +2258,26 @@ function OrcaAnalyticsSection() {
         />
       </div>
 
-      {/* Routing Channels (#1) */}
-      {learning && learning.events.some(e => e.type === 'weight_update' || e.type === 'selection_summary') && (
+      {/* Recent Routing Decisions (#1) */}
+      {learning && learning.events.filter(e => e.type === 'routing_decision').length > 0 && (
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
-          <h3 className="text-xs font-medium text-slate-300 mb-1">Skill Routing Channels</h3>
-          <p className="text-[11px] text-slate-500 mb-3">How queries are routed — each channel scores independently, then scores are fused with learned weights.</p>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2 text-center">
-            {[
-              { name: 'Keyword', weight: 0.30, color: 'bg-blue-500' },
-              { name: 'Component', weight: 0.20, color: 'bg-emerald-500' },
-              { name: 'Historical', weight: 0.20, color: 'bg-violet-500' },
-              { name: 'Semantic', weight: 0.15, color: 'bg-cyan-500' },
-              { name: 'Taxonomy', weight: 0.10, color: 'bg-amber-500' },
-              { name: 'Temporal', weight: 0.05, color: 'bg-slate-500' },
-            ].map((ch) => (
-              <div key={ch.name}>
-                <div className="text-[10px] text-slate-500 mb-1">{ch.name}</div>
-                <div className="h-12 bg-slate-800 rounded relative overflow-hidden">
-                  <div
-                    className={cn('absolute bottom-0 left-0 right-0 rounded-b', ch.color + '/50')}
-                    style={{ height: `${ch.weight * 100 * 2}%` }}
-                  />
+          <h3 className="text-xs font-medium text-slate-300 mb-1">Recent Routing Decisions</h3>
+          <p className="text-[11px] text-slate-500 mb-3">Why each query was routed to a specific skill — shows which channels fired.</p>
+          <div className="space-y-2">
+            {learning.events.filter(e => e.type === 'routing_decision').map((evt, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs">
+                <ArrowRight className="w-3 h-3 text-violet-400 shrink-0 mt-0.5" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-slate-200">{evt.description}</div>
+                  <div className="text-[10px] text-slate-500 mt-0.5">
+                    {(evt.data as Record<string, string>)?.channels || 'low signal'}
+                  </div>
                 </div>
-                <div className="text-[10px] text-slate-400 mt-1">{Math.round(ch.weight * 100)}%</div>
               </div>
             ))}
           </div>
           {learning.events.find(e => e.type === 'selection_summary') && (
-            <div className="mt-2 text-[11px] text-slate-400">
+            <div className="mt-2 pt-2 border-t border-slate-800 text-[11px] text-slate-400">
               {learning.events.find(e => e.type === 'selection_summary')?.description}
             </div>
           )}
