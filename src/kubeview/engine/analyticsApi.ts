@@ -186,3 +186,29 @@ export interface ResolutionsResponse {
 
 export const fetchResolutions = (days = 7, limit = 50) =>
   get<ResolutionsResponse>(`${AGENT_BASE}/fix-history/resolutions?days=${days}&limit=${limit}`);
+
+// --- ORCA analytics ---
+
+export interface TopologySummary {
+  nodes: number;
+  edges: number;
+  kinds: Record<string, number>;
+  last_refresh: number;
+}
+
+export interface PlanTemplate {
+  id: string;
+  name: string;
+  incident_type: string;
+  phases: number;
+  max_duration: number;
+}
+
+export const fetchTopologySummary = () =>
+  get<{ nodes: unknown[]; edges: unknown[]; summary: TopologySummary }>(`${AGENT_BASE}/topology`).then(r => r.summary);
+
+export const fetchPlanTemplates = () =>
+  get<{ templates: PlanTemplate[] }>(`${AGENT_BASE}/plan-templates`).then(r => r.templates);
+
+export const fetchPostmortemCount = () =>
+  get<{ postmortems: unknown[]; total: number }>(`${AGENT_BASE}/postmortems?limit=1`).then(r => r.total);

@@ -11,7 +11,11 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useToolUsageStore } from '../store/toolUsageStore';
-import { fetchIntelligenceSections, fetchPromptStats } from '../engine/analyticsApi';
+import {
+  fetchIntelligenceSections, fetchPromptStats,
+  fetchTopologySummary, fetchPlanTemplates, fetchPostmortemCount,
+  fetchFixHistorySummary,
+} from '../engine/analyticsApi';
 import type { ToolInfo, ToolUsageEntry } from '../store/toolUsageStore';
 
 type ToolboxTab = 'catalog' | 'skills' | 'connections' | 'components' | 'usage' | 'analytics';
@@ -1874,6 +1878,9 @@ function AnalyticsTab() {
         </>
       )}
 
+      {/* ORCA Analytics */}
+      <OrcaAnalyticsSection />
+
       {/* Harness Effectiveness */}
       {intelligence?.harness_effectiveness && (
         <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
@@ -2072,6 +2079,131 @@ interface PromptVersion {
   is_current: boolean;
   sections?: Record<string, number>;
   total_static_chars?: number;
+}
+
+function OrcaAnalyticsSection() {
+  const { data: topology } = useQuery({
+    queryKey: ['analytics', 'topology-summary'],
+    queryFn: () => fetchTopologySummary().catch(() => null),
+    staleTime: 60_000,
+  });
+
+  const { data: templates } = useQuery({
+    queryKey: ['analytics', 'plan-templates'],
+    queryFn: () => fetchPlanTemplates().catch(() => []),
+    staleTime: 60_000,
+  });
+
+  const { data: postmortemCount } = useQuery({
+    queryKey: ['analytics', 'postmortem-count'],
+    queryFn: () => fetchPostmortemCount().catch(() => 0),
+    staleTime: 60_000,
+  });
+
+  const { data: fixSummary } = useQuery({
+    queryKey: ['analytics', 'fix-summary'],
+    queryFn: () => fetchFixHistorySummary(30).catch(() => null),
+    staleTime: 60_000,
+  });
+
+  const hasData = topology || (templates && templates.length > 0) || (postmortemCount && postmortemCount > 0) || fixSummary;
+  if (!hasData) return null;
+
+  return (
+    <div className="border-t border-slate-800 pt-6 space-y-4">
+      <h2 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
+        <Target className="w-4 h-4 text-cyan-400" />
+        Agent Intelligence
+      </h2>
+      <p className="text-[11px] text-slate-500 -mt-2">
+        Multi-signal skill selection, investigation plans, fix outcomes, and dependency analysis.
+      </p>
+
+      {/* Summary cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {topology && (
+          <StatCard
+            label="Resources Tracked"
+            value={String(topology.nodes)}
+            icon={<Layers className="w-4 h-4 text-cyan-400" />}
+          />
+        )}
+        {topology && (
+          <StatCard
+            label="Dependencies"
+            value={String(topology.edges)}
+            icon={<Cable className="w-4 h-4 text-cyan-400" />}
+          />
+        )}
+        {templates && (
+          <StatCard
+            label="Investigation Plans"
+            value={String(templates.length)}
+            icon={<Target className="w-4 h-4 text-violet-400" />}
+          />
+        )}
+        <StatCard
+          label="Postmortems"
+          value={String(postmortemCount || 0)}
+          icon={<FileText className="w-4 h-4 text-teal-400" />}
+        />
+      </div>
+
+      {/* Fix Outcomes */}
+      {fixSummary && fixSummary.total_actions > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 className="text-xs font-medium text-slate-300 mb-1">Fix Outcomes</h3>
+          <p className="text-[11px] text-slate-500 mb-3">How well automated fixes resolve issues (last 30 days).</p>
+          <div className="grid grid-cols-4 gap-4 text-center text-xs">
+            <div>
+              <div className="text-slate-400">Success Rate</div>
+              <div className="text-lg font-bold text-emerald-400">{(fixSummary.success_rate * 100).toFixed(0)}%</div>
+            </div>
+            <div>
+              <div className="text-slate-400">Verified Fixed</div>
+              <div className="text-lg font-bold text-emerald-400">{fixSummary.verification.resolved}</div>
+            </div>
+            <div>
+              <div className="text-slate-400">Still Failing</div>
+              <div className="text-lg font-bold text-red-400">{fixSummary.verification.still_failing}</div>
+            </div>
+            <div>
+              <div className="text-slate-400">Rollback Rate</div>
+              <div className="text-lg font-bold text-amber-400">{(fixSummary.rollback_rate * 100).toFixed(0)}%</div>
+            </div>
+          </div>
+          {fixSummary.by_category.length > 0 && (
+            <div className="mt-3 space-y-1">
+              {fixSummary.by_category.slice(0, 5).map((c) => (
+                <div key={c.category} className="flex items-center justify-between text-xs">
+                  <span className="text-slate-300">{c.category}</span>
+                  <span className="text-slate-400">
+                    {c.success_count}/{c.count} fixed
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Dependency Graph breakdown */}
+      {topology && Object.keys(topology.kinds).length > 0 && (
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+          <h3 className="text-xs font-medium text-slate-300 mb-1">Dependency Graph</h3>
+          <p className="text-[11px] text-slate-500 mb-3">Live resource graph used for blast radius analysis and impact prediction.</p>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            {Object.entries(topology.kinds).sort(([, a], [, b]) => b - a).map(([kind, count]) => (
+              <div key={kind} className="text-center">
+                <div className="text-lg font-bold text-slate-200">{count}</div>
+                <div className="text-[10px] text-slate-500">{kind}s</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function PromptAuditSection() {
