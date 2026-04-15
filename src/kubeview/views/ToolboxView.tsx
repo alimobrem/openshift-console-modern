@@ -817,74 +817,65 @@ function SLOTab() {
           <p className="text-xs text-slate-500 mt-1">Add a Service Level Objective to track error budget burn rate from live Prometheus data.</p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg overflow-hidden">
+          {/* Header row */}
+          <div className="grid grid-cols-12 gap-0 px-4 py-2 border-b border-slate-800 text-[10px] text-slate-500 uppercase tracking-wider">
+            <div className="col-span-4">Service</div>
+            <div className="col-span-1 text-center">Target</div>
+            <div className="col-span-1 text-center">Current</div>
+            <div className="col-span-4">Error Budget</div>
+            <div className="col-span-1 text-center">Burn</div>
+            <div className="col-span-1"></div>
+          </div>
+          {/* SLO rows */}
           {slos.map((slo: Record<string, unknown>) => {
             const budgetPct = Math.round((slo.error_budget_remaining as number) * 100);
             const alertLevel = slo.alert_level as string;
+            const budgetColor = budgetPct > 50 ? 'bg-emerald-500' : budgetPct > 20 ? 'bg-amber-500' : 'bg-red-500';
+            const textColor = budgetPct > 50 ? 'text-emerald-400' : budgetPct > 20 ? 'text-amber-400' : 'text-red-400';
             return (
-              <div key={`${slo.service}:${slo.type}`} className={cn(
-                'bg-slate-900 border rounded-lg p-4',
-                alertLevel === 'critical' ? 'border-red-800/50' : alertLevel === 'warning' ? 'border-amber-800/50' : 'border-slate-800',
-              )}>
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-sm font-medium text-slate-200">{String(slo.service)}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-slate-800 text-slate-400 rounded">{String(slo.type)}</span>
-                      <span className={cn(
-                        'text-[10px] px-1.5 py-0.5 rounded',
-                        alertLevel === 'critical' ? 'bg-red-900/50 text-red-300' :
-                        alertLevel === 'warning' ? 'bg-amber-900/50 text-amber-300' :
-                        'bg-emerald-900/50 text-emerald-300',
-                      )}>
-                        {alertLevel}
-                      </span>
-                    </div>
-                    {Boolean(slo.description) && <p className="text-[11px] text-slate-500">{String(slo.description)}</p>}
+              <div key={`${slo.service}:${slo.type}`} className="grid grid-cols-12 gap-0 px-4 py-3 border-b border-slate-800/50 items-center hover:bg-slate-800/20 transition-colors">
+                {/* Service + type + status */}
+                <div className="col-span-4 flex items-center gap-2 min-w-0">
+                  <div className={cn(
+                    'w-2 h-2 rounded-full shrink-0',
+                    alertLevel === 'critical' ? 'bg-red-500' : alertLevel === 'warning' ? 'bg-amber-500' : 'bg-emerald-500',
+                  )} />
+                  <div className="min-w-0">
+                    <div className="text-xs font-medium text-slate-200 truncate">{String(slo.service).replace('pulse-openshift-sre-agent', 'agent').replace('openshiftpulse', 'ui')}</div>
+                    <div className="text-[10px] text-slate-500">{String(slo.type)} · {(slo.window_days as number)}d</div>
                   </div>
+                </div>
+                {/* Target */}
+                <div className="col-span-1 text-center text-xs text-slate-400">
+                  {((slo.target as number) * 100).toFixed(1)}%
+                </div>
+                {/* Current */}
+                <div className="col-span-1 text-center text-xs text-slate-200">
+                  {slo.current_value ? `${((slo.current_value as number) * 100).toFixed(1)}%` : '-'}
+                </div>
+                {/* Error Budget bar */}
+                <div className="col-span-4 flex items-center gap-2">
+                  <div className="flex-1 h-2.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div
+                      className={cn('h-full rounded-full transition-all', budgetColor + '/70')}
+                      style={{ width: `${Math.max(budgetPct, 2)}%` }}
+                    />
+                  </div>
+                  <span className={cn('text-xs font-semibold w-10 text-right', textColor)}>{budgetPct}%</span>
+                </div>
+                {/* Burn rate */}
+                <div className="col-span-1 text-center text-xs text-slate-400">
+                  {((slo.burn_rate as number) * 100).toFixed(1)}%
+                </div>
+                {/* Delete */}
+                <div className="col-span-1 text-right">
                   <button
                     onClick={() => setConfirmDelete({ service: String(slo.service), type: String(slo.type) })}
-                    className="text-slate-600 hover:text-red-400 transition-colors"
+                    className="text-slate-700 hover:text-red-400 transition-colors p-1"
                   >
-                    <Trash2 className="w-3.5 h-3.5" />
+                    <Trash2 className="w-3 h-3" />
                   </button>
-                </div>
-
-                <div className="grid grid-cols-4 gap-4 mb-3">
-                  <div>
-                    <div className="text-[10px] text-slate-500">Target</div>
-                    <div className="text-sm font-bold text-slate-200">{((slo.target as number) * 100).toFixed(1)}%</div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500">Current</div>
-                    <div className="text-sm font-bold text-slate-200">
-                      {slo.current_value ? `${((slo.current_value as number) * 100).toFixed(2)}%` : '-'}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500">Error Budget</div>
-                    <div className={cn('text-sm font-bold', budgetPct > 50 ? 'text-emerald-400' : budgetPct > 20 ? 'text-amber-400' : 'text-red-400')}>
-                      {budgetPct}%
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-500">Burn Rate</div>
-                    <div className="text-sm font-bold text-slate-200">{((slo.burn_rate as number) * 100).toFixed(1)}%</div>
-                  </div>
-                </div>
-
-                <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
-                  <div
-                    className={cn(
-                      'h-full rounded-full transition-all',
-                      budgetPct > 50 ? 'bg-emerald-500/70' : budgetPct > 20 ? 'bg-amber-500/70' : 'bg-red-500/70',
-                    )}
-                    style={{ width: `${Math.max(budgetPct, 2)}%` }}
-                  />
-                </div>
-                <div className="flex justify-between mt-1">
-                  <span className="text-[10px] text-slate-600">{(slo.window_days as number)}d rolling window</span>
-                  <span className="text-[10px] text-slate-600">{budgetPct}% error budget remaining</span>
                 </div>
               </div>
             );
