@@ -156,10 +156,16 @@ export class AgentClient {
       }
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
       this._connected = false;
+      if (event.code === 4001) {
+        // Auth failure — token mismatch or missing
+        this.emit({ type: 'error', message: 'Agent authentication failed (code 4001). The WebSocket token may not be configured correctly. Try redeploying.' });
+      }
       this.emit({ type: 'disconnected' });
-      this.scheduleReconnect();
+      if (event.code !== 4001) {
+        this.scheduleReconnect();
+      }
     };
 
     this.ws.onerror = () => {

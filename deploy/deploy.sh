@@ -560,13 +560,26 @@ if [[ "$HEALTHY" == "true" ]]; then
 
     # Verify token substitution — proxy chain success already proves the token works,
     # but double-check the nginx config doesn't have leftover placeholders
+    # Wait for rollout to complete before checking token — avoids reading from stale pod
+    sleep 3
+    UI_POD=$(oc get pods -n "$NAMESPACE" -l app=openshiftpulse --field-selector=status.phase=Running --no-headers 2>/dev/null | head -1 | awk '{print $1}')
     TOKEN_CHECK=$(oc exec "$UI_POD" -c openshiftpulse -n "$NAMESPACE" -- grep -c "__AGENT_TOKEN__" /tmp/nginx.conf 2>/dev/null || echo "0")
     if [[ "$TOKEN_CHECK" != "0" ]]; then
-      # Proxy chain passed but placeholder still in config — entrypoint may still be running.
-      # This is a non-fatal warning since connectivity is confirmed.
-      warn "Token placeholder found in nginx config (may be stale pod during rollout)"
+      error "WS TOKEN NOT INJECTED — nginx config still has __AGENT_TOKEN__ placeholder"
+      error "WebSocket connections will fail. Fix: check secret '$WS_SECRET' exists and is mounted"
+      # Attempt auto-fix: read token from secret and patch configmap
+      ACTUAL_TOKEN=$(oc get secret "$WS_SECRET" -n "$NAMESPACE" -o jsonpath='{.data.token}' 2>/dev/null | base64 --decode 2>/dev/null || echo "")
+      if [[ -n "$ACTUAL_TOKEN" ]]; then
+        warn "Attempting token injection fix..."
+        oc get configmap openshiftpulse-nginx -n "$NAMESPACE" -o json 2>/dev/null | \
+          python3 -c "import sys,json; d=json.load(sys.stdin); d['data']['nginx.conf']=d['data']['nginx.conf'].replace('__AGENT_TOKEN__','$ACTUAL_TOKEN'); json.dump(d,sys.stdout)" | \
+          oc replace -f - 2>/dev/null && \
+          oc rollout restart deployment/openshiftpulse -n "$NAMESPACE" 2>/dev/null && \
+          info "Token injected via configmap patch — pods restarting" && \
+          wait_for_rollout "openshiftpulse" "$NAMESPACE" 60
+      fi
     else
-      info "Token substitution verified"
+      info "WS token injection verified"
     fi
   fi
 fi

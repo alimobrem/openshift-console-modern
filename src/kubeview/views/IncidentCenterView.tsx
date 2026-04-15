@@ -1,7 +1,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Siren, Zap, Search, Clock, Bell, Settings, GitPullRequest, FileText,
+  Siren, Zap, Search, Clock, Bell, Settings, GitPullRequest, FileText, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useMonitorStore } from '../store/monitorStore';
@@ -39,6 +39,7 @@ export default function IncidentCenterView() {
   };
   const navigate = useNavigate();
   const connected = useMonitorStore((s) => s.connected);
+  const connectionError = useMonitorStore((s) => s.connectionError);
 
 
   return (
@@ -114,6 +115,14 @@ export default function IncidentCenterView() {
             </button>
           ))}
         </div>
+
+        {/* Connection error banner */}
+        {connectionError && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-lg bg-red-950/50 border border-red-800 text-sm text-red-300">
+            <AlertTriangle className="w-4 h-4 shrink-0" />
+            <span>{connectionError}</span>
+          </div>
+        )}
 
         {/* Tab content */}
         {activeTab === 'now' && <div id="incident-panel-now" role="tabpanel"><NowTab /></div>}

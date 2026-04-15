@@ -227,10 +227,13 @@ export class MonitorClient {
       }
     };
 
-    this.ws.onclose = () => {
+    this.ws.onclose = (event) => {
       this._connected = false;
+      if (event.code === 4001) {
+        this.emit({ type: 'error', message: 'Monitor authentication failed (code 4001). The WebSocket token may not be configured correctly. Try redeploying.' });
+      }
       this.emit({ type: 'disconnected' });
-      if (!this._disconnectedByUser) {
+      if (!this._disconnectedByUser && event.code !== 4001) {
         this.scheduleReconnect();
       }
     };

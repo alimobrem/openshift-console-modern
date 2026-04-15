@@ -35,6 +35,7 @@ const MAX_RESOLUTIONS = 50;
 interface MonitorState {
   // Connection
   connected: boolean;
+  connectionError: string | null;
   lastScanTime: number;
   nextScanTime: number;
   activeWatches: string[];
@@ -95,6 +96,7 @@ export const useMonitorStore = create<MonitorState>()(
     (set, get) => ({
       // Connection
       connected: false,
+      connectionError: null,
       lastScanTime: 0,
       nextScanTime: 0,
       activeWatches: [],
@@ -136,7 +138,7 @@ export const useMonitorStore = create<MonitorState>()(
         unsubscribe = client.on((event: MonitorEvent) => {
           switch (event.type) {
             case 'connected':
-              set({ connected: true });
+              set({ connected: true, connectionError: null });
               break;
 
             case 'disconnected':
@@ -287,6 +289,7 @@ export const useMonitorStore = create<MonitorState>()(
 
             case 'error':
               console.error('Monitor error:', event.message);
+              set({ connectionError: event.message || 'Unknown monitor error' });
               break;
           }
         });

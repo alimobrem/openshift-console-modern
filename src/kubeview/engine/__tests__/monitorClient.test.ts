@@ -10,7 +10,7 @@ class MockWebSocket {
   static CLOSED = 3;
   readyState = MockWebSocket.OPEN;
   onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
+  onclose: ((event: { code: number }) => void) | null = null;
   onmessage: ((event: { data: string }) => void) | null = null;
   onerror: (() => void) | null = null;
   sent: string[] = [];
@@ -25,7 +25,7 @@ class MockWebSocket {
 
   close() {
     this.readyState = MockWebSocket.CLOSED;
-    this.onclose?.();
+    this.onclose?.({ code: 1000 });
   }
 }
 
@@ -191,7 +191,7 @@ describe('MonitorClient', () => {
 
     // Simulate unexpected close (not user-initiated)
     const ws = (client as any).ws as MockWebSocket;
-    ws.onclose?.();
+    ws.onclose?.({ code: 1006 });
 
     // Should schedule reconnect — advance past base delay + jitter
     expect((client as any).reconnectTimer).not.toBeNull();
