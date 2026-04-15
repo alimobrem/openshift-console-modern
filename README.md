@@ -11,7 +11,7 @@
 
 <p align="center">
   <a href="https://github.com/alimobrem/OpenshiftPulse/releases/tag/v6.2.0"><img src="https://img.shields.io/badge/release-v6.2.0-2563eb?style=for-the-badge" alt="Version"></a>
-  <img src="https://img.shields.io/badge/tests-1953%20unit%20%2B%2013%20Helm%20%2B%2053%20E2E-10b981?style=for-the-badge" alt="Tests">
+  <img src="https://img.shields.io/badge/tests-1934%20unit%20%2B%2013%20Helm%20%2B%2053%20E2E-10b981?style=for-the-badge" alt="Tests">
   <img src="https://img.shields.io/badge/health%20checks-77-f59e0b?style=for-the-badge" alt="Health Checks">
   <img src="https://img.shields.io/badge/CVEs-0-10b981?style=for-the-badge" alt="CVEs">
   <img src="https://img.shields.io/badge/license-MIT-6366f1?style=for-the-badge" alt="License">
@@ -51,7 +51,7 @@ Real-time Kubernetes dashboard built with React, TypeScript, and WebSocket watch
 
 ## Prerequisites
 
-- **Node.js 22+** and **pnpm** — for building the UI
+- **Node.js 24+** and **pnpm** — for building the UI
 - **OpenShift 4.14+** or **ROSA** — with OAuth proxy support
 - **Podman** or **Docker** — for building container images
 - **Helm 3+** — for deployment
@@ -174,7 +174,7 @@ podman login quay.io                         # Container registry
 
 | Category | What You Get |
 |----------|-------------|
-| **AI Agent** | Claude-powered SRE diagnostics and security scanning. 111 tools (75 native + 36 MCP), 5 skills (sre, security, view_designer, capacity_planner, postgres_troubleshooter), 73 PromQL recipes, 10 runbooks, intent-based auto-routing, dynamic UI rendering (19 component types), dashboard generation with semantic layout engine and auto-save to PostgreSQL, prompt caching, dynamic tool selection, cluster context injection, intelligence loop for continuous improvement. Follow-up suggestions after each response, welcome message on first connect. [pulse-agent](https://github.com/alimobrem/pulse-agent) |
+| **AI Agent** | Claude-powered SRE diagnostics and security scanning. 122 tools (86 native + 36 MCP), 7 skills (sre, security, view_designer, capacity_planner, plan_builder, postmortem, slo_management), 73 PromQL recipes, 10 runbooks, ORCA multi-signal routing (6-channel skill selector), dynamic UI rendering (19 component types), dashboard generation with semantic layout engine and auto-save to PostgreSQL, prompt caching, dynamic tool selection, cluster context injection, intelligence loop for continuous improvement. Follow-up suggestions after each response, welcome message on first connect. [pulse-agent](https://github.com/alimobrem/pulse-agent) |
 | **Predictive AI** | Live cluster-aware smart prompts: AI suggestions reflect actual issues (crash-looping pods, degraded operators, pending PVCs) not generic templates. Integrated into Command Palette (`?` mode), dock agent panel, and empty states. |
 | **Native AI Layer** | Unified intelligence layer across all surfaces: smart prompts adapt to cluster state, AI query mode in Command Palette (`?`), violet-branded AI surfaces, auto-expanding InlineAgent for unhealthy resources, "Ask AI" buttons on PulseView attention items, first-run onboarding, dock notification dot for background insights |
 | **Ask Pulse** | Natural language queries in Cmd+K — type a question, get AI-powered answers with action buttons. Dedicated WebSocket, falls back gracefully when agent is offline. |
@@ -207,7 +207,7 @@ podman login quay.io                         # Container registry
 
 | Feature | Details |
 |---------|---------|
-| **AI Agent** | Chat with Claude-powered SRE/Security agent (111 tools, 5 skills, 73 PromQL recipes, 19 component types). "Ask Agent" from any resource. Streaming, tool execution indicators, confirmation gates. Follow-up suggestions after each response, welcome message on first connect, capability change toast notifications. Mission Control at `/agent` with Trust Policy, Agent Health, Agent Accuracy, and Capability Discovery sections. |
+| **AI Agent** | Chat with Claude-powered SRE/Security agent (122 tools, 7 skills, 73 PromQL recipes, 19 component types). "Ask Agent" from any resource. Streaming, tool execution indicators, confirmation gates. Follow-up suggestions after each response, welcome message on first connect, capability change toast notifications. Mission Control at `/agent` with Trust Policy, Agent Health, Agent Accuracy, and Capability Discovery sections. |
 | **Ask Pulse** | Natural language queries in Cmd+K: type a question in the Command Palette, get AI-powered answers with action buttons. "Open in Agent" for full conversations. |
 | **Incident Actions** | PR-style review of AI-proposed changes merged into Incident Center: YAML diffs, risk badges, business impact, approve/reject. Live data from monitor WebSocket. |
 | **Native AI UX** | Unified violet-branded intelligence layer: `?` in Command Palette sends to agent, smart prompts adapt to cluster state, "Ask AI" on PulseView attention items, auto-expand InlineAgent for unhealthy resources, AI empty state suggestions, first-run onboarding card, dock agent notification dot. |
@@ -237,7 +237,7 @@ podman login quay.io                         # Container registry
 |------|-----------|
 | **Welcome** | Quick nav, cluster status with error recovery, all capabilities clickable, keyboard shortcuts |
 | **Pulse** | AI morning briefing, overnight agent activity feed, incident insights rail, cost trends. "Cluster Zen" calm state when healthy. Fleet mode: cluster health table, risk scores, AI analysis |
-| **Agent** | Consolidated agent hub: Settings, Memory, and Views tabs at `/agent` |
+| **Agent** | Mission Control at `/agent` — Trust Policy, Agent Health, Agent Accuracy, and Capability Discovery |
 | **Workloads** | Metrics + 6-check health audit, deployments sorted unhealthy-first |
 | **Compute** | Node hex map with role filters, cluster type summary (HyperShift vs self-managed), capacity planning, machine management |
 | **Storage** | PVC health, capacity audit, CSI drivers |
@@ -254,7 +254,7 @@ podman login quay.io                         # Container registry
 | **Readiness** | Production readiness program — 30 gates across 6 categories, wizard + checklist modes, waiver workflow |
 | **Fleet** | Multi-cluster dashboard, cross-cluster search, comparison, compliance, cert heat map |
 | **Custom Views** | AI-generated dashboards at `/custom/:viewId`. Agent creates views via `create_dashboard` tool with metric cards, charts, and tables. Semantic auto-layout, version history, clone, delete, share. Plan → Build → Critique workflow |
-| **Toolbox** | Consolidated tools hub at `/toolbox` — 6 tabs: Catalog (all 111 tools with native/MCP source badges), Skills (5 skill packages with editor, version history, diff viewer, routing tester), Connections (MCP server management with toolset toggles), Components (19 component kinds with mutation support), Usage (tool invocation audit log), Analytics (merged tool + skill + handoff stats) |
+| **Toolbox** | Consolidated tools hub at `/toolbox` — 8 tabs: Catalog (all 122 tools with native/MCP source badges), Skills (7 skill packages with status and routing config), Plans (plan templates and active executions), SLOs (SLO registry with burn rates), Connections (MCP server management with toolset toggles), Components (19 component kinds with mutation support), Usage (tool invocation audit log), Analytics (routing accuracy, fix strategies, agent learning) |
 | **Project** | Namespace-scoped dashboard at `/project/:namespace` with resource summary and health overview |
 | **Claim** | Share token claim view at `/share/:shareToken` for accepting shared custom views |
 | **Admin** | 8 tabs: Overview, Operators, Config, Updates, Snapshots, Quotas, Certificates, CRDs |
@@ -270,8 +270,8 @@ podman login quay.io                         # Container registry
 | **State** | Zustand + TanStack Query | Client + server state separation |
 | **Real-time** | WebSocket watches | Instant updates, 60s polling fallback |
 | **Styling** | Tailwind CSS 3.4 + Radix UI | Utility-first, headless components, CVA variants |
-| **Testing** | Vitest + Playwright + Helm | 1,953 unit + 13 Helm + 53 E2E in ~9s |
-| **Charts** | Pure SVG sparklines | Zero chart library dependency |
+| **Testing** | Vitest + Playwright + Helm | 1,934 unit + 13 Helm + 53 E2E in ~9s |
+| **Charts** | recharts + SVG sparklines | Rich charts with lightweight inline sparklines |
 | **Security** | Red Hat UBI images | 0 CVEs, all images from Red Hat registries |
 
 ---
@@ -368,7 +368,7 @@ pnpm install         # Install dependencies
 cp .env.example .env # Configure cluster URLs (optional)
 oc proxy --port=8001 & # Start API proxy
 pnpm dev             # Dev server on port 9000
-pnpm test            # Run test suite (1953 tests)
+pnpm test            # Run test suite (1934 tests)
 pnpm build           # Production build (~1s)
 pnpm type-check      # TypeScript checking
 pnpm verify          # Full check: types + lint + test + build
@@ -420,7 +420,7 @@ Browser --> OAuth Proxy (8443/TLS) --> nginx (8080) --> K8s API / Prometheus / A
 ---
 
 <p align="center">
-  <strong>1,953 unit + 13 Helm + 53 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>18 views</strong> &bull; <strong>111 AI tools</strong> &bull; <strong>5 skills</strong> &bull; <strong>500+ operators</strong>
+  <strong>1,934 unit + 13 Helm + 53 E2E tests</strong> &bull; <strong>77 health checks</strong> &bull; <strong>~1s builds</strong> &bull; <strong>0 CVEs</strong> &bull; <strong>18 views</strong> &bull; <strong>122 AI tools</strong> &bull; <strong>7 skills</strong> &bull; <strong>500+ operators</strong>
 </p>
 
 <p align="center">
