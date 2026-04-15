@@ -136,7 +136,7 @@ else
 fi
 
 # 4. Agent tools endpoint
-_WS_TOKEN=$(oc get secret pulse-ws-token -n "$NAMESPACE" -o jsonpath='{.data.token}' 2>/dev/null | base64 -d 2>/dev/null || echo "")
+_WS_TOKEN=$(oc get secret pulse-ws-token -n "$NAMESPACE" -o jsonpath='{.data.token}' 2>/dev/null | base64 --decode 2>/dev/null || echo "")
 TOOLS_RESP=$(agent_get_auth /tools)
 [[ "$TOOLS_RESP" == *'"sre"'* ]] && pass "GET /tools → SRE tools available" || fail "GET /tools failed"
 

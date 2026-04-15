@@ -404,7 +404,7 @@ WS_TOKEN=""
 if [[ -n "$_WS_TOKEN_OVERRIDE" ]]; then
   WS_TOKEN="$_WS_TOKEN_OVERRIDE"
 elif EXISTING=$(oc get secret "$WS_SECRET" -n "$NAMESPACE" -o jsonpath='{.data.token}' 2>/dev/null) && [[ -n "$EXISTING" ]]; then
-  WS_TOKEN=$(echo "$EXISTING" | base64 -d 2>/dev/null || echo "$EXISTING")
+  WS_TOKEN=$(echo "$EXISTING" | base64 --decode 2>/dev/null || echo "$EXISTING")
   info "WS token: read from existing secret"
 else
   WS_TOKEN=$(openssl rand -hex 16)
