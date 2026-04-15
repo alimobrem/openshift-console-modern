@@ -45,6 +45,15 @@ export function TrustPolicy({ maxTrustLevel, scannerCount, fixSummary }: TrustPo
 
   const [confirmLevel, setConfirmLevel] = useState<TrustLevel | null>(null);
   const [hoveredLevel, setHoveredLevel] = useState<TrustLevel | null>(null);
+  const [autofixPaused, setAutofixPaused] = useState(false);
+
+  const togglePause = async () => {
+    const endpoint = autofixPaused ? '/api/agent/monitor/resume' : '/api/agent/monitor/pause';
+    try {
+      const res = await fetch(endpoint, { method: 'POST' });
+      if (res.ok) setAutofixPaused(!autofixPaused);
+    } catch { /* ignore */ }
+  };
 
   const handleLevelClick = (level: TrustLevel) => {
     if (level > maxTrustLevel) return;
@@ -64,6 +73,22 @@ export function TrustPolicy({ maxTrustLevel, scannerCount, fixSummary }: TrustPo
   return (
     <Card>
       <div className="p-5 space-y-5">
+        {/* Emergency Pause */}
+        {trustLevel >= 3 && (
+          <button
+            onClick={togglePause}
+            className={cn(
+              'w-full py-2 px-4 rounded-lg text-xs font-medium flex items-center justify-center gap-2 transition-colors',
+              autofixPaused
+                ? 'bg-emerald-900/30 text-emerald-400 border border-emerald-800/50 hover:bg-emerald-900/50'
+                : 'bg-red-900/30 text-red-400 border border-red-800/50 hover:bg-red-900/50',
+            )}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            {autofixPaused ? 'Resume Auto-Fix' : 'Pause Auto-Fix (Emergency Kill Switch)'}
+          </button>
+        )}
+
         {/* Trust Level Selector */}
         <div>
           <h2 className="text-sm font-semibold text-slate-200 mb-3">Trust Level</h2>
