@@ -6,6 +6,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { k8sCreate, k8sGet } from '../engine/query';
+import { safeQuery } from '../engine/safeQuery';
 
 export type InstallPhase = 'idle' | 'creating' | 'pending' | 'installing' | 'succeeded' | 'failed';
 
@@ -35,9 +36,9 @@ export function useOperatorInstall(): UseOperatorInstallResult {
     queryKey: ['operator-install-sub', installing?.name, installing?.ns],
     queryFn: () =>
       installing
-        ? k8sGet<any>(
+        ? safeQuery(() => k8sGet<any>(
             `/apis/operators.coreos.com/v1alpha1/namespaces/${installing.ns}/subscriptions/${installing.name}`,
-          ).catch(() => null)
+          ))
         : null,
     enabled: !!installing && phase !== 'idle' && phase !== 'succeeded' && phase !== 'failed',
     refetchInterval: 3000,
@@ -49,9 +50,9 @@ export function useOperatorInstall(): UseOperatorInstallResult {
     queryKey: ['operator-install-csv', csvName, installing?.ns],
     queryFn: () =>
       csvName && installing
-        ? k8sGet<any>(
+        ? safeQuery(() => k8sGet<any>(
             `/apis/operators.coreos.com/v1alpha1/namespaces/${installing.ns}/clusterserviceversions/${csvName}`,
-          ).catch(() => null)
+          ))
         : null,
     enabled: !!csvName && !!installing,
     refetchInterval: 3000,

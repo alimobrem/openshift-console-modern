@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sList, k8sGet } from '../engine/query';
+import { safeQuery } from '../engine/safeQuery';
 import { K8S_BASE as BASE } from '../engine/gvr';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { Card } from './primitives/Card';
@@ -38,7 +39,7 @@ export default function DeployProgress({ type, name, namespace, mode = 'deploy',
       const path = type === 'deployment'
         ? `/apis/apps/v1/namespaces/${namespace}/deployments/${name}`
         : `/apis/batch/v1/namespaces/${namespace}/jobs/${name}`;
-      return k8sGet<K8sResource>(path).catch(() => null);
+      return safeQuery(() => k8sGet<K8sResource>(path));
     },
     refetchInterval: 2000,
   });

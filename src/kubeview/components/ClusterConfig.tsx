@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sGet, k8sPatch } from '../engine/query';
+import { safeQuery } from '../engine/safeQuery';
 import { useUIStore } from '../store/uiStore';
 import { ConfirmDialog } from './feedback/ConfirmDialog';
 import { Card } from './primitives/Card';
@@ -60,7 +61,7 @@ function ConfigSectionPanel({ section, expanded, onToggle }: {
 }) {
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'config', section.id],
-    queryFn: () => k8sGet<Record<string, unknown>>(section.apiPath).catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<Record<string, unknown>>(section.apiPath)),
     staleTime: 60000,
     enabled: expanded,
   });

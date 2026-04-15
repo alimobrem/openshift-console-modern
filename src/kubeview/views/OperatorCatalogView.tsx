@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sList, k8sCreate, k8sDelete, k8sGet } from '../engine/query';
+import { safeQuery } from '../engine/safeQuery';
 import { useUIStore } from '../store/uiStore';
 import { showErrorToast } from '../engine/errorToast';
 import { PulseError } from '../engine/errors';
@@ -79,7 +80,7 @@ export default function OperatorCatalogView() {
   // Fetch installed subscriptions
   const { data: subscriptions = [] } = useQuery<any[]>({
     queryKey: ['readiness', 'subscriptions'],
-    queryFn: () => k8sList('/apis/operators.coreos.com/v1alpha1/subscriptions').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/operators.coreos.com/v1alpha1/subscriptions'))) ?? [],
     staleTime: 60000,
   });
 
@@ -250,14 +251,14 @@ export default function OperatorCatalogView() {
   // Track install progress
   const { data: installSub } = useQuery({
     queryKey: ['install-progress', installingOp?.name, installingOp?.ns],
-    queryFn: () => installingOp ? k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installingOp.ns}/subscriptions/${installingOp.name}`).catch(() => null) : null,
+    queryFn: () => installingOp ? safeQuery(() => k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installingOp.ns}/subscriptions/${installingOp.name}`)) : null,
     enabled: !!installingOp,
     refetchInterval: 3000,
   });
 
   const { data: installCsv } = useQuery({
     queryKey: ['install-csv', installSub?.status?.installedCSV, installingOp?.ns],
-    queryFn: () => installSub?.status?.installedCSV ? k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installingOp!.ns}/clusterserviceversions/${installSub.status.installedCSV}`).catch(() => null) : null,
+    queryFn: () => installSub?.status?.installedCSV ? safeQuery(() => k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installingOp!.ns}/clusterserviceversions/${installSub.status.installedCSV}`)) : null,
     enabled: !!installSub?.status?.installedCSV && !!installingOp,
     refetchInterval: 3000,
   });
@@ -422,7 +423,7 @@ export default function OperatorCatalogView() {
 
   const { data: installedCsv } = useQuery({
     queryKey: ['csv-detail', installedCsvName, installedCsvNs],
-    queryFn: () => k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installedCsvNs}/clusterserviceversions/${installedCsvName}`).catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installedCsvNs}/clusterserviceversions/${installedCsvName}`)),
     enabled: !!installedCsvName && !!installedCsvNs,
     staleTime: 30000,
   });
@@ -468,7 +469,7 @@ export default function OperatorCatalogView() {
   const { data: installPlan } = useQuery({
     queryKey: ['installplan', selectedSub?.status?.installPlanRef?.name, installedCsvNs],
     queryFn: () => selectedSub?.status?.installPlanRef?.name && installedCsvNs
-      ? k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installedCsvNs}/installplans/${selectedSub.status.installPlanRef.name}`).catch(() => null)
+      ? safeQuery(() => k8sGet<any>(`/apis/operators.coreos.com/v1alpha1/namespaces/${installedCsvNs}/installplans/${selectedSub.status.installPlanRef.name}`))
       : null,
     enabled: !!selectedSub?.status?.installPlanRef?.name && !!installedCsvNs,
     staleTime: 60000,

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sGet, k8sList } from '../engine/query';
+import { safeQuery } from '../engine/safeQuery';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useClusterStore } from '../store/clusterStore';
 import { useArgoCDStore } from '../store/argoCDStore';
@@ -35,130 +36,130 @@ export default function ProductionReadiness() {
 
   const { data: clusterVersion } = useQuery({
     queryKey: ['admin', 'clusterversion'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/clusterversions/version').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/clusterversions/version')),
     staleTime: 60000,
   });
 
   const { data: oauth } = useQuery({
     queryKey: ['admin', 'config', 'oauth'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/oauths/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/oauths/cluster')),
     staleTime: 60000,
   });
 
   const { data: apiServer } = useQuery({
     queryKey: ['admin', 'config', 'apiserver'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/apiservers/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/apiservers/cluster')),
     staleTime: 60000,
   });
 
   const { data: storageClasses = [] } = useQuery<any[]>({
     queryKey: ['k8s', 'list', '/apis/storage.k8s.io/v1/storageclasses'],
-    queryFn: () => k8sList('/apis/storage.k8s.io/v1/storageclasses').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/storage.k8s.io/v1/storageclasses'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: netpols = [] } = useQuery<any[]>({
     queryKey: ['k8s', 'list', '/apis/networking.k8s.io/v1/networkpolicies'],
-    queryFn: () => k8sList('/apis/networking.k8s.io/v1/networkpolicies').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/networking.k8s.io/v1/networkpolicies'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: quotas = [] } = useQuery<any[]>({
     queryKey: ['k8s', 'list', '/api/v1/resourcequotas'],
-    queryFn: () => k8sList('/api/v1/resourcequotas').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/api/v1/resourcequotas'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: healthChecks = [] } = useQuery<any[]>({
     queryKey: ['k8s', 'list', '/apis/machine.openshift.io/v1beta1/machinehealthchecks'],
-    queryFn: () => k8sList('/apis/machine.openshift.io/v1beta1/machinehealthchecks').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/machine.openshift.io/v1beta1/machinehealthchecks'))) ?? [],
     staleTime: 60000,
     enabled: !isHyperShift,
   });
 
   const { data: clusterAutoscaler = [] } = useQuery<any[]>({
     queryKey: ['k8s', 'list', '/apis/autoscaling.openshift.io/v1/clusterautoscalers'],
-    queryFn: () => k8sList('/apis/autoscaling.openshift.io/v1/clusterautoscalers').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/autoscaling.openshift.io/v1/clusterautoscalers'))) ?? [],
     staleTime: 60000,
     enabled: !isHyperShift,
   });
 
   const { data: kubeadminSecret } = useQuery({
     queryKey: ['readiness', 'kubeadmin'],
-    queryFn: () => k8sGet<any>('/api/v1/namespaces/kube-system/secrets/kubeadmin').then(() => true).catch(() => false),
+    queryFn: async () => (await safeQuery(() => k8sGet<any>('/api/v1/namespaces/kube-system/secrets/kubeadmin'))) !== null,
     staleTime: 60000,
   });
 
   const { data: monitoringPods = [] } = useQuery<any[]>({
     queryKey: ['readiness', 'monitoring'],
-    queryFn: () => k8sList('/api/v1/namespaces/openshift-monitoring/pods').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/api/v1/namespaces/openshift-monitoring/pods'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: logForwarder } = useQuery({
     queryKey: ['readiness', 'logforwarder'],
-    queryFn: () => k8sList('/apis/logging.openshift.io/v1/clusterlogforwarders').then((items: any[]) => items.length > 0).catch(() => false),
+    queryFn: async () => { const items = await safeQuery(() => k8sList('/apis/logging.openshift.io/v1/clusterlogforwarders')); return items ? items.length > 0 : false; },
     staleTime: 60000,
   });
 
   const { data: ingress } = useQuery({
     queryKey: ['admin', 'config', 'ingress'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/ingresses/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/ingresses/cluster')),
     staleTime: 60000,
   });
 
   const { data: imageRegistry } = useQuery({
     queryKey: ['readiness', 'imageregistry'],
-    queryFn: () => k8sGet<any>('/apis/imageregistry.operator.openshift.io/v1/configs/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/imageregistry.operator.openshift.io/v1/configs/cluster')),
     staleTime: 60000,
   });
 
   const { data: limitRanges = [] } = useQuery<any[]>({
     queryKey: ['k8s', 'list', '/api/v1/limitranges'],
-    queryFn: () => k8sList('/api/v1/limitranges').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/api/v1/limitranges'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: pdbs = [] } = useQuery<any[]>({
     queryKey: ['k8s', 'list', '/apis/policy/v1/poddisruptionbudgets'],
-    queryFn: () => k8sList('/apis/policy/v1/poddisruptionbudgets').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/policy/v1/poddisruptionbudgets'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: externalSecrets = [] } = useQuery<any[]>({
     queryKey: ['readiness', 'externalsecrets'],
-    queryFn: () => k8sList('/apis/external-secrets.io/v1beta1/externalsecrets').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/external-secrets.io/v1beta1/externalsecrets'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: sealedSecrets = [] } = useQuery<any[]>({
     queryKey: ['readiness', 'sealedsecrets'],
-    queryFn: () => k8sList('/apis/bitnami.com/v1alpha1/sealedsecrets').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/bitnami.com/v1alpha1/sealedsecrets'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: proxy } = useQuery({
     queryKey: ['admin', 'config', 'proxy'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/proxies/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/proxies/cluster')),
     staleTime: 60000,
   });
 
   const { data: dns } = useQuery({
     queryKey: ['readiness', 'dns'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/dnses/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/dnses/cluster')),
     staleTime: 60000,
   });
 
   // Operator subscriptions (OLM)
   const { data: subscriptions = [] } = useQuery<any[]>({
     queryKey: ['readiness', 'subscriptions'],
-    queryFn: () => k8sList('/apis/operators.coreos.com/v1alpha1/subscriptions').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList('/apis/operators.coreos.com/v1alpha1/subscriptions'))) ?? [],
     staleTime: 60000,
   });
 
   const { data: etcdBackup } = useQuery({
     queryKey: ['readiness', 'etcdbackup'],
-    queryFn: () => k8sList('/apis/config.openshift.io/v1/backups').then((items: any[]) => items.length > 0).catch(() => false),
+    queryFn: async () => { const items = await safeQuery(() => k8sList('/apis/config.openshift.io/v1/backups')); return items ? items.length > 0 : false; },
     staleTime: 60000,
   });
 

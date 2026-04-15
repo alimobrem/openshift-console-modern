@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useK8sListWatch } from './useK8sListWatch';
 import { k8sGet } from '../engine/query';
+import { safeQuery } from '../engine/safeQuery';
 import type { K8sResource } from '../engine/renderers';
 import type { Event, ReplicaSet, Deployment, ClusterVersion, ClusterOperator } from '../engine/types';
 import type { TimelineEntry, TimelineCategory, CorrelationGroup } from '../engine/types/timeline';
@@ -76,7 +77,7 @@ export function useIncidentTimeline({ timeRange, namespace, categories }: UseInc
   // ClusterVersion + ClusterOperators for config changes
   const { data: clusterVersion = null, isLoading: cvLoading } = useQuery({
     queryKey: ['timeline', 'clusterversion'],
-    queryFn: () => k8sGet<ClusterVersion>('/apis/config.openshift.io/v1/clusterversions/version').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<ClusterVersion>('/apis/config.openshift.io/v1/clusterversions/version')),
     staleTime: 60000,
     enabled: categories?.has('config'),
   });

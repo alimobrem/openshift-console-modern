@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { k8sGet, k8sList } from '../engine/query';
+import { safeQuery } from '../engine/safeQuery';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { Panel } from '../components/primitives/Panel';
@@ -40,23 +41,23 @@ export default function SecurityView() {
   // Data
   const { data: oauthConfig } = useQuery({
     queryKey: ['security', 'oauth'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/oauths/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/oauths/cluster')),
     staleTime: 120000,
   });
   const { data: apiServer } = useQuery({
     queryKey: ['security', 'apiserver'],
-    queryFn: () => k8sGet<any>('/apis/config.openshift.io/v1/apiservers/cluster').catch(() => null),
+    queryFn: () => safeQuery(() => k8sGet<any>('/apis/config.openshift.io/v1/apiservers/cluster')),
     staleTime: 120000,
   });
   const { data: users = [] } = useQuery<K8sResource[]>({
     queryKey: ['security', 'users'],
-    queryFn: () => k8sList<K8sResource>('/apis/user.openshift.io/v1/users').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList<K8sResource>('/apis/user.openshift.io/v1/users'))) ?? [],
     staleTime: 60000,
   });
   const { data: clusterRoleBindings = [], isLoading: crbLoading } = useK8sListWatch({ apiPath: '/apis/rbac.authorization.k8s.io/v1/clusterrolebindings' });
   const { data: sccs = [] } = useQuery<K8sResource[]>({
     queryKey: ['security', 'sccs'],
-    queryFn: () => k8sList<K8sResource>('/apis/security.openshift.io/v1/securitycontextconstraints').catch(() => []),
+    queryFn: async () => (await safeQuery(() => k8sList<K8sResource>('/apis/security.openshift.io/v1/securitycontextconstraints'))) ?? [],
     staleTime: 120000,
   });
   const { data: networkPolicies = [] } = useK8sListWatch({ apiPath: '/apis/networking.k8s.io/v1/networkpolicies' });
