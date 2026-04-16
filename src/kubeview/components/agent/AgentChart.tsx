@@ -55,9 +55,16 @@ export default function AgentChart({ spec, onAddToView, refreshInterval }: { spe
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const height = spec.height || 300;
+  const [editingQuery, setEditingQuery] = useState(false);
+  const [queryDraft, setQueryDraft] = useState(spec.query || '');
+  const [activeQuery, setActiveQuery] = useState(spec.query || '');
+  const queryInputRef = useRef<HTMLInputElement>(null);
+
+  // Build a spec with the active (possibly edited) query for the live data hook
+  const activeSpec = useMemo(() => activeQuery !== spec.query ? { ...spec, query: activeQuery } : spec, [spec, activeQuery]);
 
   // Live data hook — fetches fresh Prometheus data when spec.query is set
-  const { series: liveSeries, isLive, isFetching, error: liveError, lastUpdated, isPaused, togglePause } = useChartLiveData(spec, refreshInterval);
+  const { series: liveSeries, isLive, isFetching, error: liveError, lastUpdated, isPaused, togglePause } = useChartLiveData(activeSpec, refreshInterval);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -309,7 +316,7 @@ export default function AgentChart({ spec, onAddToView, refreshInterval }: { spe
           </div>
           {onAddToView && (
             <button
-              onClick={() => onAddToView({ ...spec, chartType })}
+              onClick={() => onAddToView({ ...spec, chartType, query: activeQuery || spec.query })}
               className="p-0.5 text-slate-500 hover:text-emerald-400 hover:bg-slate-800 rounded transition-colors"
               title="Add to View"
             >
@@ -325,9 +332,45 @@ export default function AgentChart({ spec, onAddToView, refreshInterval }: { spe
         </ResponsiveContainer>
       </div>
 
-      {spec.query && (
-        <div className="px-3 py-1 border-t border-slate-700 text-[10px] text-slate-600 truncate" title={spec.query}>
-          PromQL: {spec.query}
+      {(spec.query || activeQuery) && (
+        <div className="px-3 py-1 border-t border-slate-700 text-[10px]">
+          {editingQuery ? (
+            <div className="flex items-center gap-1">
+              <span className="text-slate-500 shrink-0">PromQL:</span>
+              <input
+                ref={queryInputRef}
+                value={queryDraft}
+                onChange={(e) => setQueryDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && queryDraft.trim()) {
+                    setActiveQuery(queryDraft.trim());
+                    setEditingQuery(false);
+                  }
+                  if (e.key === 'Escape') {
+                    setQueryDraft(activeQuery);
+                    setEditingQuery(false);
+                  }
+                }}
+                onBlur={() => {
+                  if (queryDraft.trim() && queryDraft.trim() !== activeQuery) {
+                    setActiveQuery(queryDraft.trim());
+                  }
+                  setEditingQuery(false);
+                }}
+                className="flex-1 px-1.5 py-0.5 bg-slate-900 border border-violet-500 rounded text-slate-200 text-[10px] font-mono outline-none"
+                autoFocus
+              />
+            </div>
+          ) : (
+            <button
+              onClick={() => { setQueryDraft(activeQuery); setEditingQuery(true); }}
+              className="w-full text-left text-slate-600 hover:text-slate-300 truncate transition-colors cursor-text"
+              title="Click to edit PromQL query"
+            >
+              PromQL: <span className="font-mono">{activeQuery}</span>
+              {activeQuery !== spec.query && <span className="text-violet-400 ml-1">(edited)</span>}
+            </button>
+          )}
         </div>
       )}
     </div>
