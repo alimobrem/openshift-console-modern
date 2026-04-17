@@ -9,6 +9,7 @@ import { ToastContainer } from './feedback/Toast';
 import { ErrorBoundary, CssHealthCheck } from './ErrorBoundary';
 import { SaveViewWatcher } from './agent/SaveViewWatcher';
 import { SessionTracker } from './SessionTracker';
+import { GuidedTour } from './GuidedTour';
 import { useKeyboardShortcuts, useDiscovery } from '../hooks';
 import { useCapabilityDetection } from '../hooks/useCapabilityDetection';
 import { useShallow } from 'zustand/react/shallow';
@@ -17,7 +18,9 @@ import { useCustomViewStore } from '../store/customViewStore';
 import { registerBuiltinEnhancers } from '../engine/enhancers/register';
 import { startAgentNotifications, stopAgentNotifications } from '../engine/agentNotifications';
 import { useAgentStore } from '../store/agentStore';
+import { useMonitorStore } from '../store/monitorStore';
 import { useEffect } from 'react';
+import { Bot } from 'lucide-react';
 
 // Register enhancers once at module load
 registerBuiltinEnhancers();
@@ -61,6 +64,14 @@ export function Shell() {
       clearImpersonation: s.clearImpersonation,
       sessionExpired: s.degradedReasons.has('session_expired'),
     })));
+
+  const findingsCount = useMonitorStore((s) => s.findings.length);
+  const unreadCount = useMonitorStore((s) => s.unreadCount);
+  const hasUnreadInsight = useAgentStore((s) => s.hasUnreadInsight);
+  const openDock = useUIStore((s) => s.openDock);
+  const dockHidden = !dockPanel && !viewBuilderMode;
+  const hasPulse = unreadCount > 0 || hasUnreadInsight;
+
   return (
     <div className="flex h-screen flex-col bg-slate-900 text-slate-100">
       {/* Session expired modal — blocks interaction until user re-authenticates */}
@@ -133,6 +144,23 @@ export function Shell() {
       {/* Status bar at bottom */}
       <StatusBar />
 
+      {/* Floating AI button — persistent teammate indicator */}
+      {dockHidden && (
+        <button
+          onClick={() => openDock('agent')}
+          title="Ask AI (Cmd+J)"
+          className="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-gradient-to-br from-violet-500 to-violet-700 shadow-lg transition-transform hover:scale-110"
+        >
+          <Bot className="h-5 w-5 text-white" />
+          {findingsCount > 0 && (
+            <span className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-slate-900 bg-red-500" />
+          )}
+          {hasPulse && (
+            <span className="absolute inset-0 animate-ping rounded-full bg-violet-400 opacity-30" />
+          )}
+        </button>
+      )}
+
       {/* Overlay components */}
       {commandPaletteOpen && <CommandPalette />}
       {browserOpen && <ResourceBrowser />}
@@ -140,6 +168,7 @@ export function Shell() {
       <SaveViewWatcher />
       <SessionTracker />
       <CssHealthCheck />
+      <GuidedTour />
     </div>
   );
 }

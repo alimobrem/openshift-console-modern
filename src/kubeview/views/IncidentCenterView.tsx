@@ -1,10 +1,12 @@
-import { useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Siren, Zap, Search, Clock, Bell, Settings, GitPullRequest, FileText, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useShallow } from 'zustand/react/shallow';
 import { useMonitorStore } from '../store/monitorStore';
+import { useIncidentFeed } from '../hooks/useIncidentFeed';
 import { NowTab } from './incidents/NowTab';
 import { InvestigateTab } from './incidents/InvestigateTab';
 import { HistoryTab } from './incidents/HistoryTab';
@@ -38,8 +40,24 @@ export default function IncidentCenterView() {
     window.history.replaceState(null, '', qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
   };
   const navigate = useNavigate();
-  const connected = useMonitorStore((s) => s.connected);
-  const connectionError = useMonitorStore((s) => s.connectionError);
+  const { connected, connectionError, findingsCount, pendingCount } = useMonitorStore(
+    useShallow((s) => ({
+      connected: s.connected,
+      connectionError: s.connectionError,
+      findingsCount: s.findings.length,
+      pendingCount: s.pendingActions.length,
+    })),
+  );
+  const { counts: alertCounts } = useIncidentFeed({ sources: ['prometheus-alert'] });
+  const firingAlertCount = alertCounts.total;
+
+  const badgeCounts = useMemo<Partial<Record<IncidentTab, number>>>(() => {
+    const map: Partial<Record<IncidentTab, number>> = {};
+    if (findingsCount > 0) map.now = findingsCount;
+    if (pendingCount > 0) map.actions = pendingCount;
+    if (firingAlertCount > 0) map.alerts = firingAlertCount;
+    return map;
+  }, [findingsCount, pendingCount, firingAlertCount]);
 
 
   return (
@@ -112,6 +130,22 @@ export default function IncidentCenterView() {
             >
               <tab.icon className={cn('w-3.5 h-3.5', activeTab !== tab.id && tab.color)} />
               {tab.label}
+              {badgeCounts[tab.id] != null && (
+                <span
+                  className={cn(
+                    'text-[10px] font-semibold leading-none px-1.5 py-0.5 rounded-full',
+                    activeTab === tab.id
+                      ? 'bg-white/20 text-white'
+                      : tab.id === 'now'
+                        ? 'bg-amber-500/20 text-amber-300'
+                        : tab.id === 'alerts'
+                          ? 'bg-red-500/20 text-red-300'
+                          : 'bg-violet-500/20 text-violet-300',
+                  )}
+                >
+                  {badgeCounts[tab.id]}
+                </span>
+              )}
             </button>
           ))}
         </div>

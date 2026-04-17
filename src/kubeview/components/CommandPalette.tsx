@@ -20,6 +20,7 @@ import { usePrefetchOnHover } from '../hooks/usePrefetchOnHover';
 import { useAskPulse } from '../hooks/useAskPulse';
 import { AskPulsePanel } from './AskPulsePanel';
 import { getRecentQueries } from '../engine/askPulseUtils';
+import { ALL_NAV_ITEMS, matchesNavQuery } from '../engine/navRegistry';
 
 /** Capitalize first letter of each word: "deployments" → "Deployments", "poddisruptionbudgets" → "Poddisruptionbudgets" */
 function titleCase(s: string): string {
@@ -378,30 +379,17 @@ function getCommandItems(
       });
     }
 
-    // Built-in pages
-    const builtinViews: CommandItem[] = [
-      { type: 'nav', id: 'welcome', title: 'Welcome', subtitle: 'Getting started guide', icon: 'Home', path: '/welcome' },
-      { type: 'nav', id: 'pulse', title: 'Cluster Pulse', subtitle: 'Health overview', icon: 'Activity', path: '/pulse' },
-      { type: 'nav', id: 'workloads', title: 'Workloads', subtitle: 'Deployments, StatefulSets, DaemonSets, Jobs, Pods', icon: 'Package', path: '/workloads' },
-      { type: 'nav', id: 'networking', title: 'Networking', subtitle: 'Services, Routes, Ingresses, Network Policies', icon: 'Globe', path: '/networking' },
-      { type: 'nav', id: 'compute', title: 'Compute', subtitle: 'Nodes, machines, cluster capacity', icon: 'Server', path: '/compute' },
-      { type: 'nav', id: 'storage', title: 'Storage', subtitle: 'PVs, PVCs, StorageClasses', icon: 'HardDrive', path: '/storage' },
-      { type: 'nav', id: 'security', title: 'Security', subtitle: 'Security audit, SCCs, network policies, access', icon: 'ShieldCheck', path: '/security' },
-      { type: 'nav', id: 'identity', title: 'Identity & Access', subtitle: 'Users, groups, service accounts, RBAC, impersonation', icon: 'Shield', path: '/identity' },
-      { type: 'nav', id: 'incidents', title: 'Incident Center', subtitle: 'Active incidents, timeline, review queue, postmortems, alerts', icon: 'Bell', path: '/incidents' },
-      { type: 'nav', id: 'topology', title: 'Impact Analysis', subtitle: 'Resource dependency graph, blast radius visualization', icon: 'Network', path: '/topology' },
-      { type: 'nav', id: 'gitops', title: 'GitOps', subtitle: 'ArgoCD applications, sync status, drift detection', icon: 'GitBranch', path: '/gitops' },
-      { type: 'nav', id: 'fleet', title: 'Fleet', subtitle: 'Multi-cluster dashboard, health scores, comparison', icon: 'Globe', path: '/fleet' },
-      { type: 'nav', id: 'admin', title: 'Administration', subtitle: 'Operators, config, updates, quotas, certificates, CRDs', icon: 'Settings', path: '/admin' },
-      { type: 'nav', id: 'readiness', title: 'Production Readiness', subtitle: 'Readiness wizard — security, reliability, observability gates', icon: 'Shield', path: '/readiness' },
-      { type: 'nav', id: 'agent', title: 'Mission Control', subtitle: 'Agent policy, health, accuracy, capability discovery', icon: 'Bot', path: '/agent' },
-      { type: 'nav', id: 'views', title: 'Custom Views', subtitle: 'AI-generated dashboards — manage, share, version history', icon: 'LayoutDashboard', path: '/views' },
-      { type: 'nav', id: 'toolbox', title: 'Toolbox', subtitle: 'Tools, skills, connections, and analytics', icon: 'Wrench', path: '/toolbox' },
-    ];
-
-    const matchingPages = builtinViews.filter((page) =>
-      !cleanQuery || page.title.toLowerCase().includes(cleanQuery) || page.subtitle!.toLowerCase().includes(cleanQuery)
-    );
+    // Built-in pages — derived from canonical navRegistry
+    const matchingPages: CommandItem[] = ALL_NAV_ITEMS
+      .filter((nav) => matchesNavQuery(nav, cleanQuery))
+      .map((nav) => ({
+        type: 'nav' as const,
+        id: nav.id,
+        title: nav.label,
+        subtitle: nav.subtitle,
+        icon: nav.icon,
+        path: nav.path,
+      }));
     items.push(...matchingPages);
 
     // Custom dashboards (AI-generated) — dedup by title, keep newest

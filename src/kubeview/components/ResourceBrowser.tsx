@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Search, ChevronRight, ChevronDown, Activity, Package, Globe, Server, HardDrive, Shield, Bell, Settings, LayoutDashboard, ShieldCheck, GitBranch, Layers, Rocket, Network } from 'lucide-react';
+import { Search, ChevronRight, ChevronDown, LayoutDashboard } from 'lucide-react';
 import { useUIStore } from '../store/uiStore';
 import { useClusterStore } from '../store/clusterStore';
 import { useCustomViewStore } from '../store/customViewStore';
 import { getResourceIcon, getResourceIconName } from '../engine/iconRegistry';
+import { NAV_ITEMS, getNavItemsByGroup } from '../engine/navRegistry';
 
 interface GroupedResources {
   [groupName: string]: Array<{
@@ -136,63 +137,30 @@ export function ResourceBrowser() {
           </div>
         </div>
 
-        {/* Views section */}
+        {/* Views section — derived from canonical navRegistry */}
         <div className="border-b border-slate-700 p-3 space-y-3">
-          {([
-            {
-              section: 'CLUSTER',
-              items: [
-                { label: 'Cluster Pulse', icon: Activity, path: '/pulse', color: 'text-emerald-400' },
-                { label: 'Workloads', icon: Package, path: '/workloads', color: 'text-blue-400' },
-                { label: 'Networking', icon: Globe, path: '/networking', color: 'text-cyan-400' },
-                { label: 'Compute', icon: Server, path: '/compute', color: 'text-blue-400' },
-                { label: 'Storage', icon: HardDrive, path: '/storage', color: 'text-orange-400' },
-              ],
-            },
-            {
-              section: 'OPERATIONS',
-              items: [
-                { label: 'Incidents', icon: Bell, path: '/incidents', color: 'text-red-400' },
-                { label: 'Impact Analysis', icon: Network, path: '/topology', color: 'text-cyan-400' },
-                { label: 'Security', icon: ShieldCheck, path: '/security', color: 'text-red-400' },
-                { label: 'GitOps', icon: GitBranch, path: '/gitops', color: 'text-green-400' },
-                { label: 'Fleet', icon: Layers, path: '/fleet', color: 'text-indigo-400' },
-              ],
-            },
-            {
-              section: 'ADMINISTRATION',
-              items: [
-                { label: 'Administration', icon: Settings, path: '/admin', color: 'text-slate-400' },
-                { label: 'Identity & Access', icon: Shield, path: '/identity', color: 'text-teal-400' },
-                { label: 'Production Readiness', icon: Rocket, path: '/readiness', color: 'text-amber-400' },
-              ],
-            },
-            {
-              section: 'AGENT',
-              items: [
-                { label: 'Mission Control', icon: Settings, path: '/agent', color: 'text-violet-400' },
-                { label: 'Custom Views', icon: LayoutDashboard, path: '/views', color: 'text-emerald-400' },
-              ],
-            },
-          ] as const).map((group) => (
-            <div key={group.section}>
+          {getNavItemsByGroup().map((section) => (
+            <div key={section.group}>
               <div className="mb-1 flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                {group.section}
+                {section.label}
               </div>
-              {group.items.map((page) => (
-                <button
-                  key={page.path}
-                  onClick={() => {
-                    addTab({ title: page.label, icon: page.icon.displayName || '', path: page.path, pinned: false, closable: true });
-                    navigate(page.path);
-                    closeBrowser();
-                  }}
-                  className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${location.pathname === page.path ? 'bg-slate-700/60 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
-                >
-                  <page.icon className={`h-4 w-4 ${page.color}`} />
-                  {page.label}
-                </button>
-              ))}
+              {section.items.map((page) => {
+                const Icon = getResourceIcon(page.icon);
+                return (
+                  <button
+                    key={page.path}
+                    onClick={() => {
+                      addTab({ title: page.label, icon: page.icon, path: page.path, pinned: false, closable: true });
+                      navigate(page.path);
+                      closeBrowser();
+                    }}
+                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${location.pathname === page.path ? 'bg-slate-700/60 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
+                  >
+                    <Icon className={`h-4 w-4 ${page.color || ''}`} />
+                    {page.label}
+                  </button>
+                );
+              })}
             </div>
           ))}
         </div>

@@ -9,11 +9,17 @@ import type { FixHistorySummary } from '../../engine/analyticsApi';
 
 const TRUST_ICONS = [Eye, MessageSquare, Shield, Zap, Activity] as const;
 
-const AUTOFIX_CATEGORIES = [
+const DEFAULT_AUTOFIX_CATEGORIES: AutofixCategory[] = [
   { id: 'crashloop', label: 'Crashlooping pods', description: 'Delete crashlooping pods (controller recreates)' },
   { id: 'workloads', label: 'Failed deployments', description: 'Rolling restart for degraded deployments' },
   { id: 'image_pull', label: 'Image pull errors', description: 'Restart deployment to clear image pull errors' },
-] as const;
+];
+
+interface AutofixCategory {
+  id: string;
+  label: string;
+  description: string;
+}
 
 const COMM_STYLES: Array<{ id: CommunicationStyle; label: string; description: string }> = [
   { id: 'brief', label: 'Brief', description: 'Short, actionable answers' },
@@ -33,15 +39,30 @@ interface TrustPolicyProps {
   maxTrustLevel: number;
   scannerCount: number;
   fixSummary: FixHistorySummary | null;
+  supportedAutoFixCategories?: string[];
 }
 
-export function TrustPolicy({ maxTrustLevel, scannerCount, fixSummary }: TrustPolicyProps) {
+function buildCategoryLabel(id: string): string {
+  return id.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function resolveCategories(serverCategories?: string[]): AutofixCategory[] {
+  if (!serverCategories || serverCategories.length === 0) return DEFAULT_AUTOFIX_CATEGORIES;
+  const defaultMap = new Map(DEFAULT_AUTOFIX_CATEGORIES.map((c) => [c.id, c]));
+  return serverCategories.map((id) =>
+    defaultMap.get(id) ?? { id, label: buildCategoryLabel(id), description: `Auto-fix for ${id.replace(/_/g, ' ')} issues` },
+  );
+}
+
+export function TrustPolicy({ maxTrustLevel, scannerCount, fixSummary, supportedAutoFixCategories }: TrustPolicyProps) {
   const { trustLevel, setTrustLevel, autoFixCategories, setAutoFixCategories, communicationStyle, setCommunicationStyle } =
     useTrustStore(useShallow((s) => ({
       trustLevel: s.trustLevel, setTrustLevel: s.setTrustLevel,
       autoFixCategories: s.autoFixCategories, setAutoFixCategories: s.setAutoFixCategories,
       communicationStyle: s.communicationStyle, setCommunicationStyle: s.setCommunicationStyle,
     })));
+
+  const autofixCategories_ = resolveCategories(supportedAutoFixCategories);
 
   const [confirmLevel, setConfirmLevel] = useState<TrustLevel | null>(null);
   const [hoveredLevel, setHoveredLevel] = useState<TrustLevel | null>(null);
@@ -140,7 +161,7 @@ export function TrustPolicy({ maxTrustLevel, scannerCount, fixSummary }: TrustPo
             When the monitor detects these issues, the agent applies a fix automatically. Each fix is recorded with a before-state snapshot for rollback. If a fix fails, the agent stops and surfaces the finding to you — it won't retry or escalate on its own.
           </p>
           <div className="space-y-1.5">
-            {AUTOFIX_CATEGORIES.map((cat) => {
+            {autofixCategories_.map((cat) => {
               const enabled = autoFixCategories.includes(cat.id);
               const disabled = trustLevel < 2;
               return (

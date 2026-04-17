@@ -1,5 +1,10 @@
 import React, { lazy, Suspense, useState, useEffect, useRef } from 'react';
-import { HeartPulse, ArrowRight, Bell, GitPullRequest, Shield, Activity } from 'lucide-react';
+import {
+  HeartPulse, Bell, GitPullRequest, Shield, Activity,
+  Sparkles, CheckCircle, XCircle, Search, AlertTriangle, X,
+  Package, Globe, Server, HardDrive, ChevronDown,
+  Puzzle, Users, Hammer, History, Settings, Monitor, GitBranch,
+} from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import type { K8sResource } from '../engine/renderers';
@@ -8,23 +13,124 @@ import { useFleetStore } from '../store/fleetStore';
 import { useShallow } from 'zustand/react/shallow';
 import { useMonitorStore } from '../store/monitorStore';
 import { useTrustStore } from '../store/trustStore';
+import { useCustomViewStore } from '../store/customViewStore';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import { useIncidentFeed } from '../hooks/useIncidentFeed';
+import { usePrefetchOnHover } from '../hooks/usePrefetchOnHover';
 import { fetchBriefing, type BriefingResponse } from '../engine/fixHistory';
 import { ReportTab } from './pulse/ReportTab';
 import { FleetReportTab } from './pulse/FleetReportTab';
 import { AIOnboarding } from '../components/agent/AIOnboarding';
 import { OvernightActivityFeed } from './pulse/OvernightActivityFeed';
 import { InsightsRail } from './pulse/InsightsRail';
-import { Sparkles, CheckCircle, XCircle, Search, AlertTriangle } from 'lucide-react';
+import { formatRelativeTime } from '../engine/formatters';
+
+const GETTING_STARTED_KEY = 'openshiftpulse-getting-started-dismissed';
 
 const TopologyMap = lazy(() => import('../components/topology/TopologyMap'));
+
+type PostureLevel = 'green' | 'yellow' | 'red';
+
+function ClusterPostureBar({
+  findings,
+  incidentCounts,
+  lastScanTime,
+  monitorConnected,
+  onInvestigate,
+}: {
+  findings: Array<{ severity: string; title: string }>;
+  incidentCounts: { critical: number; warning: number; info: number; total: number };
+  lastScanTime: number | null;
+  monitorConnected: boolean;
+  onInvestigate: () => void;
+}) {
+  const criticalCount = incidentCounts.critical;
+  const warningCount = incidentCounts.warning;
+  const autoFixedCount = findings.filter((f) => (f as any).autoFixable).length;
+
+  let level: PostureLevel = 'green';
+  if (criticalCount > 0) level = 'red';
+  else if (warningCount > 0 || findings.length > 0) level = 'yellow';
+
+  const topFinding = findings.length > 0 ? findings[0] : null;
+
+  const scanLabel = lastScanTime
+    ? `Last scan: ${formatRelativeTime(lastScanTime)}`
+    : 'No scan yet';
+
+  const borderColor: Record<PostureLevel, string> = {
+    green: 'border-l-emerald-500',
+    yellow: 'border-l-amber-500',
+    red: 'border-l-red-500',
+  };
+
+  const bgColor: Record<PostureLevel, string> = {
+    green: 'bg-emerald-500/5',
+    yellow: 'bg-amber-500/5',
+    red: 'bg-red-500/5',
+  };
+
+  const iconColor: Record<PostureLevel, string> = {
+    green: 'text-emerald-400',
+    yellow: 'text-amber-400',
+    red: 'text-red-400',
+  };
+
+  const Icon = level === 'green' ? Shield : AlertTriangle;
+
+  return (
+    <div
+      className={cn(
+        'flex items-center gap-2 rounded-lg border-l-4 px-4 py-2 text-sm',
+        borderColor[level],
+        bgColor[level],
+        'border border-slate-800',
+      )}
+    >
+      <Icon className={cn('w-4 h-4 shrink-0', iconColor[level])} />
+      <span className="text-slate-200 truncate">
+        {level === 'green' && (
+          <>
+            All clear — 0 critical, 0 warnings
+            <span className="text-slate-500"> | {scanLabel} | Agent: {monitorConnected ? 'healthy' : 'disconnected'}</span>
+          </>
+        )}
+        {level === 'yellow' && (
+          <>
+            <span className="text-amber-400">{warningCount + findings.length} warning{warningCount + findings.length !== 1 ? 's' : ''}</span>
+            {topFinding && (
+              <span className="text-slate-400"> — {topFinding.title}</span>
+            )}
+            <span className="text-slate-500"> | {scanLabel}</span>
+          </>
+        )}
+        {level === 'red' && (
+          <>
+            <span className="text-red-400">{criticalCount} critical</span>
+            {topFinding && (
+              <span className="text-slate-400"> — {topFinding.title}</span>
+            )}
+            <span className="text-slate-500"> →{' '}</span>
+            <button onClick={onInvestigate} className="text-red-400 underline underline-offset-2 hover:text-red-300">
+              Investigate
+            </button>
+            {autoFixedCount > 0 && (
+              <span className="text-slate-500"> | {autoFixedCount} auto-fixed overnight</span>
+            )}
+          </>
+        )}
+      </span>
+    </div>
+  );
+}
 
 export default function PulseView() {
   const go = useNavigateTab();
   const selectedNamespace = useUIStore((s) => s.selectedNamespace);
+  const connectionStatus = useUIStore((s) => s.connectionStatus);
   const fleetMode = useFleetStore((s) => s.fleetMode);
+  const customViews = useCustomViewStore((s) => s.views);
 
   const nsFilter = selectedNamespace !== '*' ? selectedNamespace : undefined;
   const { data: nodes = [], isLoading: nodesLoading } = useK8sListWatch({ apiPath: '/api/v1/nodes' });
@@ -90,6 +196,23 @@ export default function PulseView() {
   return (
     <div className="h-full overflow-auto bg-slate-950 p-6">
       <div className="max-w-6xl mx-auto space-y-5">
+
+        {/* ── Cluster Posture Bar ── */}
+        <ClusterPostureBar
+          findings={findings}
+          incidentCounts={incidentCounts}
+          lastScanTime={lastScanTime}
+          monitorConnected={monitorConnected}
+          onInvestigate={() => go('/incidents', 'Incidents')}
+        />
+
+        {/* ── Getting Started (new users only) ── */}
+        <GettingStartedStrip
+          go={go}
+          isConnected={connectionStatus === 'connected'}
+          alertCount={incidentCounts.total}
+          nodeCount={typedNodes.length}
+        />
 
         {/* ── Header with inline stats ── */}
         <div className="flex items-center justify-between">
@@ -243,6 +366,9 @@ export default function PulseView() {
           {/* ── Right rail: always visible ── */}
           <InsightsRail className="w-60 shrink-0 hidden lg:block" onNavigate={go} />
         </div>
+
+        {/* ── Quick Navigation ── */}
+        <QuickNavigation go={go} customViews={customViews} />
       </div>
     </div>
   );
@@ -265,5 +391,170 @@ function StatPill({ icon, label, color, onClick }: {
       {icon}
       {label}
     </button>
+  );
+}
+
+function GettingStartedStrip({ go, isConnected, alertCount, nodeCount }: {
+  go: (path: string, title: string) => void;
+  isConnected: boolean;
+  alertCount: number;
+  nodeCount: number;
+}) {
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem(GETTING_STARTED_KEY) === '1'; } catch { return false; }
+  });
+
+  if (dismissed) return null;
+
+  const steps = [
+    {
+      title: 'Check cluster health',
+      done: isConnected && nodeCount > 0,
+      status: isConnected ? `${nodeCount} nodes connected` : 'Not connected',
+      action: () => go('/compute', 'Compute'),
+    },
+    {
+      title: 'Review incidents',
+      done: alertCount === 0,
+      status: alertCount > 0 ? `${alertCount} alert${alertCount !== 1 ? 's' : ''} firing` : 'All clear',
+      action: () => go('/incidents', 'Incidents'),
+    },
+    {
+      title: 'Verify production readiness',
+      done: false,
+      status: '30 gates across 6 categories',
+      action: () => go('/readiness', 'Production Readiness'),
+    },
+  ];
+
+  const allDone = steps.every((s) => s.done);
+
+  const handleDismiss = () => {
+    try { localStorage.setItem(GETTING_STARTED_KEY, '1'); } catch { /* ignore */ }
+    setDismissed(true);
+  };
+
+  return (
+    <div className="rounded-lg border border-violet-800/40 bg-violet-950/20 p-3">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+          <span className="text-xs font-semibold text-slate-200">
+            {allDone ? 'You\'re all set!' : 'Getting Started'}
+          </span>
+        </div>
+        <button onClick={handleDismiss} className="text-slate-500 hover:text-slate-300 transition-colors" title="Dismiss">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2">
+        {steps.map((step, i) => (
+          <button
+            key={i}
+            onClick={step.action}
+            className={cn(
+              'flex items-start gap-2 px-2.5 py-2 rounded-lg border text-left transition-all hover:bg-slate-800/40',
+              step.done ? 'border-emerald-800/40 bg-emerald-950/10' : 'border-slate-700/40 bg-slate-900/30',
+            )}
+          >
+            <div className={cn('w-4.5 h-4.5 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold',
+              step.done ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-700 text-slate-400',
+            )}>
+              {step.done ? <CheckCircle className="w-3 h-3" /> : i + 1}
+            </div>
+            <div>
+              <div className="text-xs font-medium text-slate-200">{step.title}</div>
+              <div className={cn('text-[11px] mt-0.5', step.done ? 'text-emerald-400' : 'text-slate-500')}>{step.status}</div>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function NavTile({ icon, color, border, title, sub, onClick, path }: {
+  icon: React.ReactNode; color: string; border: string; title: string; sub: string; onClick: () => void; path?: string;
+}) {
+  const prefetch = usePrefetchOnHover(path || '');
+  const hoverProps = path ? { onMouseEnter: prefetch.onMouseEnter, onFocus: prefetch.onFocus, onMouseLeave: prefetch.onMouseLeave } : {};
+  return (
+    <button
+      onClick={onClick}
+      {...hoverProps}
+      className={cn('group flex flex-col items-center gap-1.5 rounded-lg border bg-slate-900/50 px-3 py-4 hover:bg-slate-800/70 transition-all text-center', border)}
+    >
+      <span className={color}>{icon}</span>
+      <span className="text-sm font-medium text-slate-200 group-hover:text-white transition-colors">{title}</span>
+      <span className="text-[11px] text-slate-500">{sub}</span>
+    </button>
+  );
+}
+
+function QuickNavigation({ go, customViews }: {
+  go: (path: string, title: string) => void;
+  customViews: Array<{ id: string; title: string }>;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  return (
+    <div className="space-y-3">
+      <div className="grid grid-cols-4 gap-2">
+        <NavTile icon={<Bell className="w-5 h-5" />} color="text-red-400" border="border-red-500/20" title="Incidents" sub="Triage alerts, review AI fixes" onClick={() => go('/incidents', 'Incidents')} />
+        <NavTile icon={<GitPullRequest className="w-5 h-5" />} color="text-violet-400" border="border-violet-500/20" title="Reviews" sub="Approve or reject AI changes" onClick={() => go('/incidents?tab=actions', 'Review Queue')} />
+        <NavTile icon={<Package className="w-5 h-5" />} color="text-blue-400" border="border-blue-500/20" title="Workloads" sub="Deployments, pods, health audit" onClick={() => go('/workloads', 'Workloads')} path="/workloads" />
+        <NavTile icon={<Server className="w-5 h-5" />} color="text-blue-400" border="border-slate-800" title="Compute" sub="Node health, capacity, machines" onClick={() => go('/compute', 'Compute')} path="/compute" />
+        <NavTile icon={<Globe className="w-5 h-5" />} color="text-cyan-400" border="border-slate-800" title="Networking" sub="Routes, services, network policies" onClick={() => go('/networking', 'Networking')} path="/networking" />
+        <NavTile icon={<HardDrive className="w-5 h-5" />} color="text-orange-400" border="border-slate-800" title="Storage" sub="PVCs, storage classes, capacity" onClick={() => go('/storage', 'Storage')} path="/storage" />
+        <NavTile icon={<Shield className="w-5 h-5" />} color="text-emerald-400" border="border-emerald-500/20" title="Readiness" sub="30 production gates, 6 categories" onClick={() => go('/readiness', 'Production Readiness')} />
+        <NavTile icon={<Settings className="w-5 h-5" />} color="text-slate-400" border="border-slate-800" title="Mission Control" sub="Agent config, trust, skills" onClick={() => go('/agent', 'Mission Control')} />
+      </div>
+
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="flex items-center gap-2 text-xs text-slate-500 hover:text-slate-300 transition-colors w-full"
+      >
+        <div className="h-px flex-1 bg-slate-800" />
+        <span className="font-semibold uppercase tracking-widest">{expanded ? 'Fewer views' : 'More views'}</span>
+        <ChevronDown className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-180')} />
+        <div className="h-px flex-1 bg-slate-800" />
+      </button>
+
+      {expanded && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2">
+          {[
+            { icon: <Globe className="w-4 h-4 text-blue-400" />, title: 'Fleet', onClick: () => go('/fleet', 'Fleet') },
+            { icon: <Bell className="w-4 h-4 text-amber-400" />, title: 'Alerts', onClick: () => go('/alerts', 'Alerts') },
+            { icon: <Users className="w-4 h-4 text-teal-400" />, title: 'Identity', onClick: () => go('/identity', 'Identity') },
+            { icon: <Shield className="w-4 h-4 text-indigo-400" />, title: 'Security', onClick: () => go('/security', 'Security') },
+            { icon: <GitBranch className="w-4 h-4 text-violet-400" />, title: 'GitOps', onClick: () => go('/gitops', 'GitOps') },
+            { icon: <Settings className="w-4 h-4 text-slate-400" />, title: 'Admin', onClick: () => go('/admin', 'Administration') },
+            { icon: <Hammer className="w-4 h-4 text-amber-500" />, title: 'Builds', onClick: () => go('/workloads?tab=builds', 'Workloads') },
+            { icon: <Puzzle className="w-4 h-4 text-violet-400" />, title: 'CRDs', onClick: () => go('/admin?tab=crds', 'Administration') },
+            { icon: <Package className="w-4 h-4 text-blue-400" />, title: 'Create', onClick: () => go('/create', 'Create Resources') },
+            { icon: <History className="w-4 h-4 text-violet-400" />, title: 'Memory', onClick: () => go('/memory', "What I've Learned") },
+          ].map((v) => (
+            <button
+              key={v.title}
+              onClick={v.onClick}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800/60 bg-slate-900/50 hover:bg-slate-800/60 hover:border-slate-700 transition-all text-left text-sm text-slate-300 hover:text-slate-100"
+            >
+              {v.icon}
+              {v.title}
+            </button>
+          ))}
+          {customViews.map((v) => (
+            <button
+              key={v.id}
+              onClick={() => go(`/custom/${v.id}`, v.title)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-800/60 bg-slate-900/50 hover:bg-slate-800/60 hover:border-slate-700 transition-all text-left text-sm text-slate-300 hover:text-slate-100"
+            >
+              <Monitor className="w-4 h-4 text-violet-400" />
+              {v.title}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

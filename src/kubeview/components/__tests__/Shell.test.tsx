@@ -51,10 +51,33 @@ vi.mock('../../store/monitorStore', () => ({
       const state = {
         notificationCenterOpen: false,
         toggleNotificationCenter: vi.fn(),
+        findings: [],
+        unreadCount: 0,
       };
       return selector(state);
     },
     { getState: () => ({ toggleNotificationCenter: vi.fn() }) },
+  ),
+}));
+
+vi.mock('../../store/agentStore', () => ({
+  useAgentStore: Object.assign(
+    (selector: any) => {
+      const state = {
+        connected: false,
+        hasUnreadInsight: false,
+        setUnreadInsight: vi.fn(),
+      };
+      return selector(state);
+    },
+    { getState: () => ({ connected: false, connect: vi.fn() }) },
+  ),
+}));
+
+vi.mock('../../store/customViewStore', () => ({
+  useCustomViewStore: Object.assign(
+    (selector: any) => selector({ views: [] }),
+    { getState: () => ({ loadViews: vi.fn(), setActiveBuilderId: vi.fn() }) },
   ),
 }));
 

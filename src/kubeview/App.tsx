@@ -21,8 +21,7 @@ const queryClient = new QueryClient({
 });
 
 function DefaultRedirect() {
-  const onboarded = localStorage.getItem('openshiftpulse-onboarding-complete') === 'true';
-  return <Navigate to={onboarded ? '/pulse' : '/welcome'} replace />;
+  return <Navigate to="/pulse" replace />;
 }
 
 export default function OpenshiftPulseApp() {

@@ -144,6 +144,7 @@ export const fetchReadinessSummary = () =>
 
 export interface AgentCapabilities {
   max_trust_level: number;
+  supported_auto_fix_categories?: string[];
 }
 
 export interface AgentVersionInfo {
@@ -274,3 +275,16 @@ export interface SessionAnalytics {
 
 export const fetchSessionAnalytics = (days = 7) =>
   get<SessionAnalytics>(`${AGENT_BASE}/analytics/sessions?days=${days}`);
+
+// --- Agent health ---
+
+export interface AgentHealthStatus {
+  status: string;
+  circuit_breaker: { state: string; failure_count: number; recovery_timeout: number };
+  errors: { total: number; by_category: Record<string, number>; recent: string[] };
+  investigations: Record<string, unknown>;
+  autofix_paused: boolean;
+}
+
+export const fetchAgentHealth = () =>
+  get<AgentHealthStatus>(`${AGENT_BASE}/health`);

@@ -10,34 +10,74 @@ export interface NavItem {
   path: string;
   group: 'cluster' | 'operations' | 'administration' | 'agent';
   subtitle?: string;
+  keywords?: string[];
   color?: string;
 }
 
+export const GROUP_LABELS: Record<NavItem['group'], string> = {
+  cluster: 'CLUSTER',
+  operations: 'OPERATIONS',
+  administration: 'ADMINISTRATION',
+  agent: 'AGENT',
+};
+
+export const GROUP_ORDER: NavItem['group'][] = ['cluster', 'operations', 'administration', 'agent'];
+
 export const NAV_ITEMS: NavItem[] = [
   // Cluster
-  { id: 'pulse', label: 'Cluster Pulse', icon: 'Activity', path: '/pulse', group: 'cluster', subtitle: 'Health overview, topology, insights', color: 'text-emerald-400' },
-  { id: 'workloads', label: 'Workloads', icon: 'Package', path: '/workloads', group: 'cluster', subtitle: 'Pods, deployments, statefulsets, jobs, builds', color: 'text-blue-400' },
-  { id: 'networking', label: 'Networking', icon: 'Globe', path: '/networking', group: 'cluster', subtitle: 'Services, ingresses, routes, network policies', color: 'text-cyan-400' },
-  { id: 'compute', label: 'Compute', icon: 'Server', path: '/compute', group: 'cluster', subtitle: 'Nodes, machines, machine sets, autoscaling', color: 'text-blue-400' },
-  { id: 'storage', label: 'Storage', icon: 'HardDrive', path: '/storage', group: 'cluster', subtitle: 'PVCs, storage classes, CSI drivers', color: 'text-orange-400' },
+  { id: 'pulse', label: 'Cluster Pulse', icon: 'Activity', path: '/pulse', group: 'cluster', subtitle: 'Health overview, topology, insights', keywords: ['health', 'overview', 'pulse', 'dashboard', 'status'], color: 'text-emerald-400' },
+  { id: 'workloads', label: 'Workloads', icon: 'Package', path: '/workloads', group: 'cluster', subtitle: 'Pods, deployments, statefulsets, jobs, builds', keywords: ['pods', 'deployments', 'statefulsets', 'daemonsets', 'jobs', 'builds', 'replicasets'], color: 'text-blue-400' },
+  { id: 'networking', label: 'Networking', icon: 'Globe', path: '/networking', group: 'cluster', subtitle: 'Services, ingresses, routes, network policies', keywords: ['services', 'routes', 'ingresses', 'network', 'dns', 'endpoints'], color: 'text-cyan-400' },
+  { id: 'compute', label: 'Compute', icon: 'Server', path: '/compute', group: 'cluster', subtitle: 'Nodes, machines, machine sets, autoscaling', keywords: ['nodes', 'machines', 'capacity', 'autoscaling', 'cluster'], color: 'text-blue-400' },
+  { id: 'storage', label: 'Storage', icon: 'HardDrive', path: '/storage', group: 'cluster', subtitle: 'PVCs, storage classes, CSI drivers', keywords: ['pvs', 'pvcs', 'storageclasses', 'csi', 'persistent', 'volumes'], color: 'text-orange-400' },
 
   // Operations
-  { id: 'incidents', label: 'Incident Center', icon: 'Bell', path: '/incidents', group: 'operations', subtitle: 'Real-time incidents, correlation, auto-remediation', color: 'text-red-400' },
-  { id: 'topology', label: 'Impact Analysis', icon: 'Network', path: '/topology', group: 'operations', subtitle: 'Resource dependency graph, blast radius visualization', color: 'text-cyan-400' },
-  { id: 'security', label: 'Security', icon: 'ShieldCheck', path: '/security', group: 'operations', subtitle: 'Pod security, RBAC analysis, image scanning', color: 'text-red-400' },
-  { id: 'gitops', label: 'GitOps', icon: 'GitBranch', path: '/gitops', group: 'operations', subtitle: 'ArgoCD applications, sync status, rollouts', color: 'text-green-400' },
-  { id: 'fleet', label: 'Fleet', icon: 'Layers', path: '/fleet', group: 'operations', subtitle: 'Multi-cluster management, compare, drift detection', color: 'text-indigo-400' },
+  { id: 'incidents', label: 'Incident Center', icon: 'Bell', path: '/incidents', group: 'operations', subtitle: 'Real-time incidents, correlation, auto-remediation', keywords: ['incidents', 'alerts', 'timeline', 'postmortems', 'review', 'queue'], color: 'text-red-400' },
+  { id: 'topology', label: 'Impact Analysis', icon: 'Network', path: '/topology', group: 'operations', subtitle: 'Resource dependency graph, blast radius visualization', keywords: ['topology', 'graph', 'dependencies', 'blast', 'radius', 'impact'], color: 'text-cyan-400' },
+  { id: 'security', label: 'Security', icon: 'ShieldCheck', path: '/security', group: 'operations', subtitle: 'Pod security, RBAC analysis, image scanning', keywords: ['security', 'audit', 'sccs', 'rbac', 'network', 'policies', 'access', 'scanning'], color: 'text-red-400' },
+  { id: 'gitops', label: 'GitOps', icon: 'GitBranch', path: '/gitops', group: 'operations', subtitle: 'ArgoCD applications, sync status, rollouts', keywords: ['argocd', 'sync', 'drift', 'detection', 'rollouts', 'git'], color: 'text-green-400' },
+  { id: 'fleet', label: 'Fleet', icon: 'Layers', path: '/fleet', group: 'operations', subtitle: 'Multi-cluster management, compare, drift detection', keywords: ['multi-cluster', 'fleet', 'comparison', 'health', 'scores'], color: 'text-indigo-400' },
 
   // Administration
-  { id: 'admin', label: 'Administration', icon: 'Settings', path: '/admin', group: 'administration', subtitle: 'Operators, config, updates, snapshots, quotas, certificates', color: 'text-slate-400' },
-  { id: 'identity', label: 'Identity & Access', icon: 'Shield', path: '/identity', group: 'administration', subtitle: 'Users, groups, RBAC, impersonation', color: 'text-teal-400' },
-  { id: 'readiness', label: 'Production Readiness', icon: 'Rocket', path: '/readiness', group: 'administration', subtitle: 'Readiness wizard — security, reliability, observability gates', color: 'text-amber-400' },
+  { id: 'admin', label: 'Administration', icon: 'Settings', path: '/admin', group: 'administration', subtitle: 'Operators, config, updates, snapshots, quotas, certificates', keywords: ['operators', 'config', 'updates', 'quotas', 'certificates', 'crds'], color: 'text-slate-400' },
+  { id: 'identity', label: 'Identity & Access', icon: 'Shield', path: '/identity', group: 'administration', subtitle: 'Users, groups, RBAC, impersonation', keywords: ['users', 'groups', 'service', 'accounts', 'rbac', 'impersonation'], color: 'text-teal-400' },
+  { id: 'readiness', label: 'Production Readiness', icon: 'Rocket', path: '/readiness', group: 'administration', subtitle: 'Readiness wizard — security, reliability, observability gates', keywords: ['readiness', 'wizard', 'reliability', 'observability', 'gates', 'production'], color: 'text-amber-400' },
 
   // Agent
-  { id: 'agent', label: 'Mission Control', icon: 'Bot', path: '/agent', group: 'agent', subtitle: 'Agent policy, health, accuracy, capability discovery', color: 'text-violet-400' },
-  { id: 'views', label: 'Custom Views', icon: 'LayoutDashboard', path: '/views', group: 'agent', subtitle: 'AI-generated dashboards — manage, share, version history', color: 'text-emerald-400' },
-  { id: 'toolbox', label: 'Toolbox', icon: 'Wrench', path: '/toolbox', group: 'agent', subtitle: 'Tools, skills, connections, and analytics', color: 'text-fuchsia-400' },
+  { id: 'agent', label: 'Mission Control', icon: 'Bot', path: '/agent', group: 'agent', subtitle: 'Agent policy, health, accuracy, capability discovery', keywords: ['agent', 'policy', 'accuracy', 'capability', 'mission', 'control'], color: 'text-violet-400' },
+  { id: 'views', label: 'Custom Views', icon: 'LayoutDashboard', path: '/views', group: 'agent', subtitle: 'AI-generated dashboards — manage, share, version history', keywords: ['views', 'dashboards', 'custom', 'ai', 'generated', 'share'], color: 'text-emerald-400' },
+  { id: 'toolbox', label: 'Toolbox', icon: 'Wrench', path: '/toolbox', group: 'agent', subtitle: 'Tools, skills, connections, and analytics', keywords: ['tools', 'skills', 'connections', 'analytics', 'mcp'], color: 'text-fuchsia-400' },
 ];
+
+/** Nav items that only appear in CommandPalette (not in sidebar/ResourceBrowser) */
+export const PALETTE_ONLY_ITEMS: NavItem[] = [
+  { id: 'welcome', label: 'Welcome', icon: 'Home', path: '/welcome', group: 'cluster', subtitle: 'Getting started guide', keywords: ['welcome', 'getting', 'started', 'guide', 'home'] },
+];
+
+/** All nav items including palette-only entries (for CommandPalette) */
+export const ALL_NAV_ITEMS: NavItem[] = [...PALETTE_ONLY_ITEMS, ...NAV_ITEMS];
+
+/** Group NAV_ITEMS by their group field, in canonical order */
+export function getNavItemsByGroup(items: NavItem[] = NAV_ITEMS): Array<{ group: NavItem['group']; label: string; items: NavItem[] }> {
+  return GROUP_ORDER
+    .map((g) => ({
+      group: g,
+      label: GROUP_LABELS[g],
+      items: items.filter((item) => item.group === g),
+    }))
+    .filter((section) => section.items.length > 0);
+}
+
+/** Match a nav item against a search query (label, subtitle, keywords) */
+export function matchesNavQuery(item: NavItem, query: string): boolean {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  return (
+    item.label.toLowerCase().includes(q) ||
+    (item.subtitle?.toLowerCase().includes(q) ?? false) ||
+    (item.keywords?.some((k) => k.includes(q)) ?? false)
+  );
+}
 
 /** Look up a nav item by path */
 export function getNavByPath(path: string): NavItem | undefined {

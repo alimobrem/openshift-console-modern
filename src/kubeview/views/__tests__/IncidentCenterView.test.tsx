@@ -7,18 +7,32 @@ import React from 'react';
 
 vi.mock('@/lib/utils', () => ({ cn: (...args: any[]) => args.filter(Boolean).join(' ') }));
 
+vi.mock('zustand/react/shallow', () => ({
+  useShallow: (fn: any) => fn,
+}));
+
 vi.mock('../../store/monitorStore', () => ({
   useMonitorStore: (selector: any) => {
     const state = {
       connected: false,
+      connectionError: null,
       monitorEnabled: true,
       setMonitorEnabled: vi.fn(),
       triggerScan: vi.fn(),
       lastScanTime: null,
       findings: [],
+      pendingActions: [],
     };
     return selector(state);
   },
+}));
+
+vi.mock('../../hooks/useIncidentFeed', () => ({
+  useIncidentFeed: () => ({
+    incidents: [],
+    isLoading: false,
+    counts: { critical: 0, warning: 0, info: 0, total: 0 },
+  }),
 }));
 
 vi.mock('../../store/uiStore', () => ({

@@ -39,6 +39,7 @@ const mockAnalytics = {
   fetchReadinessSummary: vi.fn().mockResolvedValue({ total_gates: 30, passed: 28, failed: 1, attention: 1, pass_rate: 0.93, attention_items: [] }),
   fetchCapabilities: vi.fn().mockResolvedValue({ max_trust_level: 4 }),
   fetchAgentVersion: vi.fn().mockResolvedValue({ agent: '2.0.0', protocol: 2, tools: 111 }),
+  fetchAgentHealth: vi.fn().mockResolvedValue({ status: 'ok', circuit_breaker: { state: 'closed', failure_count: 0, recovery_timeout: 60 }, errors: { total: 0, by_category: {}, recent: [] }, investigations: {}, autofix_paused: false }),
 };
 
 vi.mock('../../engine/analyticsApi', () => mockAnalytics);

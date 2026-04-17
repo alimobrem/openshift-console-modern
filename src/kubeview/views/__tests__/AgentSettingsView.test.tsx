@@ -39,6 +39,7 @@ vi.mock('../../engine/analyticsApi', () => ({
   fetchReadinessSummary: vi.fn().mockResolvedValue(null),
   fetchCapabilities: vi.fn().mockResolvedValue({ max_trust_level: 4 }),
   fetchAgentVersion: vi.fn().mockResolvedValue(null),
+  fetchAgentHealth: vi.fn().mockResolvedValue({ status: 'ok', circuit_breaker: { state: 'closed', failure_count: 0, recovery_timeout: 60 }, errors: { total: 0, by_category: {}, recent: [] }, investigations: {}, autofix_paused: false }),
 }));
 
 vi.mock('../../engine/evalStatus', () => ({

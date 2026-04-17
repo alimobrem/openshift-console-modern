@@ -17,12 +17,17 @@ vi.mock('../../store/uiStore', () => ({
   useUIStore: (selector: any) => {
     const state = {
       selectedNamespace: '*',
+      connectionStatus: 'connected',
       addTab: addTabMock,
       setConnectionStatus: vi.fn(),
       addToast: vi.fn(),
     };
     return selector(state);
   },
+}));
+
+vi.mock('../../store/customViewStore', () => ({
+  useCustomViewStore: (selector: any) => selector({ views: [] }),
 }));
 
 const _mockListWatchData: Record<string, { data: any[]; isLoading: boolean }> = {};
