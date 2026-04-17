@@ -2,7 +2,7 @@
  * Renders agent ComponentSpec objects as interactive UI primitives.
  */
 
-import { useState, useMemo, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { CheckCircle, AlertTriangle, XCircle, Clock, HelpCircle, ChevronDown, ChevronUp, ChevronRight, Plus, Search, Radio, Pause, Loader2 } from 'lucide-react';
@@ -35,8 +35,8 @@ import type {
   ResourceCountsSpec,
   TopologySpec,
 } from '../../engine/agentComponents';
-import { AgentNodeMap } from './AgentNodeMap';
-import AgentTopology from './AgentTopology';
+const LazyAgentNodeMap = lazy(() => import('./AgentNodeMap').then(m => ({ default: m.AgentNodeMap })));
+const LazyAgentTopology = lazy(() => import('./AgentTopology'));
 import { DynamicComponent } from './DynamicComponent';
 import { Badge } from '../primitives/Badge';
 import { InfoCard } from '../primitives/InfoCard';
@@ -87,7 +87,7 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView, refreshIn
     case 'metric_card':
       return <AgentMetricCard spec={spec} />;
     case 'node_map':
-      return <AgentNodeMap spec={spec} />;
+      return <Suspense fallback={<div className="h-48 flex items-center justify-center text-slate-500 text-xs">Loading node map...</div>}><LazyAgentNodeMap spec={spec} /></Suspense>;
     case 'bar_list':
       return <AgentBarList spec={spec} />;
     case 'progress_list':
@@ -99,7 +99,7 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView, refreshIn
     case 'resource_counts':
       return <AgentResourceCounts spec={spec} />;
     case 'topology':
-      return <AgentTopology spec={spec} onAddToView={onAddToView} />;
+      return <Suspense fallback={<div className="h-48 flex items-center justify-center text-slate-500 text-xs">Loading topology...</div>}><LazyAgentTopology spec={spec} onAddToView={onAddToView} /></Suspense>;
     default:
       // Dynamic rendering for unknown kinds — uses layout templates from component registry
       return <DynamicComponentFallback spec={spec} />;
@@ -115,7 +115,7 @@ function AgentDataTable({ spec, onAddToView, refreshInterval }: { spec: DataTabl
 }
 
 /** Live multi-source table — K8s watches + PromQL/log enrichment */
-function LiveAgentTable({ spec, onAddToView, refreshInterval }: { spec: DataTableSpec; onAddToView?: (spec: ComponentSpec) => void; refreshInterval?: number }) {
+const LiveAgentTable = React.memo(function LiveAgentTable({ spec, onAddToView, refreshInterval }: { spec: DataTableSpec; onAddToView?: (spec: ComponentSpec) => void; refreshInterval?: number }) {
   const navigate = useNavigate();
   const result = useMultiSourceTable(spec.datasources!, refreshInterval);
 
@@ -206,10 +206,10 @@ function LiveAgentTable({ spec, onAddToView, refreshInterval }: { spec: DataTabl
       showActions
     />
   );
-}
+});
 
 /** Static data table for inline chat rendering */
-function StaticAgentTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToView?: (spec: ComponentSpec) => void }) {
+const StaticAgentTable = React.memo(function StaticAgentTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToView?: (spec: ComponentSpec) => void }) {
   const navigate = useNavigate();
 
   const handleRowClick = useCallback((row: Record<string, unknown>) => {
@@ -237,7 +237,7 @@ function StaticAgentTable({ spec, onAddToView }: { spec: DataTableSpec; onAddToV
       showActions={spec.rows.some((r) => r._gvr)}
     />
   );
-}
+});
 
 // ---------------------------------------------------------------------------
 // Column Renderer Registry — smart rendering based on column type
