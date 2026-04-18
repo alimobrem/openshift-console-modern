@@ -228,14 +228,16 @@ export function ReportTab({ nodes, allPods, deployments, pvcs, operators, go }: 
   const [showScoreDetails, setShowScoreDetails] = useState(false);
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const [zenDismissed, setZenDismissed] = useState(() => sessionStorage.getItem('pulse-zen-dismissed') === 'true');
-  const openDock = useUIStore((s) => s.openDock);
+  const expandAISidebar = useUIStore((s) => s.expandAISidebar);
+  const setAISidebarMode = useUIStore((s) => s.setAISidebarMode);
   const connectAndSend = useAgentStore((s) => s.connectAndSend);
 
-  /** Open dock agent panel with a prompt */
+  /** Open AI sidebar in chat mode with a prompt */
   const askAgent = useCallback((prompt: string) => {
     connectAndSend(prompt);
-    openDock('agent');
-  }, [connectAndSend, openDock]);
+    expandAISidebar();
+    setAISidebarMode('chat');
+  }, [connectAndSend, expandAISidebar, setAISidebarMode]);
 
   const toggleExpanded = (key: string) => {
     setExpandedItems(prev => {

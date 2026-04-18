@@ -25,7 +25,7 @@ vi.mock('../../../store/agentStore', () => ({
 
 vi.mock('../../../store/uiStore', () => ({
   useUIStore: (sel: (s: any) => any) =>
-    sel({ openDock: mockOpenDock }),
+    sel({ expandAISidebar: mockOpenDock, setAISidebarMode: vi.fn() }),
 }));
 
 afterEach(() => cleanup());

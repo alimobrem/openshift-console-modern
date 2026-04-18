@@ -68,9 +68,10 @@ function saveRecent(item: CommandItem) {
 export function CommandPalette() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { closeCommandPalette, openDock, addTab } = useUIStore(useShallow((s) => ({
+  const { closeCommandPalette, expandAISidebar, setAISidebarMode, addTab } = useUIStore(useShallow((s) => ({
     closeCommandPalette: s.closeCommandPalette,
-    openDock: s.openDock,
+    expandAISidebar: s.expandAISidebar,
+    setAISidebarMode: s.setAISidebarMode,
     addTab: s.addTab,
   })));
   const resourceRegistry = useClusterStore((s) => s.resourceRegistry);
@@ -138,7 +139,7 @@ export function CommandPalette() {
     // AI query items: send to dock agent panel
     if (item.type === 'ai') {
       connectAndSend(item.title);
-      openDock('agent');
+      expandAISidebar(); setAISidebarMode('chat');
       closeCommandPalette();
       return;
     }
@@ -161,7 +162,7 @@ export function CommandPalette() {
     }
 
     closeCommandPalette();
-  }, [mode, addTab, navigate, closeCommandPalette, connectAndSend, openDock]);
+  }, [mode, addTab, navigate, closeCommandPalette, connectAndSend, expandAISidebar, setAISidebarMode]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -498,7 +499,7 @@ function getCommandItems(
         action: () => {
           const { connectAndSend } = useAgentStore.getState();
           connectAndSend('Create a custom dashboard. Ask me what data I want to see.');
-          useUIStore.getState().openDock('agent');
+          useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat');
         },
       },
       {
@@ -510,7 +511,7 @@ function getCommandItems(
         action: () => {
           const { connectAndSend } = useAgentStore.getState();
           connectAndSend('Run a full cluster scan now and report any issues.');
-          useUIStore.getState().openDock('agent');
+          useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat');
         },
       },
     ] satisfies CommandItem[]).filter((item) =>

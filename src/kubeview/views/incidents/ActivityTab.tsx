@@ -184,12 +184,14 @@ export function ActivityTab() {
     const eventSummary = group.entries.slice(0, 8).map((e) => e.title).join(', ');
     const query = `Investigate ${label}${ns && ns !== '_' ? ` in namespace ${ns}` : ''}. Recent events: ${eventSummary}. What is the root cause and how should I fix it?`;
     useAgentStore.getState().sendMessage(query);
-    useUIStore.getState().openDock('agent');
+    useUIStore.getState().expandAISidebar();
+    useUIStore.getState().setAISidebarMode('chat');
   };
 
   const handlePostmortemInvestigate = (query: string) => {
     useAgentStore.getState().sendMessage(query);
-    useUIStore.getState().openDock('agent');
+    useUIStore.getState().expandAISidebar();
+    useUIStore.getState().setAISidebarMode('chat');
   };
 
   return (

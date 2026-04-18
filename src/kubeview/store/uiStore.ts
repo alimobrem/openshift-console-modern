@@ -77,13 +77,22 @@ interface UIState {
   setDockContext: (ctx: { namespace: string; podName: string; containerName?: string } | null) => void;
   openTerminal: (ctx: { namespace: string; podName: string; containerName: string; isNode?: boolean }) => void;
 
-  // Legacy adapter — redirects 'agent' to sidebar, others to bottom dock
+  // Legacy adapter — DEPRECATED: use expandAISidebar/setAISidebarMode for agent,
+  // openBottomDock/closeBottomDock for logs/terminal/events. Remove after remaining
+  // engine/ and components/ callsites are migrated.
+  /** @deprecated Use expandAISidebar() + setAISidebarMode('chat') or openBottomDock() */
   dockPanel: DockPanel;
+  /** @deprecated No longer used — AI sidebar width is fixed */
   dockWidth: number;
+  /** @deprecated No longer used */
   dockFullscreen: boolean;
+  /** @deprecated Use expandAISidebar() + setAISidebarMode('chat') for agent, openBottomDock() for others */
   openDock: (panel: DockPanel) => void;
+  /** @deprecated Use collapseAISidebar() or closeBottomDock() */
   closeDock: () => void;
+  /** @deprecated No longer used */
   setDockWidth: (width: number) => void;
+  /** @deprecated No longer used */
   toggleDockFullscreen: () => void;
 
   // View Builder (split-screen mode)
@@ -294,7 +303,11 @@ export const useUIStore = create<UIState>()(
         set({ terminalContext: ctx, bottomDockPanel: 'terminal' });
       },
 
-      // Legacy adapter — all 18+ openDock('agent') callsites keep working
+      // Legacy adapter — DEPRECATED: migrate remaining callsites in engine/ and components/ to
+      // expandAISidebar() + setAISidebarMode('chat') for agent, openBottomDock() for logs/terminal/events.
+      // Remove once engine/agentNotifications.ts, engine/actions.ts, components/ErrorBoundary.tsx,
+      // components/onboarding/GateCard.tsx, components/feedback/Toast.tsx, components/CommandPalette.tsx,
+      // components/agent/AIOnboarding.tsx, and components/StatusBar.tsx are migrated.
       dockPanel: null as DockPanel,
       dockWidth: 420,
       dockFullscreen: false,
@@ -325,7 +338,7 @@ export const useUIStore = create<UIState>()(
       viewBuilderId: null,
 
       enterViewBuilder: (viewId) => {
-        set({ viewBuilderMode: true, viewBuilderId: viewId, dockPanel: 'agent' });
+        set({ viewBuilderMode: true, viewBuilderId: viewId, aiSidebarExpanded: true, aiSidebarMode: 'chat' });
       },
 
       exitViewBuilder: () => {

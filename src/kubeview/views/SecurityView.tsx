@@ -294,7 +294,8 @@ export default function SecurityView() {
               <button
                 key={prompt}
                 onClick={() => {
-                  useUIStore.getState().openDock('agent');
+                  useUIStore.getState().expandAISidebar();
+                  useUIStore.getState().setAISidebarMode('chat');
                   useAgentStore.getState().connectAndSend(prompt);
                 }}
                 className="px-2.5 py-1 text-xs rounded bg-slate-800 text-slate-300 hover:bg-indigo-900/40 hover:text-indigo-300 border border-slate-700 hover:border-indigo-700/50 transition-colors"

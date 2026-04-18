@@ -26,7 +26,8 @@ interface AIOnboardingProps {
 
 export function AIOnboarding({ compact = false, className }: AIOnboardingProps) {
   const { aiOnboardingSeen, dismissOnboarding } = useOnboardingStore();
-  const openDock = useUIStore((s) => s.openDock);
+  const expandAISidebar = useUIStore((s) => s.expandAISidebar);
+  const setAISidebarMode = useUIStore((s) => s.setAISidebarMode);
   const connectAndSend = useAgentStore((s) => s.connectAndSend);
   const setTrustLevel = useTrustStore((s) => s.setTrustLevel);
 
@@ -35,7 +36,7 @@ export function AIOnboarding({ compact = false, className }: AIOnboardingProps) 
   const tryIt = () => {
     setTrustLevel(1);
     connectAndSend('Give me a safe read-only cluster health summary and top 3 risks.');
-    openDock('agent');
+    expandAISidebar(); setAISidebarMode('chat');
     dismissOnboarding();
   };
 

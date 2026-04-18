@@ -144,7 +144,8 @@ export function useAskPulse(query: string): UseAskPulseResult {
   const openInAgent = useCallback(() => {
     if (!query.trim()) return;
     useAgentStore.getState().connectAndSend(query);
-    useUIStore.getState().openDock('agent');
+    useUIStore.getState().expandAISidebar();
+    useUIStore.getState().setAISidebarMode('chat');
     useUIStore.getState().closeCommandPalette();
   }, [query]);
 

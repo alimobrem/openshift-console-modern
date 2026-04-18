@@ -66,7 +66,7 @@ function Toast({ id: _id, type, title, detail, duration, action, category, sugge
   }[type];
 
   const handleAskAI = () => {
-    useUIStore.getState().openDock('agent');
+    useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat');
     useAgentStore.getState().connectAndSend(
       `I got this error: "${title}". ${detail || ''}. What does this mean and how can I fix it?`
     );

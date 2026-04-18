@@ -143,7 +143,7 @@ export class ErrorBoundary extends React.Component<Props, State> {
                   const { useUIStore } = require('../store/uiStore');
                   // eslint-disable-next-line @typescript-eslint/no-require-imports
                   const { useAgentStore } = require('../store/agentStore');
-                  useUIStore.getState().openDock('agent');
+                  useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat');
                   useAgentStore.getState().connectAndSend(
                     `The UI crashed with this error: "${this.state.error?.message}". What could cause this and how do I fix it?`
                   );

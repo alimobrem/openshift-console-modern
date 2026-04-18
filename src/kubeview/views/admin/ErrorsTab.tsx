@@ -39,7 +39,8 @@ export function ErrorsTab() {
   const resolvedCount = errors.length - unresolvedCount;
 
   const handleAskAI = (error: TrackedError) => {
-    useUIStore.getState().openDock('agent');
+    useUIStore.getState().expandAISidebar();
+    useUIStore.getState().setAISidebarMode('chat');
     useAgentStore.getState().connectAndSend(
       `I got this error: "${error.userMessage}". ${error.message}. What does this mean and how can I fix it?`
     );

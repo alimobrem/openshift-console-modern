@@ -11,10 +11,10 @@ const mockConnectAndSend = vi.fn();
 vi.mock('../../../store/uiStore', () => ({
   useUIStore: Object.assign(
     (selector?: any) => {
-      const state = { openDock: mockOpenDock };
+      const state = { expandAISidebar: mockOpenDock, setAISidebarMode: vi.fn() };
       return selector ? selector(state) : state;
     },
-    { getState: () => ({ openDock: mockOpenDock }) },
+    { getState: () => ({ expandAISidebar: mockOpenDock, setAISidebarMode: vi.fn() }) },
   ),
 }));
 
@@ -145,7 +145,7 @@ describe('GateCard', () => {
   it('shows Fix with AI button for failed gates and triggers agent', () => {
     render(<GateCard gate={makeGate()} result={makeResult({ status: 'failed', detail: 'Bad config' })} />);
     fireEvent.click(screen.getByText('Fix with AI'));
-    expect(mockOpenDock).toHaveBeenCalledWith('agent');
+    expect(mockOpenDock).toHaveBeenCalled();
     expect(mockConnectAndSend).toHaveBeenCalledWith(expect.stringContaining('TLS Configured'));
   });
 

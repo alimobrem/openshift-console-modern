@@ -16,16 +16,15 @@ import { getNavByPath } from '../engine/navRegistry';
 export function StatusBar() {
   const {
     connectionStatus, lastSyncTime, selectedNamespace, activeOperation,
-    tabs, dockPanel, openDock, closeDock, degradedReasons,
+    tabs, aiSidebarExpanded, toggleAISidebar, degradedReasons,
   } = useUIStore(useShallow((s) => ({
     connectionStatus: s.connectionStatus,
     lastSyncTime: s.lastSyncTime,
     selectedNamespace: s.selectedNamespace,
     activeOperation: s.activeOperation,
     tabs: s.tabs,
-    dockPanel: s.dockPanel,
-    openDock: s.openDock,
-    closeDock: s.closeDock,
+    aiSidebarExpanded: s.aiSidebarExpanded,
+    toggleAISidebar: s.toggleAISidebar,
     degradedReasons: s.degradedReasons,
   })));
   const location = useLocation();
@@ -111,10 +110,10 @@ export function StatusBar() {
           </span>
         )}
         <button
-          onClick={() => dockPanel === 'agent' ? closeDock() : openDock('agent')}
+          onClick={toggleAISidebar}
           className={cn(
             'flex items-center gap-1 px-1.5 py-0.5 rounded transition-colors',
-            dockPanel === 'agent' ? 'bg-blue-600/30 text-blue-400' : 'text-slate-500 hover:text-slate-300'
+            aiSidebarExpanded ? 'bg-blue-600/30 text-blue-400' : 'text-slate-500 hover:text-slate-300'
           )}
           title="Toggle Agent (Cmd+Shift+A)"
         >

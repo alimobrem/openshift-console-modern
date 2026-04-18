@@ -187,6 +187,11 @@ function PendingActionCard({
         body: JSON.stringify({
           tool: action.tool,
           input: action.input,
+          target_resource: action.input.name ? {
+            kind: action.input.kind || (action.tool.includes('pod') ? 'Pod' : action.tool.includes('deployment') ? 'Deployment' : 'Pod'),
+            namespace: action.input.namespace || '',
+            name: action.input.name,
+          } : null,
         }),
       });
       if (res.ok) {

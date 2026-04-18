@@ -22,14 +22,15 @@ vi.mock('../../../store/errorStore', () => ({
   },
 }));
 
-const mockOpenDock = vi.fn();
+const mockExpandAISidebar = vi.fn();
+const mockSetAISidebarMode = vi.fn();
 vi.mock('../../../store/uiStore', () => ({
   useUIStore: Object.assign(
     (selector?: any) => {
-      const state = { openDock: mockOpenDock };
+      const state = { expandAISidebar: mockExpandAISidebar, setAISidebarMode: mockSetAISidebarMode };
       return selector ? selector(state) : state;
     },
-    { getState: () => ({ openDock: mockOpenDock }) },
+    { getState: () => ({ expandAISidebar: mockExpandAISidebar, setAISidebarMode: mockSetAISidebarMode }) },
   ),
 }));
 
@@ -166,7 +167,7 @@ describe('ErrorsTab', () => {
     render(<ErrorsTab />);
 
     fireEvent.click(screen.getByText('Ask AI'));
-    expect(mockOpenDock).toHaveBeenCalledWith('agent');
+    expect(mockExpandAISidebar).toHaveBeenCalled();
     expect(mockConnectAndSend).toHaveBeenCalledWith(
       expect.stringContaining('Cannot list pods'),
     );

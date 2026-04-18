@@ -310,7 +310,8 @@ export default function CustomView() {
             </button>
             <button
               onClick={() => {
-                useUIStore.getState().openDock('agent');
+                useUIStore.getState().expandAISidebar();
+                useUIStore.getState().setAISidebarMode('chat');
                 useAgentStore.getState().connectAndSend(`Update my view "${view.title}" (ID: ${view.id}). It has ${view.layout.length} widgets. Use get_view_details("${view.id}") to see the current widgets, then modify as needed.`);
               }}
               className="p-1.5 rounded bg-violet-700 hover:bg-violet-600 text-white transition-colors"
@@ -343,9 +344,9 @@ export default function CustomView() {
             title="No widgets yet"
             description="Ask the agent to add widgets to this dashboard."
             aiPrompts={[
-              { label: 'Add a table of pods with high restart counts', onAsk: () => { useAgentStore.getState().connectAndSend('Add a data_table widget showing pods with the most restarts'); useUIStore.getState().openDock('agent'); } },
-              { label: 'Show CPU and memory trends', onAsk: () => { useAgentStore.getState().connectAndSend('Add chart widgets showing CPU utilization and memory usage trends'); useUIStore.getState().openDock('agent'); } },
-              { label: 'Add a deployment status grid', onAsk: () => { useAgentStore.getState().connectAndSend('Add a status_list widget showing all deployments with their health status'); useUIStore.getState().openDock('agent'); } },
+              { label: 'Add a table of pods with high restart counts', onAsk: () => { useAgentStore.getState().connectAndSend('Add a data_table widget showing pods with the most restarts'); useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat'); } },
+              { label: 'Show CPU and memory trends', onAsk: () => { useAgentStore.getState().connectAndSend('Add chart widgets showing CPU utilization and memory usage trends'); useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat'); } },
+              { label: 'Add a deployment status grid', onAsk: () => { useAgentStore.getState().connectAndSend('Add a status_list widget showing all deployments with their health status'); useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat'); } },
             ]}
           />
         ) : (

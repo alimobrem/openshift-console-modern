@@ -217,10 +217,10 @@ export default function ViewsManagement({ embedded = false }: { embedded?: boole
               title="No views yet"
               description="Ask the AI to build any dashboard you need."
               aiPrompts={[
-                { label: 'Node health dashboard', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing node health: CPU/memory utilization, pod density, and node conditions'); useUIStore.getState().openDock('agent'); } },
-                { label: 'Workload overview', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing deployment status, pod restart trends, and OOM kills'); useUIStore.getState().openDock('agent'); } },
-                { label: 'Security posture', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing security audit score, cluster-admin bindings, unprotected namespaces, and SCC usage'); useUIStore.getState().openDock('agent'); } },
-                { label: 'Cost & capacity', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing resource utilization ratios, capacity projections, and idle workloads'); useUIStore.getState().openDock('agent'); } },
+                { label: 'Node health dashboard', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing node health: CPU/memory utilization, pod density, and node conditions'); useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat'); } },
+                { label: 'Workload overview', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing deployment status, pod restart trends, and OOM kills'); useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat'); } },
+                { label: 'Security posture', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing security audit score, cluster-admin bindings, unprotected namespaces, and SCC usage'); useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat'); } },
+                { label: 'Cost & capacity', onAsk: () => { useAgentStore.getState().connectAndSend('Create a dashboard showing resource utilization ratios, capacity projections, and idle workloads'); useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat'); } },
               ]}
             />
           </div>

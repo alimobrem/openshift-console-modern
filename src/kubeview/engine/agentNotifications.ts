@@ -53,7 +53,7 @@ function showFindingToast(finding: Finding) {
     action: {
       label: 'Investigate',
       onClick: () => {
-        store.openDock('agent');
+        store.expandAISidebar(); store.setAISidebarMode('chat');
         const agentStore = useAgentStore.getState();
         if (agentStore.connected) {
           agentStore.sendMessage(
@@ -203,7 +203,7 @@ async function poll() {
         action: {
           label: 'Investigate',
           onClick: () => {
-            store.openDock('agent');
+            store.expandAISidebar(); store.setAISidebarMode('chat');
             // Send the insight to the agent so it continues the thread
             const agentStore = useAgentStore.getState();
             if (agentStore.connected) {

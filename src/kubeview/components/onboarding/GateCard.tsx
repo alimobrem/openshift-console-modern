@@ -95,7 +95,7 @@ export function GateCard({ gate, result, waived, waiverReason, onReVerify, onWai
             {(status === 'failed' || status === 'needs_attention') && (
               <button
                 onClick={() => {
-                  useUIStore.getState().openDock('agent');
+                  useUIStore.getState().expandAISidebar(); useUIStore.getState().setAISidebarMode('chat');
                   useAgentStore.getState().connectAndSend(
                     `Fix this production readiness issue:\n\n"${gate.title}": ${result?.detail || gate.whyItMatters}\n\n${result?.fixGuidance || ''}\n\nPlease fix this or generate the required YAML configuration.`
                   );

@@ -34,12 +34,13 @@ vi.mock('../../store/agentStore', () => ({
 }));
 
 // Mock uiStore
-const openDockMock = vi.fn();
+const expandAISidebarMock = vi.fn();
+const setAISidebarModeMock = vi.fn();
 const closeCommandPaletteMock = vi.fn();
 vi.mock('../../store/uiStore', () => ({
   useUIStore: Object.assign(
     function useUIStore(sel: any) { return sel({}); },
-    { getState: () => ({ openDock: openDockMock, closeCommandPalette: closeCommandPaletteMock }) },
+    { getState: () => ({ expandAISidebar: expandAISidebarMock, setAISidebarMode: setAISidebarModeMock, closeCommandPalette: closeCommandPaletteMock }) },
   ),
 }));
 
@@ -55,7 +56,8 @@ describe('useAskPulse', () => {
     mockConnect.mockReset();
     mockDisconnect.mockReset();
     connectAndSendMock.mockReset();
-    openDockMock.mockReset();
+    expandAISidebarMock.mockReset();
+    setAISidebarModeMock.mockReset();
     closeCommandPaletteMock.mockReset();
   });
 
@@ -133,7 +135,7 @@ describe('useAskPulse', () => {
     });
 
     expect(connectAndSendMock).toHaveBeenCalledWith('what is wrong?');
-    expect(openDockMock).toHaveBeenCalledWith('agent');
+    expect(expandAISidebarMock).toHaveBeenCalled();
     expect(closeCommandPaletteMock).toHaveBeenCalled();
   });
 
