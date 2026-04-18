@@ -137,126 +137,128 @@ export function ResourceBrowser() {
           </div>
         </div>
 
-        {/* Views section — derived from canonical navRegistry */}
-        <div className="border-b border-slate-700 p-3 space-y-3">
-          {getNavItemsByGroup().map((section) => (
-            <div key={section.group}>
-              <div className="mb-1 flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-600">
-                {section.label}
+        {/* Scrollable body: views + dashboards + resource groups */}
+        <div className="flex-1 overflow-auto thin-scrollbar">
+          {/* Views section — derived from canonical navRegistry */}
+          <div className="border-b border-slate-700 p-3 space-y-3">
+            {getNavItemsByGroup().map((section) => (
+              <div key={section.group}>
+                <div className="mb-1 flex items-center gap-2 px-2 text-xs font-semibold uppercase tracking-wider text-slate-600">
+                  {section.label}
+                </div>
+                {section.items.map((page) => {
+                  const Icon = getResourceIcon(page.icon);
+                  return (
+                    <button
+                      key={page.path}
+                      onClick={() => {
+                        addTab({ title: page.label, icon: page.icon, path: page.path, pinned: false, closable: true });
+                        navigate(page.path);
+                        closeBrowser();
+                      }}
+                      className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${location.pathname === page.path ? 'bg-slate-700/60 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
+                    >
+                      <Icon className={`h-4 w-4 ${page.color || ''}`} />
+                      {page.label}
+                    </button>
+                  );
+                })}
               </div>
-              {section.items.map((page) => {
-                const Icon = getResourceIcon(page.icon);
-                return (
-                  <button
-                    key={page.path}
-                    onClick={() => {
-                      addTab({ title: page.label, icon: page.icon, path: page.path, pinned: false, closable: true });
-                      navigate(page.path);
-                      closeBrowser();
-                    }}
-                    className={`flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm transition-colors ${location.pathname === page.path ? 'bg-slate-700/60 text-white' : 'text-slate-300 hover:bg-slate-700'}`}
-                  >
-                    <Icon className={`h-4 w-4 ${page.color || ''}`} />
-                    {page.label}
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-        </div>
-
-        {/* Custom dashboards */}
-        <div className="border-b border-slate-700 p-3">
-          <div className="mb-2 flex items-center justify-between px-2">
-            <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
-              <LayoutDashboard className="h-3 w-3" />
-              Your Views
-            </span>
-            <button
-              onClick={() => {
-                addTab({ title: 'Manage Views', icon: 'LayoutDashboard', path: '/views', pinned: false, closable: true });
-                navigate('/views');
-                closeBrowser();
-              }}
-              className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
-            >
-              Manage
-            </button>
+            ))}
           </div>
-          {customViews.length === 0 ? (
-            <p className="px-2 py-1 text-xs text-slate-600">No views yet. Ask the AI to create one.</p>
-          ) : (
-            customViews.map((v) => (
+
+          {/* Custom dashboards */}
+          <div className="border-b border-slate-700 p-3">
+            <div className="mb-2 flex items-center justify-between px-2">
+              <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                <LayoutDashboard className="h-3 w-3" />
+                Your Views
+              </span>
               <button
-                key={v.id}
                 onClick={() => {
-                  addTab({ title: v.title, icon: 'LayoutDashboard', path: `/custom/${v.id}`, pinned: false, closable: true });
-                  navigate(`/custom/${v.id}`);
+                  addTab({ title: 'Manage Views', icon: 'LayoutDashboard', path: '/views', pinned: false, closable: true });
+                  navigate('/views');
                   closeBrowser();
                 }}
-                className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700"
+                className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
               >
-                <LayoutDashboard className="h-4 w-4 text-violet-400" />
-                <span className="truncate">{v.title}</span>
+                Manage
               </button>
-            ))
-          )}
-        </div>
-
-        {/* Resource groups */}
-        <div className="flex-1 overflow-auto thin-scrollbar p-3">
-          {filteredGroups.map((group) => {
-            const isExpanded = expandedGroups.has(group);
-            const resources = groupedResources[group];
-
-            // Filter resources by search
-            const filteredResources = searchQuery
-              ? resources.filter(
-                  (r) =>
-                    r.kind.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                    (r.plural || r.name || '').toLowerCase().includes(searchQuery.toLowerCase())
-                )
-              : resources;
-
-            if (filteredResources.length === 0) return null;
-
-            return (
-              <div key={group} className="mb-3">
+            </div>
+            {customViews.length === 0 ? (
+              <p className="px-2 py-1 text-xs text-slate-600">No views yet. Ask the AI to create one.</p>
+            ) : (
+              customViews.map((v) => (
                 <button
-                  onClick={() => toggleGroup(group)}
-                  className="flex w-full items-center gap-2 px-2 py-1 text-sm font-semibold text-slate-300 transition-colors hover:text-slate-100"
+                  key={v.id}
+                  onClick={() => {
+                    addTab({ title: v.title, icon: 'LayoutDashboard', path: `/custom/${v.id}`, pinned: false, closable: true });
+                    navigate(`/custom/${v.id}`);
+                    closeBrowser();
+                  }}
+                  className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700"
                 >
-                  {isExpanded ? (
-                    <ChevronDown className="h-3.5 w-3.5" />
-                  ) : (
-                    <ChevronRight className="h-3.5 w-3.5" />
-                  )}
-                  <span className="flex-1 text-left">
-                    {group === 'Core' ? 'Core (v1)' : group}
-                  </span>
-                  <span className="text-xs text-slate-500">{filteredResources.length}</span>
+                  <LayoutDashboard className="h-4 w-4 text-violet-400" />
+                  <span className="truncate">{v.title}</span>
                 </button>
+              ))
+            )}
+          </div>
 
-                {isExpanded && (
-                  <div className="ml-5 mt-1 space-y-0.5">
-                    {filteredResources.map((resource) => {
-                      const Icon = getIcon(getResourceIconName(resource.kind));
-                      return (
-                        <button
-                          key={`${resource.group}-${resource.version}-${resource.plural}`}
-                          onClick={() => handleResourceClick(resource)}
-                          className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
-                        >
-                          <Icon className="h-3.5 w-3.5" />
-                          <span className="flex-1 truncate text-left">{resource.plural}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          {/* Resource groups */}
+          <div className="p-3">
+            {filteredGroups.map((group) => {
+              const isExpanded = expandedGroups.has(group);
+              const resources = groupedResources[group];
+
+              const filteredResources = searchQuery
+                ? resources.filter(
+                    (r) =>
+                      r.kind.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      (r.plural || r.name || '').toLowerCase().includes(searchQuery.toLowerCase())
+                  )
+                : resources;
+
+              if (filteredResources.length === 0) return null;
+
+              return (
+                <div key={group} className="mb-3">
+                  <button
+                    onClick={() => toggleGroup(group)}
+                    className="flex w-full items-center gap-2 px-2 py-1 text-sm font-semibold text-slate-300 transition-colors hover:text-slate-100"
+                  >
+                    {isExpanded ? (
+                      <ChevronDown className="h-3.5 w-3.5" />
+                    ) : (
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    )}
+                    <span className="flex-1 text-left">
+                      {group === 'Core' ? 'Core (v1)' : group}
+                    </span>
+                    <span className="text-xs text-slate-500">{filteredResources.length}</span>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="ml-5 mt-1 space-y-0.5">
+                      {filteredResources.map((resource) => {
+                        const Icon = getIcon(getResourceIconName(resource.kind));
+                        return (
+                          <button
+                            key={`${resource.group}-${resource.version}-${resource.plural}`}
+                            onClick={() => handleResourceClick(resource)}
+                            className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-slate-400 transition-colors hover:bg-slate-700 hover:text-slate-200"
+                          >
+                            <Icon className="h-3.5 w-3.5" />
+                            <span className="flex-1 truncate text-left">{resource.plural}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* Footer */}

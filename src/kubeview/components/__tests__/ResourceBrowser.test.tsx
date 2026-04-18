@@ -209,4 +209,12 @@ describe('OpenShift Pulse ResourceBrowser', () => {
     renderBrowser();
     expect(screen.getByText('Browse Resources')).toBeDefined();
   });
+
+  it('sidebar uses flex-col layout with scrollable body', () => {
+    const { container } = renderBrowser();
+    const sidebar = container.querySelector('.fixed.flex.flex-col');
+    expect(sidebar).not.toBeNull();
+    const scrollBody = sidebar!.querySelector('.flex-1.overflow-auto.thin-scrollbar');
+    expect(scrollBody).not.toBeNull();
+  });
 });
