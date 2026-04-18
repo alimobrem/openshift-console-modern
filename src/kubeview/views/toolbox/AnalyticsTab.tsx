@@ -27,6 +27,7 @@ import { CapabilityDiscovery } from '../mission-control/CapabilityDiscovery';
 import { ScannerDrawer } from '../mission-control/ScannerDrawer';
 import { EvalDrawer } from '../mission-control/EvalDrawer';
 import { MemoryDrawer } from '../mission-control/MemoryDrawer';
+import { OutcomesDrawer } from '../mission-control/OutcomesDrawer';
 
 export function AnalyticsTab() {
   const { data: intelligence } = useQuery({
@@ -42,7 +43,7 @@ export function AnalyticsTab() {
   });
 
   // Agent health data
-  const [drawerOpen, setDrawerOpen] = useState<'scanner' | 'eval' | 'memory' | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState<'scanner' | 'eval' | 'memory' | 'outcomes' | null>(null);
   const evalQ = useQuery({ queryKey: ['agent', 'eval-status'], queryFn: fetchAgentEvalStatus, refetchInterval: 60_000 });
   const fixQ = useQuery({ queryKey: ['agent', 'fix-history-summary'], queryFn: () => fetchFixHistorySummary(), staleTime: 60_000 });
   const coverageQ = useQuery({ queryKey: ['agent', 'scanner-coverage'], queryFn: () => fetchScannerCoverage(), staleTime: 60_000 });
@@ -157,6 +158,7 @@ export function AnalyticsTab() {
           onOpenScannerDrawer={() => setDrawerOpen('scanner')}
           onOpenEvalDrawer={() => setDrawerOpen('eval')}
           onOpenMemoryDrawer={() => setDrawerOpen('memory')}
+          onOpenOutcomesDrawer={() => setDrawerOpen('outcomes')}
           memoryPatternCount={accuracyQ.data?.learning?.total_patterns ?? 0}
         />
       </div>
@@ -175,6 +177,7 @@ export function AnalyticsTab() {
       {drawerOpen === 'scanner' && <ScannerDrawer coverage={coverageQ.data ?? null} onClose={() => setDrawerOpen(null)} />}
       {drawerOpen === 'eval' && <EvalDrawer evalStatus={evalQ.data} onClose={() => setDrawerOpen(null)} />}
       {drawerOpen === 'memory' && <MemoryDrawer onClose={() => setDrawerOpen(null)} />}
+      {drawerOpen === 'outcomes' && <OutcomesDrawer onClose={() => setDrawerOpen(null)} />}
     </div>
   );
 }

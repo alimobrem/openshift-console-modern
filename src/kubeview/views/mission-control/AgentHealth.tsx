@@ -20,12 +20,13 @@ interface AgentHealthProps {
   onOpenScannerDrawer: () => void;
   onOpenEvalDrawer: () => void;
   onOpenMemoryDrawer: () => void;
+  onOpenOutcomesDrawer?: () => void;
   memoryPatternCount?: number;
 }
 
 export function AgentHealth({
   evalStatus, coverage, fixSummary, confidence, costStats, readiness,
-  onOpenScannerDrawer, onOpenEvalDrawer, onOpenMemoryDrawer,
+  onOpenScannerDrawer, onOpenEvalDrawer, onOpenMemoryDrawer, onOpenOutcomesDrawer,
   memoryPatternCount = 0,
 }: AgentHealthProps) {
   return (
@@ -40,7 +41,7 @@ export function AgentHealth({
           readiness={readiness}
           memoryPatternCount={memoryPatternCount}
           onMemoryClick={onOpenMemoryDrawer}
-          onCardClick={onOpenEvalDrawer}
+          onCardClick={onOpenOutcomesDrawer || onOpenEvalDrawer}
         />
       </div>
     </div>
