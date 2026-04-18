@@ -1,13 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
-  Wrench, Database, AlertTriangle, Clock, Bot, Shield, Palette,
-  ArrowRight, Puzzle, FileText, DollarSign, CheckCircle, XCircle, Activity, HelpCircle,
+  FileText, DollarSign, CheckCircle, XCircle, Activity, AlertTriangle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useShallow } from 'zustand/react/shallow';
-import { useToolUsageStore } from '../../store/toolUsageStore';
-import { useVisibilityAwareInterval } from '../../hooks/useVisibilityAwareInterval';
 import { safeQuery } from '../../engine/safeQuery';
 import {
   fetchIntelligenceSections,
@@ -22,13 +18,9 @@ import {
   type CostStats,
 } from '../../engine/analyticsApi';
 import { fetchAgentEvalStatus } from '../../engine/evalStatus';
-import { METRIC_EXPLANATIONS } from '../../engine/analyticsExplanations';
-import { SourceBadge } from './SourceBadge';
-import { StatCard } from './StatCard';
 import { SessionAnalyticsSection } from './SessionAnalyticsSection';
 import { OrcaAnalyticsSection } from './OrcaAnalyticsSection';
 import { PromptAuditSection } from './PromptAuditSection';
-import { UnusedToolsSection } from './UnusedToolsSection';
 import { AgentHealth } from '../mission-control/AgentHealth';
 import { AgentAccuracy } from '../mission-control/AgentAccuracy';
 import { CapabilityDiscovery } from '../mission-control/CapabilityDiscovery';
@@ -36,19 +28,7 @@ import { ScannerDrawer } from '../mission-control/ScannerDrawer';
 import { EvalDrawer } from '../mission-control/EvalDrawer';
 import { MemoryDrawer } from '../mission-control/MemoryDrawer';
 
-const MODE_ICONS: Record<string, React.ReactNode> = {
-  sre: <Bot className="w-4 h-4 text-violet-400" />,
-  security: <Shield className="w-4 h-4 text-red-400" />,
-  view_designer: <Palette className="w-4 h-4 text-emerald-400" />,
-};
-
 export function AnalyticsTab() {
-  const { stats, statsLoading, loadStats, chains, chainsLoading, loadChains, tools, loadTools } = useToolUsageStore(useShallow((s) => ({
-    stats: s.stats, statsLoading: s.statsLoading, loadStats: s.loadStats,
-    chains: s.chains, chainsLoading: s.chainsLoading, loadChains: s.loadChains,
-    tools: s.tools, loadTools: s.loadTools,
-  })));
-
   const { data: intelligence } = useQuery({
     queryKey: ['analytics', 'intelligence'],
     queryFn: () => safeQuery(() => fetchIntelligenceSections()),
@@ -61,17 +41,7 @@ export function AnalyticsTab() {
     staleTime: 60_000,
   });
 
-  const { data: skillStats, isLoading: skillStatsLoading } = useQuery({
-    queryKey: ['admin', 'skill-usage'],
-    queryFn: async () => {
-      const res = await fetch('/api/agent/skills/usage?days=30');
-      if (!res.ok) return null;
-      return res.json();
-    },
-    refetchInterval: 30_000,
-  });
-
-  // Agent health data (moved from old MissionControlView)
+  // Agent health data
   const [drawerOpen, setDrawerOpen] = useState<'scanner' | 'eval' | 'memory' | null>(null);
   const evalQ = useQuery({ queryKey: ['agent', 'eval-status'], queryFn: fetchAgentEvalStatus, refetchInterval: 60_000 });
   const fixQ = useQuery({ queryKey: ['agent', 'fix-history-summary'], queryFn: () => fetchFixHistorySummary(), staleTime: 60_000 });
@@ -81,57 +51,6 @@ export function AnalyticsTab() {
   const costQ = useQuery({ queryKey: ['agent', 'cost'], queryFn: () => fetchCostStats(), staleTime: 60_000 });
   const recsQ = useQuery({ queryKey: ['agent', 'recommendations'], queryFn: fetchRecommendations, staleTime: 5 * 60_000 });
   const readinessQ = useQuery({ queryKey: ['agent', 'readiness-summary'], queryFn: () => fetchReadinessSummary(), staleTime: 60_000 });
-
-  useEffect(() => { loadStats(); loadChains(); loadTools(); }, [loadStats, loadChains, loadTools]);
-  const refreshAnalytics = useCallback(() => { loadStats(); loadChains(); }, [loadStats, loadChains]);
-  useVisibilityAwareInterval(refreshAnalytics, 10000);
-
-  if (statsLoading && !stats) {
-    return <div className="flex justify-center py-12"><div className="kv-skeleton w-8 h-8 rounded-full" /></div>;
-  }
-
-  if (!stats || stats.total_calls === 0) {
-    return (
-      <div className="space-y-6">
-        <OrcaAnalyticsSection />
-        <div className="text-center py-8 text-sm text-slate-500">No tool usage data yet. Tool call analytics will appear once the agent handles conversations.</div>
-
-        {/* Agent health sections always render even without tool usage data */}
-        <div className="border-t border-slate-800 pt-6">
-          <AgentHealth
-            evalStatus={evalQ.data ?? null}
-            coverage={coverageQ.data ?? null}
-            fixSummary={fixQ.data ?? null}
-            confidence={confidenceQ.data ?? null}
-            costStats={costQ.data ?? null}
-            readiness={readinessQ.data ?? null}
-            onOpenScannerDrawer={() => setDrawerOpen('scanner')}
-            onOpenEvalDrawer={() => setDrawerOpen('eval')}
-            onOpenMemoryDrawer={() => setDrawerOpen('memory')}
-            memoryPatternCount={accuracyQ.data?.learning?.total_patterns ?? 0}
-          />
-        </div>
-        <AgentAccuracy accuracy={accuracyQ.data ?? null} onOpenMemoryDrawer={() => setDrawerOpen('memory')} />
-        {recsQ.data?.recommendations && recsQ.data.recommendations.length > 0 && (
-          <CapabilityDiscovery recommendations={recsQ.data.recommendations} />
-        )}
-        {drawerOpen === 'scanner' && <ScannerDrawer coverage={coverageQ.data ?? null} onClose={() => setDrawerOpen(null)} />}
-        {drawerOpen === 'eval' && <EvalDrawer evalStatus={evalQ.data} onClose={() => setDrawerOpen(null)} />}
-        {drawerOpen === 'memory' && <MemoryDrawer onClose={() => setDrawerOpen(null)} />}
-      </div>
-    );
-  }
-
-  const byTool = stats.by_tool || [];
-  const maxCount = Math.max(...byTool.slice(0, 10).map((t) => t.count), 1);
-  const bySource = useMemo(() => {
-    const raw = (stats as unknown as { by_source?: Record<string, number> | Array<{ source: string; count: number }> }).by_source;
-    if (!raw) return [];
-    return Array.isArray(raw) ? raw : Object.entries(raw).map(([source, count]) => ({ source, count }));
-  }, [stats]);
-
-  const skills = skillStats?.skills || [];
-  const handoffs = skillStats?.handoffs || [];
 
   return (
     <div className="space-y-6">
