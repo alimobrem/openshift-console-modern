@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Wrench, Database, AlertTriangle, Clock, Bot, Shield, Palette,
-  ArrowRight, Puzzle, FileText,
+  ArrowRight, Puzzle, FileText, DollarSign, CheckCircle, XCircle, Activity, HelpCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useShallow } from 'zustand/react/shallow';
@@ -19,6 +19,7 @@ import {
   fetchCostStats,
   fetchRecommendations,
   fetchReadinessSummary,
+  type CostStats,
 } from '../../engine/analyticsApi';
 import { fetchAgentEvalStatus } from '../../engine/evalStatus';
 import { METRIC_EXPLANATIONS } from '../../engine/analyticsExplanations';
@@ -137,6 +138,12 @@ export function AnalyticsTab() {
       <SessionAnalyticsSection />
 
       <OrcaAnalyticsSection />
+
+      {/* KPI Dashboard */}
+      <KpiSection />
+
+      {/* Cost Breakdown */}
+      <CostSection costStats={costQ.data ?? null} />
 
       {/* Skill Routing */}
       {!skillStatsLoading && skills.length > 0 && (
@@ -424,6 +431,138 @@ export function AnalyticsTab() {
       {drawerOpen === 'scanner' && <ScannerDrawer coverage={coverageQ.data ?? null} onClose={() => setDrawerOpen(null)} />}
       {drawerOpen === 'eval' && <EvalDrawer evalStatus={evalQ.data} onClose={() => setDrawerOpen(null)} />}
       {drawerOpen === 'memory' && <MemoryDrawer onClose={() => setDrawerOpen(null)} />}
+    </div>
+  );
+}
+
+
+const KPI_INFO: Record<string, { label: string; explain: string; action: string }> = {
+  mttd: { label: 'Detect', explain: 'How quickly issues are found. Target: <60s.', action: 'Decrease scan interval in settings.' },
+  mttr: { label: 'Remediate', explain: 'How quickly issues are fixed. Target: <5min.', action: 'Review auto-fix categories.' },
+  auto_fix_success: { label: 'Fix Success', explain: 'Auto-fix success rate. Target: >85%.', action: 'Review fix strategies below.' },
+  false_positive_rate: { label: 'Noise', explain: 'Findings that were false positives. Target: <2%.', action: 'Check scanner noise thresholds.' },
+  selector_recall: { label: 'Routing', explain: 'Correct skill selected. Target: >92%.', action: 'Review ORCA channel weights.' },
+  selector_latency_p99: { label: 'Latency p99', explain: 'Routing decision speed. Target: <80ms.', action: 'Check keyword index size.' },
+  agent_caused_incidents: { label: 'Agent Incidents', explain: 'Issues caused by auto-fix. Target: 0.', action: 'Review rolled-back actions.' },
+  time_to_resolution: { label: 'Resolution', explain: 'End-to-end fix time. Target: <10min.', action: 'Check investigation plan efficiency.' },
+  self_heal_rate: { label: 'Self-Heal', explain: 'Issues resolved without agent. Higher = resilient cluster.', action: 'Informational — no action needed.' },
+  tokens_per_resolution: { label: 'Tokens/Fix', explain: 'AI tokens per resolution. Lower = more efficient.', action: 'Check prompt audit for bloat.' },
+  routing_accuracy: { label: 'Route Accuracy', explain: 'ORCA overall accuracy. Target: >90%.', action: 'Review skill analytics.' },
+};
+
+function KpiSection() {
+  const { data: kpiData } = useQuery({
+    queryKey: ['analytics', 'kpi'],
+    queryFn: async () => {
+      const res = await fetch('/api/agent/kpi?days=7');
+      if (!res.ok) return null;
+      return res.json();
+    },
+    staleTime: 60_000,
+  });
+
+  if (!kpiData?.kpis) return null;
+
+  const kpis = kpiData.kpis as Record<string, { label: string; value: number | string; unit: string; status: string; sample_count?: number }>;
+
+  return (
+    <div className="border-t border-slate-800 pt-6">
+      <h2 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+        <Activity className="w-4 h-4 text-blue-400" />
+        Operational KPIs (7 days)
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+        {Object.entries(kpis).map(([key, kpi]) => {
+          const info = KPI_INFO[key];
+          const noData = kpi.status === 'info' && (kpi.value === 0 || kpi.value === '0');
+          const val = noData ? '\u2014' :
+            kpi.unit === 'ratio' ? `${Math.round((kpi.value as number) * 100)}%` :
+            kpi.unit === 'seconds' ? `${kpi.value}s` :
+            kpi.unit === 'ms' ? `${kpi.value}ms` :
+            String(kpi.value);
+
+          return (
+            <div key={key} className={cn(
+              'bg-slate-900 border rounded-lg p-2.5 text-center group relative',
+              kpi.status === 'pass' ? 'border-emerald-800/30' :
+              kpi.status === 'warn' ? 'border-amber-800/30' :
+              kpi.status === 'fail' ? 'border-red-800/30' :
+              'border-slate-800',
+            )}>
+              <div className="flex items-center justify-center gap-1 mb-1">
+                {kpi.status === 'pass' ? <CheckCircle className="w-3 h-3 text-emerald-400" /> :
+                 kpi.status === 'warn' ? <AlertTriangle className="w-3 h-3 text-amber-400" /> :
+                 kpi.status === 'info' ? <Activity className="w-3 h-3 text-slate-500" /> :
+                 <XCircle className="w-3 h-3 text-red-400" />}
+                <span className="text-[10px] text-slate-500 truncate">{info?.label ?? kpi.label}</span>
+              </div>
+              <div className={cn('text-sm font-bold', noData ? 'text-slate-500' : kpi.status === 'pass' ? 'text-emerald-400' : kpi.status === 'warn' ? 'text-amber-400' : kpi.status === 'fail' ? 'text-red-400' : 'text-slate-200')}>
+                {val}
+              </div>
+              {noData && <div className="text-[9px] text-slate-600 mt-0.5">No data yet</div>}
+              {info && (
+                <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2.5 py-1.5 bg-slate-800 border border-slate-700 rounded text-[10px] text-left w-48 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10 space-y-0.5">
+                  <div className="text-slate-300">{info.explain}</div>
+                  <div className="text-blue-400">{info.action}</div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function CostSection({ costStats }: { costStats: CostStats | null }) {
+  if (!costStats?.cost || costStats.cost.total_usd === 0) return null;
+
+  const { cost, total_incidents = 0, by_mode = [] } = costStats;
+
+  return (
+    <div className="border-t border-slate-800 pt-6">
+      <h2 className="text-sm font-semibold text-slate-200 mb-3 flex items-center gap-2">
+        <DollarSign className="w-4 h-4 text-green-400" />
+        Cost Breakdown
+      </h2>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
+          <div className="text-[10px] text-slate-500 mb-1">Total Cost</div>
+          <div className="text-lg font-bold text-slate-100">${cost.total_usd.toFixed(2)}</div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
+          <div className="text-[10px] text-slate-500 mb-1">Per Session</div>
+          <div className="text-lg font-bold text-slate-100">${cost.avg_per_incident_usd.toFixed(3)}</div>
+          <div className="text-[9px] text-slate-600">{total_incidents} sessions</div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
+          <div className="text-[10px] text-slate-500 mb-1">Cache Savings</div>
+          <div className="text-lg font-bold text-emerald-400">${cost.cache_savings_usd.toFixed(2)}</div>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-center">
+          <div className="text-[10px] text-slate-500 mb-1">I/O Split</div>
+          <div className="text-xs text-slate-300">
+            <span className="text-blue-400">${cost.input_usd.toFixed(2)}</span> in / <span className="text-amber-400">${cost.output_usd.toFixed(2)}</span> out
+          </div>
+        </div>
+      </div>
+
+      {by_mode.length > 0 && (
+        <div className="mt-3 bg-slate-900 border border-slate-800 rounded-lg p-3">
+          <div className="text-[10px] text-slate-500 mb-2">Cost by Mode</div>
+          <div className="space-y-1">
+            {by_mode.map((m) => (
+              <div key={m.mode} className="flex items-center justify-between text-xs">
+                <span className="text-slate-300 capitalize">{m.mode}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-slate-500">{m.count} sessions</span>
+                  <span className="text-slate-200 font-medium">${(m.cost_usd ?? 0).toFixed(2)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
