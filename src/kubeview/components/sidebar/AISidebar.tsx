@@ -27,6 +27,17 @@ export function AISidebar() {
   const streaming = useAgentStore((s) => s.streaming);
   const activeSkill = useMonitorStore((s) => s.activeSkill);
 
+  // Auto-collapse on small screens
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 1200px)');
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) useUIStore.getState().collapseAISidebar();
+    };
+    if (mq.matches) useUIStore.getState().collapseAISidebar();
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   // Resize
   const [isResizing, setIsResizing] = useState(false);
   const startX = useRef(0);

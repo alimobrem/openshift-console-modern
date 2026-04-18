@@ -8,9 +8,6 @@ export default {
         mono: ['Geist Mono', 'SF Mono', 'Fira Code', 'JetBrains Mono', 'monospace'],
       },
       colors: {
-        slate: {
-          850: '#1a202e',
-        },
         pulse: {
           DEFAULT: '#2563eb',
           light: '#3b82f6',
@@ -43,9 +40,9 @@ export default {
         'glow-pulse': 'glow-pulse 2s ease-in-out infinite',
       },
       boxShadow: {
-        'modern-sm': 'var(--shadow-sm)',
-        'modern-md': 'var(--shadow-md)',
-        'modern-lg': 'var(--shadow-lg)',
+        'modern-sm': 'var(--kv-shadow-sm)',
+        'modern-md': 'var(--kv-shadow-md)',
+        'modern-lg': 'var(--kv-shadow-lg)',
       },
     },
   },

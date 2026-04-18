@@ -138,14 +138,6 @@
   transition: border-color var(--kv-transition-fast), box-shadow var(--kv-transition-fast);
 }
 
-/* Staggered entrance */
-@keyframes kv-enter { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-.kv-enter { animation: kv-enter 0.3s ease-out both; }
-.kv-enter-1 { animation-delay: 0.05s; }
-.kv-enter-2 { animation-delay: 0.1s; }
-.kv-enter-3 { animation-delay: 0.15s; }
-.kv-enter-4 { animation-delay: 0.2s; }
-
 /* Chat message entrance */
 @keyframes kv-msg-in-left { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
 @keyframes kv-msg-in-right { from { opacity: 0; transform: translateX(12px); } to { opacity: 1; transform: translateX(0); } }
@@ -335,27 +327,3 @@
   outline-offset: 2px;
 }
 
-/* Code blocks */
-.kv-code {
-  font-family: var(--kv-font-mono);
-  font-size: 13px;
-  line-height: 1.5;
-}
-
-/* Log level colors */
-.kv-log-debug { color: #94a3b8; }
-.kv-log-info { color: #e2e8f0; }
-.kv-log-warn { color: #fbbf24; }
-.kv-log-error { color: #f87171; }
-.kv-log-fatal { color: #ef4444; font-weight: 600; }
-
-/* Search highlight */
-.kv-highlight {
-  background-color: rgba(245, 158, 11, 0.25);
-  border-radius: 2px;
-}
-
-.kv-highlight-active {
-  background-color: rgba(245, 158, 11, 0.5);
-  border-radius: 2px;
-}
