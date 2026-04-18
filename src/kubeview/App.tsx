@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Shell } from './components/Shell';
 import PulseView from './views/PulseView';
-import WelcomeView from './views/WelcomeView';
+
 import CustomView from './views/CustomView';
 import ClaimView from './views/ClaimView';
 import MemoryView from './views/MemoryView';
@@ -32,7 +32,6 @@ export default function OpenshiftPulseApp() {
           <Route path="/" element={<Shell />}>
             {/* Home */}
             <Route index element={<DefaultRedirect />} />
-            <Route path="welcome" element={<WelcomeView />} />
             <Route path="pulse" element={<PulseView />} />
 
             {/* Resource routes (list, detail, yaml, logs, metrics, create, deps, investigate) */}

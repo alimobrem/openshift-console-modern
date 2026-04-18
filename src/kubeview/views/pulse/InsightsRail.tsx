@@ -1,5 +1,5 @@
 import React from 'react';
-import { Lightbulb, ArrowRight, AlertTriangle, AlertCircle, Info, ChevronRight } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Info, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useIncidentFeed, type IncidentSeverity } from '../../hooks/useIncidentFeed';
 
@@ -20,19 +20,6 @@ const severityConfig: Record<IncidentSeverity, { icon: React.ReactNode; borderCl
     hoverClass: 'hover:border-slate-600 hover:bg-slate-800/50',
   },
 };
-
-interface QuickAction {
-  label: string;
-  route: string;
-  title: string;
-}
-
-const quickActions: QuickAction[] = [
-  { label: 'Incidents', route: '/incidents', title: 'Incidents' },
-  { label: 'Readiness', route: '/readiness', title: 'Production Readiness' },
-  { label: 'Alerts', route: '/alerts', title: 'Alerts' },
-  { label: 'Reviews', route: '/incidents?tab=actions', title: 'Review Queue' },
-];
 
 export function InsightsRail({ className, onNavigate }: { className?: string; onNavigate?: (route: string, title: string) => void }) {
   const { incidents, isLoading, counts } = useIncidentFeed({ limit: 5 });
@@ -90,25 +77,6 @@ export function InsightsRail({ className, onNavigate }: { className?: string; on
             })}
           </div>
         )}
-      </div>
-
-      <div className="rounded-lg border border-slate-800 bg-slate-900 p-3">
-        <div className="flex items-center gap-2 mb-2">
-          <Lightbulb className="h-3.5 w-3.5 text-yellow-400" />
-          <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Quick Actions</h3>
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {quickActions.map((qa) => (
-            <button
-              key={qa.route}
-              onClick={() => onNavigate?.(qa.route, qa.title)}
-              className="inline-flex items-center gap-1 rounded-full border border-slate-700 bg-slate-800 px-2.5 py-1 text-[11px] text-slate-300 hover:border-violet-500/50 hover:text-slate-100 transition-colors"
-            >
-              {qa.label}
-              <ArrowRight className="h-2.5 w-2.5" />
-            </button>
-          ))}
-        </div>
       </div>
     </aside>
   );

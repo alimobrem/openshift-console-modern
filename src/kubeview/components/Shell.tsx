@@ -10,6 +10,7 @@ import { ErrorBoundary, CssHealthCheck } from './ErrorBoundary';
 import { SaveViewWatcher } from './agent/SaveViewWatcher';
 import { SessionTracker } from './SessionTracker';
 import { GuidedTour } from './GuidedTour';
+
 import { useKeyboardShortcuts, useDiscovery } from '../hooks';
 import { useCapabilityDetection } from '../hooks/useCapabilityDetection';
 import { useShallow } from 'zustand/react/shallow';

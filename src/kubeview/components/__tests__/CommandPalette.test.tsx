@@ -236,9 +236,7 @@ describe('OpenShift Pulse CommandPalette', () => {
 
   it('keyboard navigation cycles through items', () => {
     renderPalette();
-    // First items are pages (Welcome, Pulse, Timeline, ...), then resources
-    // down, down, up = index 1 (Cluster Pulse)
-    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    // First item is Cluster Pulse (/pulse), then Workloads, etc.
     fireEvent.keyDown(window, { key: 'ArrowDown' });
     fireEvent.keyDown(window, { key: 'ArrowUp' });
     fireEvent.keyDown(window, { key: 'Enter' });

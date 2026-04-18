@@ -49,13 +49,8 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'toolbox', label: 'Toolbox', icon: 'Wrench', path: '/toolbox', group: 'agent', subtitle: 'Tools, skills, connections, and analytics', keywords: ['tools', 'skills', 'connections', 'analytics', 'mcp'], color: 'text-fuchsia-400' },
 ];
 
-/** Nav items that only appear in CommandPalette (not in sidebar/ResourceBrowser) */
-export const PALETTE_ONLY_ITEMS: NavItem[] = [
-  { id: 'welcome', label: 'Welcome', icon: 'Home', path: '/welcome', group: 'cluster', subtitle: 'Getting started guide', keywords: ['welcome', 'getting', 'started', 'guide', 'home'] },
-];
-
-/** All nav items including palette-only entries (for CommandPalette) */
-export const ALL_NAV_ITEMS: NavItem[] = [...PALETTE_ONLY_ITEMS, ...NAV_ITEMS];
+/** @deprecated Use NAV_ITEMS directly */
+export const ALL_NAV_ITEMS: NavItem[] = NAV_ITEMS;
 
 /** Group NAV_ITEMS by their group field, in canonical order */
 export function getNavItemsByGroup(items: NavItem[] = NAV_ITEMS): Array<{ group: NavItem['group']; label: string; items: NavItem[] }> {
