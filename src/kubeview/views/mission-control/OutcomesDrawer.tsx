@@ -73,7 +73,7 @@ export function OutcomesDrawer({ onClose }: { onClose: () => void }) {
         <div
           ref={drawerRef}
           tabIndex={-1}
-          className="relative w-[520px] h-full bg-slate-950 border-l border-slate-800 overflow-y-auto thin-scrollbar focus:outline-none"
+          className="relative w-[520px] h-full bg-slate-950 border-l border-slate-800 overflow-y-auto focus:outline-none"
           onClick={(e) => e.stopPropagation()}
         >
           {/* Header */}

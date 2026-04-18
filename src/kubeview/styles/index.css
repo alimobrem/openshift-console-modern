@@ -87,13 +87,15 @@
   overflow: hidden;
 }
 
-/* Scrollbar — 4px violet, always visible.
-   Uses ONLY ::-webkit-scrollbar (Chrome/Safari/Edge).
-   Do NOT add scrollbar-color — Chrome 121+ disables ::-webkit-scrollbar when it is set. */
+/* Scrollbar — 6px violet, always visible.
+   Chrome/Safari/Edge: ::-webkit-scrollbar pseudo-elements.
+   Firefox: @-moz-document fallback with scrollbar-color/scrollbar-width.
+   Do NOT add scrollbar-color outside @-moz-document — Chrome 121+ disables ::-webkit-scrollbar when it is set. */
 .openshiftpulse ::-webkit-scrollbar { width: 6px; height: 6px; }
 .openshiftpulse ::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); border-radius: 3px; }
 .openshiftpulse ::-webkit-scrollbar-thumb { background: rgba(139, 92, 246, 0.7); border-radius: 3px; }
 .openshiftpulse ::-webkit-scrollbar-thumb:hover { background: rgba(139, 92, 246, 0.9); }
+@-moz-document url-prefix() { .openshiftpulse { scrollbar-color: rgba(139, 92, 246, 0.7) rgba(30, 41, 59, 0.5); scrollbar-width: thin; } }
 
 /* Hide scrollbar on tab bar */
 .hide-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }

@@ -67,7 +67,7 @@ export function DashboardMode() {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto thin-scrollbar px-4 py-3 space-y-4">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-4">
         {/* Agent Status — clickable to Incident Center when findings exist */}
         <div
           className={cn(

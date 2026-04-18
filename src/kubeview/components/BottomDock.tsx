@@ -167,7 +167,7 @@ function EventStream() {
   }
 
   return (
-    <div className="overflow-y-auto thin-scrollbar h-full">
+    <div className="overflow-y-auto h-full">
       <table className="w-full text-xs">
         <thead className="sticky top-0 bg-slate-900 border-b border-slate-800">
           <tr className="text-left text-slate-500">
