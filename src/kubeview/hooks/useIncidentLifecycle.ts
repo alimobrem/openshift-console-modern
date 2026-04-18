@@ -81,30 +81,33 @@ async function fetchPostmortems(): Promise<Postmortem[]> {
 
 export function useIncidentLifecycle(findingId: string): IncidentLifecycle {
   const detection = useMonitorStore(
-    useCallback((s) => s.findings.find((f) => f.id === findingId) ?? null, [findingId]),
+    useCallback((s) => (s.findings || []).find((f) => f.id === findingId) ?? null, [findingId]),
   );
   const investigation = useMonitorStore(
     useCallback((s) => {
-      for (let i = s.investigations.length - 1; i >= 0; i--) {
-        if (s.investigations[i].findingId === findingId) return s.investigations[i];
+      const arr = s.investigations || [];
+      for (let i = arr.length - 1; i >= 0; i--) {
+        if (arr[i].findingId === findingId) return arr[i];
       }
       return null;
     }, [findingId]),
   );
   const action = useMonitorStore(
     useCallback((s) => {
-      const pending = s.pendingActions.find((a) => a.findingId === findingId);
+      const pending = (s.pendingActions || []).find((a) => a.findingId === findingId);
       if (pending) return pending;
-      for (let i = s.recentActions.length - 1; i >= 0; i--) {
-        if (s.recentActions[i].findingId === findingId) return s.recentActions[i];
+      const recent = s.recentActions || [];
+      for (let i = recent.length - 1; i >= 0; i--) {
+        if (recent[i].findingId === findingId) return recent[i];
       }
       return null;
     }, [findingId]),
   );
   const verification = useMonitorStore(
     useCallback((s) => {
-      for (let i = s.verifications.length - 1; i >= 0; i--) {
-        if (s.verifications[i].findingId === findingId) return s.verifications[i];
+      const arr = s.verifications || [];
+      for (let i = arr.length - 1; i >= 0; i--) {
+        if (arr[i].findingId === findingId) return arr[i];
       }
       return null;
     }, [findingId]),

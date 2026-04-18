@@ -3,7 +3,8 @@ import { X, AlertTriangle, Activity, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '../store/uiStore';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
-import type { K8sResource } from '../engine/renderers';
+import { formatAge } from '../engine/dateUtils';
+import type { Event } from '../engine/types';
 
 const LogStream = lazy(() => import('./logs/LogStream'));
 const PodTerminal = lazy(() => import('./PodTerminal'));
@@ -149,13 +150,13 @@ export function BottomDock() {
 }
 
 function EventStream() {
-  const { data: rawEvents = [] } = useK8sListWatch<K8sResource>({ apiPath: '/api/v1/events?limit=200' });
+  const { data: rawEvents = [] } = useK8sListWatch<Event>({ apiPath: '/api/v1/events?limit=200' });
 
   const events = useMemo(() => {
     return [...rawEvents]
       .sort((a, b) => {
-        const tsA = (a as any).lastTimestamp || (a as any).metadata?.creationTimestamp || '';
-        const tsB = (b as any).lastTimestamp || (b as any).metadata?.creationTimestamp || '';
+        const tsA = a.lastTimestamp || a.metadata?.creationTimestamp || '';
+        const tsB = b.lastTimestamp || b.metadata?.creationTimestamp || '';
         return new Date(tsB).getTime() - new Date(tsA).getTime();
       })
       .slice(0, 100);
@@ -179,18 +180,17 @@ function EventStream() {
         </thead>
         <tbody className="divide-y divide-slate-800/50">
           {events.map((evt) => {
-            const e = evt as any;
-            const type = e.type || 'Normal';
-            const reason = e.reason || '';
-            const obj = e.involvedObject ? `${e.involvedObject.kind}/${e.involvedObject.name}` : '';
-            const ns = e.involvedObject?.namespace || e.metadata?.namespace || '';
-            const message = (e.message || '').slice(0, 120);
-            const ts = e.lastTimestamp || e.metadata?.creationTimestamp;
+            const type = evt.type || 'Normal';
+            const reason = evt.reason || '';
+            const obj = evt.involvedObject ? `${evt.involvedObject.kind}/${evt.involvedObject.name}` : '';
+            const ns = evt.involvedObject?.namespace || evt.metadata?.namespace || '';
+            const message = (evt.message || '').slice(0, 120);
+            const ts = evt.lastTimestamp || evt.metadata?.creationTimestamp;
             const age = ts ? formatAge(new Date(ts)) : '';
             const isWarning = type === 'Warning';
 
             return (
-              <tr key={e.metadata?.uid || `${obj}-${reason}-${ts}`} className={cn('hover:bg-slate-800/30', isWarning && 'text-amber-300/90')}>
+              <tr key={evt.metadata?.uid || `${obj}-${reason}-${ts}`} className={cn('hover:bg-slate-800/30', isWarning && 'text-amber-300/90')}>
                 <td className="px-3 py-1.5">
                   <span className="flex items-center gap-1">
                     {isWarning ? <AlertTriangle className="w-3 h-3 text-amber-400" /> : <Info className="w-3 h-3 text-slate-600" />}
@@ -213,13 +213,3 @@ function EventStream() {
   );
 }
 
-function formatAge(date: Date): string {
-  const diff = Date.now() - date.getTime();
-  const secs = Math.floor(diff / 1000);
-  if (secs < 60) return `${secs}s`;
-  const mins = Math.floor(secs / 60);
-  if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h`;
-  return `${Math.floor(hrs / 24)}d`;
-}
