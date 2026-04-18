@@ -9,13 +9,31 @@ import { useShallow } from 'zustand/react/shallow';
 import { useToolUsageStore } from '../../store/toolUsageStore';
 import { useVisibilityAwareInterval } from '../../hooks/useVisibilityAwareInterval';
 import { safeQuery } from '../../engine/safeQuery';
-import { fetchIntelligenceSections, fetchPromptStats } from '../../engine/analyticsApi';
+import {
+  fetchIntelligenceSections,
+  fetchPromptStats,
+  fetchFixHistorySummary,
+  fetchScannerCoverage,
+  fetchConfidenceCalibration,
+  fetchAccuracyStats,
+  fetchCostStats,
+  fetchRecommendations,
+  fetchReadinessSummary,
+} from '../../engine/analyticsApi';
+import { fetchAgentEvalStatus } from '../../engine/evalStatus';
+import { METRIC_EXPLANATIONS } from '../../engine/analyticsExplanations';
 import { SourceBadge } from './SourceBadge';
 import { StatCard } from './StatCard';
 import { SessionAnalyticsSection } from './SessionAnalyticsSection';
 import { OrcaAnalyticsSection } from './OrcaAnalyticsSection';
 import { PromptAuditSection } from './PromptAuditSection';
 import { UnusedToolsSection } from './UnusedToolsSection';
+import { AgentHealth } from '../mission-control/AgentHealth';
+import { AgentAccuracy } from '../mission-control/AgentAccuracy';
+import { CapabilityDiscovery } from '../mission-control/CapabilityDiscovery';
+import { ScannerDrawer } from '../mission-control/ScannerDrawer';
+import { EvalDrawer } from '../mission-control/EvalDrawer';
+import { MemoryDrawer } from '../mission-control/MemoryDrawer';
 
 const MODE_ICONS: Record<string, React.ReactNode> = {
   sre: <Bot className="w-4 h-4 text-violet-400" />,
@@ -51,6 +69,17 @@ export function AnalyticsTab() {
     },
     refetchInterval: 30_000,
   });
+
+  // Agent health data (moved from old MissionControlView)
+  const [drawerOpen, setDrawerOpen] = useState<'scanner' | 'eval' | 'memory' | null>(null);
+  const evalQ = useQuery({ queryKey: ['agent', 'eval-status'], queryFn: fetchAgentEvalStatus, refetchInterval: 60_000 });
+  const fixQ = useQuery({ queryKey: ['agent', 'fix-history-summary'], queryFn: () => fetchFixHistorySummary(), staleTime: 60_000 });
+  const coverageQ = useQuery({ queryKey: ['agent', 'scanner-coverage'], queryFn: () => fetchScannerCoverage(), staleTime: 60_000 });
+  const confidenceQ = useQuery({ queryKey: ['agent', 'confidence'], queryFn: () => fetchConfidenceCalibration(), staleTime: 60_000 });
+  const accuracyQ = useQuery({ queryKey: ['agent', 'accuracy'], queryFn: () => fetchAccuracyStats(), staleTime: 60_000 });
+  const costQ = useQuery({ queryKey: ['agent', 'cost'], queryFn: () => fetchCostStats(), staleTime: 60_000 });
+  const recsQ = useQuery({ queryKey: ['agent', 'recommendations'], queryFn: fetchRecommendations, staleTime: 5 * 60_000 });
+  const readinessQ = useQuery({ queryKey: ['agent', 'readiness-summary'], queryFn: () => fetchReadinessSummary(), staleTime: 60_000 });
 
   useEffect(() => { loadStats(); loadChains(); loadTools(); }, [loadStats, loadChains, loadTools]);
   const refreshAnalytics = useCallback(() => { loadStats(); loadChains(); }, [loadStats, loadChains]);
@@ -151,10 +180,10 @@ export function AnalyticsTab() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <StatCard label="Total Calls" value={stats.total_calls.toLocaleString()} icon={<Database className="w-4 h-4 text-blue-400" />} />
-        <StatCard label="Unique Tools" value={String(stats.unique_tools_used)} icon={<Wrench className="w-4 h-4 text-fuchsia-400" />} />
-        <StatCard label="Error Rate" value={`${(stats.error_rate * 100).toFixed(1)}%`} icon={<AlertTriangle className="w-4 h-4 text-red-400" />} />
-        <StatCard label="Avg Duration" value={`${stats.avg_duration_ms}ms`} icon={<Clock className="w-4 h-4 text-emerald-400" />} />
+        <StatCard label="Total Calls" value={stats.total_calls.toLocaleString()} icon={<Database className="w-4 h-4 text-blue-400" />} explanation={METRIC_EXPLANATIONS.total_calls} />
+        <StatCard label="Unique Tools" value={String(stats.unique_tools_used)} icon={<Wrench className="w-4 h-4 text-fuchsia-400" />} explanation={METRIC_EXPLANATIONS.unique_tools} />
+        <StatCard label="Error Rate" value={`${(stats.error_rate * 100).toFixed(1)}%`} icon={<AlertTriangle className="w-4 h-4 text-red-400" />} explanation={METRIC_EXPLANATIONS.error_rate} />
+        <StatCard label="Avg Duration" value={`${stats.avg_duration_ms}ms`} icon={<Clock className="w-4 h-4 text-emerald-400" />} explanation={METRIC_EXPLANATIONS.avg_duration} />
         <StatCard label="Avg Result" value={stats.avg_result_bytes >= 1024 ? `${(stats.avg_result_bytes / 1024).toFixed(1)}KB` : `${stats.avg_result_bytes}B`} icon={<FileText className="w-4 h-4 text-slate-400" />} />
         {stats.by_status && (
           <StatCard label="Success" value={`${stats.by_status.success ?? 0} / ${stats.total_calls}`} icon={<Bot className="w-4 h-4 text-emerald-400" />} />
@@ -341,6 +370,37 @@ export function AnalyticsTab() {
 
       {/* Prompt Audit */}
       <PromptAuditSection />
+
+      {/* Agent Health (eval gate, scanner coverage, fix outcomes) */}
+      <div className="border-t border-slate-800 pt-6">
+        <AgentHealth
+          evalStatus={evalQ.data ?? null}
+          coverage={coverageQ.data ?? null}
+          fixSummary={fixQ.data ?? null}
+          confidence={confidenceQ.data ?? null}
+          costStats={costQ.data ?? null}
+          readiness={readinessQ.data ?? null}
+          onOpenScannerDrawer={() => setDrawerOpen('scanner')}
+          onOpenEvalDrawer={() => setDrawerOpen('eval')}
+          onOpenMemoryDrawer={() => setDrawerOpen('memory')}
+          memoryPatternCount={accuracyQ.data?.learning?.total_patterns ?? 0}
+        />
+      </div>
+
+      {/* Agent Accuracy */}
+      <AgentAccuracy
+        accuracy={accuracyQ.data ?? null}
+        onOpenMemoryDrawer={() => setDrawerOpen('memory')}
+      />
+
+      {/* Capability Discovery */}
+      {recsQ.data?.recommendations && recsQ.data.recommendations.length > 0 && (
+        <CapabilityDiscovery recommendations={recsQ.data.recommendations} />
+      )}
+
+      {drawerOpen === 'scanner' && <ScannerDrawer coverage={coverageQ.data ?? null} onClose={() => setDrawerOpen(null)} />}
+      {drawerOpen === 'eval' && <EvalDrawer evalStatus={evalQ.data} onClose={() => setDrawerOpen(null)} />}
+      {drawerOpen === 'memory' && <MemoryDrawer onClose={() => setDrawerOpen(null)} />}
     </div>
   );
 }
