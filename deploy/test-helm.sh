@@ -9,6 +9,8 @@ set -euo pipefail
 RED='\033[0;31m'; GREEN='\033[0;32m'; NC='\033[0m'
 pass() { echo -e "${GREEN}PASS${NC} $1"; }
 fail() { echo -e "${RED}FAIL${NC} $1"; FAILURES=$((FAILURES + 1)); }
+# grep -q on large piped input causes SIGPIPE under set -o pipefail; use grep -c instead
+has() { [[ $(echo "$1" | grep -c "$2" || true) -gt 0 ]]; }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CHART_DIR="$SCRIPT_DIR/helm/pulse"
@@ -68,48 +70,48 @@ else
 fi
 
 # 4. __AGENT_TOKEN__ placeholder present
-if echo "$RENDERED" | grep -q "__AGENT_TOKEN__"; then
+if has "$RENDERED" "__AGENT_TOKEN__"; then
   pass "__AGENT_TOKEN__ placeholder in nginx config"
 else
   fail "__AGENT_TOKEN__ placeholder missing from nginx config"
 fi
 
 # 5. Entrypoint reads token from file
-if echo "$RENDERED" | grep -q "cat /etc/nginx/agent-token/token"; then
+if has "$RENDERED" "cat /etc/nginx/agent-token/token"; then
   pass "Entrypoint reads token from mounted secret"
 else
   fail "Entrypoint doesn't read token from file"
 fi
 
 # 6. Agent token volume mount
-if echo "$RENDERED" | grep -q "agent-token"; then
+if has "$RENDERED" "agent-token"; then
   pass "Agent token volume mount exists"
 else
   fail "Agent token volume mount missing"
 fi
 
 # 7. OAuth secrets have resource-policy keep
-if echo "$RENDERED" | grep -q 'resource-policy.*keep\|resource-policy: keep'; then
+if has "$RENDERED" "resource-policy.*keep"; then
   pass "Secrets have helm.sh/resource-policy: keep"
 else
   fail "Secrets missing resource-policy annotation"
 fi
 
 # 8. PDB exists for UI
-if echo "$RENDERED" | grep -q "PodDisruptionBudget"; then
+if has "$RENDERED" "PodDisruptionBudget"; then
   pass "PodDisruptionBudget exists"
 else
   fail "PodDisruptionBudget missing"
 fi
 
 # 9. Security contexts
-if echo "$RENDERED" | grep -q "readOnlyRootFilesystem: true"; then
+if has "$RENDERED" "readOnlyRootFilesystem: true"; then
   pass "readOnlyRootFilesystem set"
 else
   fail "readOnlyRootFilesystem missing"
 fi
 
-if echo "$RENDERED" | grep -q "runAsNonRoot: true"; then
+if has "$RENDERED" "runAsNonRoot: true"; then
   pass "runAsNonRoot set"
 else
   fail "runAsNonRoot missing"
@@ -126,7 +128,7 @@ else
 fi
 
 # 11. No agent location block when disabled
-if echo "$RENDERED_NO_AGENT" | grep -q "Agent not deployed"; then
+if has "$RENDERED_NO_AGENT" "Agent not deployed"; then
   pass "Agent 503 fallback when disabled"
 else
   fail "Agent 503 fallback missing when disabled"
@@ -141,7 +143,7 @@ else
 fi
 
 # 13. --atomic flag (verify values file renders cleanly for atomic deploys)
-if echo "$RENDERED" | grep -q "RollingUpdate\|maxSurge"; then
+if has "$RENDERED" "RollingUpdate"; then
   pass "RollingUpdate strategy configured"
 else
   fail "RollingUpdate strategy missing"
