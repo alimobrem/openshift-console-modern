@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Brain, Wrench, Cpu, ChevronDown, ChevronRight } from 'lucide-react';
+import { Brain, Wrench, Cpu, GitBranch, ChevronDown, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ThinkingIndicatorProps {
   thinkingText: string;
   streamingText: string;
   activeTools: string[];
+  /** Skills running in parallel (empty for single-skill) */
+  activeSkills?: string[];
   /** Compact mode for InlineAgent (no border glow, smaller) */
   compact?: boolean;
 }
@@ -22,6 +24,7 @@ export function ThinkingIndicator({
   thinkingText,
   streamingText,
   activeTools,
+  activeSkills = [],
   compact = false,
 }: ThinkingIndicatorProps) {
   const [elapsed, setElapsed] = useState(0);
@@ -49,20 +52,25 @@ export function ThinkingIndicator({
   }, [activeTools]);
 
   // Determine phase
+  const isParallel = activeSkills.length > 1;
   const phase = streamingText
     ? 'generating'
-    : activeTools.length > 0
-      ? 'tools'
-      : 'thinking';
+    : isParallel
+      ? 'parallel'
+      : activeTools.length > 0
+        ? 'tools'
+        : 'thinking';
 
   const phaseLabel =
     phase === 'generating'
       ? 'Generating response'
-      : phase === 'tools'
-        ? `Using ${activeTools[activeTools.length - 1]}`
-        : 'Reasoning';
+      : phase === 'parallel'
+        ? `Running ${activeSkills.join(' + ')}`
+        : phase === 'tools'
+          ? `Using ${activeTools[activeTools.length - 1]}`
+          : 'Reasoning';
 
-  const PhaseIcon = phase === 'tools' ? Wrench : phase === 'generating' ? Cpu : Brain;
+  const PhaseIcon = phase === 'parallel' ? GitBranch : phase === 'tools' ? Wrench : phase === 'generating' ? Cpu : Brain;
 
   if (compact) {
     return (
@@ -102,12 +110,14 @@ export function ThinkingIndicator({
               <PhaseIcon className={cn(
                 'h-3.5 w-3.5 shrink-0',
                 phase === 'thinking' && 'text-violet-400',
+                phase === 'parallel' && 'text-cyan-400',
                 phase === 'tools' && 'text-amber-400',
                 phase === 'generating' && 'text-emerald-400',
               )} />
               <span className={cn(
                 'text-sm font-medium',
                 phase === 'thinking' && 'text-violet-300',
+                phase === 'parallel' && 'text-cyan-300',
                 phase === 'tools' && 'text-amber-300',
                 phase === 'generating' && 'text-emerald-300',
               )}>
@@ -120,6 +130,11 @@ export function ThinkingIndicator({
               <div className={cn('h-1 rounded-full transition-all duration-500',
                 phase === 'thinking' ? 'w-8 bg-violet-400' : 'w-4 bg-violet-400/40'
               )} />
+              {isParallel && (
+                <div className={cn('h-1 rounded-full transition-all duration-500',
+                  phase === 'parallel' ? 'w-8 bg-cyan-400' : 'w-4 bg-cyan-400/40'
+                )} />
+              )}
               <div className={cn('h-1 rounded-full transition-all duration-500',
                 phase === 'tools' ? 'w-8 bg-amber-400' : toolHistory.length > 0 ? 'w-4 bg-amber-400/40' : 'w-4 bg-slate-700'
               )} />
@@ -154,6 +169,22 @@ export function ThinkingIndicator({
                 </span>
               );
             })}
+          </div>
+        )}
+
+        {/* Parallel skill badges */}
+        {isParallel && (
+          <div className="flex flex-wrap gap-1.5">
+            {activeSkills.map((skill) => (
+              <span
+                key={skill}
+                className="inline-flex items-center gap-1 text-[10px] font-mono px-2 py-0.5 rounded-md bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 thinking-tool-active"
+              >
+                <GitBranch className="h-2.5 w-2.5" />
+                {skill}
+                <span className="thinking-tool-dot" />
+              </span>
+            ))}
           </div>
         )}
 

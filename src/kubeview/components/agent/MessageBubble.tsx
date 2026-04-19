@@ -1,7 +1,7 @@
 import { useState, useCallback, memo, useMemo } from 'react';
-import { Clock, Copy, Check, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Puzzle, Wrench, MessageCircleQuestion } from 'lucide-react';
+import { Clock, Copy, Check, Maximize2, Minimize2, ThumbsUp, ThumbsDown, Puzzle, Wrench, MessageCircleQuestion, GitBranch, AlertTriangle } from 'lucide-react';
 import { useAgentStore } from '../../store/agentStore';
-import type { AgentMode, AgentMessage } from '../../engine/agentClient';
+import type { AgentMode, AgentMessage, SkillConflict } from '../../engine/agentClient';
 import type { ComponentSpec } from '../../engine/agentComponents';
 import { MarkdownRenderer } from './MarkdownRenderer';
 import { AgentComponentRenderer } from './AgentComponentRenderer';
@@ -201,12 +201,35 @@ export const MessageBubble = memo(function MessageBubble({ message, mode, onAddT
         ) : (
           <RichContent content={message.content} components={message.components} onAddToView={onAddToView} />
         )}
+        {message.role === 'assistant' && message.multiSkill && message.multiSkill.conflicts.length > 0 && (
+          <div className="mt-2 space-y-1.5">
+            {message.multiSkill.conflicts.map((c: SkillConflict, i: number) => (
+              <div key={i} className="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2 text-xs" role="alert">
+                <div className="flex items-center gap-1.5 text-amber-400 font-medium mb-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Conflicting finding: {c.topic}
+                </div>
+                <div className="space-y-1 text-slate-400">
+                  <div><span className="text-slate-500">{c.skill_a}:</span> {c.position_a}</div>
+                  <div><span className="text-slate-500">{c.skill_b}:</span> {c.position_b}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
         {message.role === 'assistant' && message.skillName && (
           <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-800/50 text-[11px] text-slate-500">
-            <span className="flex items-center gap-1">
-              <Puzzle className="w-3 h-3" />
-              {message.skillName}
-            </span>
+            {message.multiSkill ? (
+              <span className="flex items-center gap-1" title="Parallel multi-skill execution">
+                <GitBranch className="w-3 h-3 text-cyan-400" />
+                Skills: {message.multiSkill.skills.join(' + ')}
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Puzzle className="w-3 h-3" />
+                {message.skillName}
+              </span>
+            )}
             {(message.toolCount ?? 0) > 0 && (
               <span className="flex items-center gap-1">
                 <Wrench className="w-3 h-3" />

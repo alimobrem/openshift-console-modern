@@ -14,6 +14,7 @@ import {
   type AgentEvent,
   type ConfirmRequest,
   type ResourceContext,
+  type MultiSkillMeta,
 } from '../engine/agentClient';
 import { type ComponentSpec, truncateForPersistence } from '../engine/agentComponents';
 
@@ -29,6 +30,8 @@ interface AgentState {
   thinkingText: string;
   activeTools: string[];
   streamingComponents: ComponentSpec[];
+  /** Skills running in parallel (empty when single-skill) */
+  activeSkills: string[];
   pendingConfirm: ConfirmRequest | null;
   error: string | null;
   /** Brief toast shown when agent acknowledges feedback */
@@ -108,6 +111,7 @@ export const useAgentStore = create<AgentState>()(
       thinkingText: '',
       activeTools: [],
       streamingComponents: [],
+      activeSkills: [],
       pendingConfirm: null,
       error: null,
       feedbackToast: null,
@@ -169,6 +173,7 @@ export const useAgentStore = create<AgentState>()(
                     streamingText: '',
                     thinkingText: '',
                     activeTools: [],
+                    activeSkills: [],
                     streamingComponents: [],
                   }));
                 } else {
@@ -178,6 +183,7 @@ export const useAgentStore = create<AgentState>()(
                     streamingText: '',
                     thinkingText: '',
                     activeTools: [],
+                    activeSkills: [],
                     streamingComponents: [],
                   });
                 }
@@ -199,6 +205,12 @@ export const useAgentStore = create<AgentState>()(
             case 'component':
               set((s) => ({ streamingComponents: [...s.streamingComponents, event.spec] }));
               break;
+            case 'multi_skill_start':
+              set({ activeSkills: event.skills });
+              break;
+            case 'skill_progress':
+              // Update skill status — UI can show per-skill progress
+              break;
             case 'confirm_request':
               set({ pendingConfirm: { tool: event.tool, input: event.input, nonce: event.nonce } });
               break;
@@ -218,6 +230,7 @@ export const useAgentStore = create<AgentState>()(
                 durationMs: event.duration_ms,
                 inputTokens: event.input_tokens,
                 outputTokens: event.output_tokens,
+                multiSkill: event.multi_skill,
               };
               set((s) => ({
                 messages: trimMessages([...s.messages, msg]),
@@ -225,6 +238,7 @@ export const useAgentStore = create<AgentState>()(
                 streamingText: '',
                 thinkingText: '',
                 activeTools: [],
+                activeSkills: [],
                 streamingComponents: [],
                 pendingConfirm: null,
               }));
@@ -239,6 +253,7 @@ export const useAgentStore = create<AgentState>()(
                 streamingText: '',
                 thinkingText: '',
                 activeTools: [],
+                activeSkills: [],
                 streamingComponents: [],
               });
               break;
@@ -260,7 +275,7 @@ export const useAgentStore = create<AgentState>()(
               });
               break;
             case 'cleared':
-              set({ messages: [], streamingText: '', thinkingText: '', activeTools: [], streamingComponents: [] });
+              set({ messages: [], streamingText: '', thinkingText: '', activeTools: [], activeSkills: [], streamingComponents: [] });
               break;
           }
         });
@@ -272,7 +287,7 @@ export const useAgentStore = create<AgentState>()(
         resetStreamingState();
         if (unsubscribe) { unsubscribe(); unsubscribe = null; }
         if (client) { client.disconnect(); client = null; }
-        set({ connected: false, streaming: false, streamingText: '', thinkingText: '', activeTools: [], streamingComponents: [] });
+        set({ connected: false, streaming: false, streamingText: '', thinkingText: '', activeTools: [], activeSkills: [], streamingComponents: [] });
       },
 
       sendMessage: (content, context, fleetMode) => {
@@ -293,6 +308,7 @@ export const useAgentStore = create<AgentState>()(
           streamingText: '',
           thinkingText: '',
           activeTools: [],
+          activeSkills: [],
           streamingComponents: [],
           error: null,
         }));
@@ -303,14 +319,14 @@ export const useAgentStore = create<AgentState>()(
 
       switchMode: (mode) => {
         resetStreamingState();
-        set({ mode, messages: [], streamingText: '', thinkingText: '', activeTools: [], streamingComponents: [] });
+        set({ mode, messages: [], streamingText: '', thinkingText: '', activeTools: [], activeSkills: [], streamingComponents: [] });
         if (client) client.switchMode(mode);
       },
 
       clearChat: () => {
         pendingTextDelta = '';
         resetStreamingState();
-        set({ messages: [], streamingText: '', thinkingText: '', activeTools: [], streamingComponents: [], error: null });
+        set({ messages: [], streamingText: '', thinkingText: '', activeTools: [], activeSkills: [], streamingComponents: [], error: null });
         if (client) client.clear();
       },
 
@@ -346,6 +362,7 @@ export const useAgentStore = create<AgentState>()(
             streamingText: '',
             thinkingText: '',
             activeTools: [],
+            activeSkills: [],
             streamingComponents: [],
             pendingConfirm: null,
           }));
@@ -355,6 +372,7 @@ export const useAgentStore = create<AgentState>()(
             streamingText: '',
             thinkingText: '',
             activeTools: [],
+            activeSkills: [],
             streamingComponents: [],
             pendingConfirm: null,
           });
