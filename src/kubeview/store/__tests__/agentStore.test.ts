@@ -2,7 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock AgentClient as a class
-let lastMockClient: any = null;
+let lastMockHandlers: Set<(e: any) => void> | null = null;
 vi.mock('../../engine/agentClient', () => {
   return {
     AgentClient: class MockAgentClient {
@@ -12,7 +12,7 @@ vi.mock('../../engine/agentClient', () => {
 
       constructor(mode: string) {
         this.mode = mode;
-        lastMockClient = this;
+        lastMockHandlers = this.handlers;
       }
 
       on(handler: (e: any) => void) {
@@ -22,7 +22,7 @@ vi.mock('../../engine/agentClient', () => {
 
       connect() {
         this.connected = true;
-        this.emit({ type: 'connected' });
+        for (const h of this.handlers) h({ type: 'connected' });
       }
 
       disconnect() {
@@ -36,17 +36,13 @@ vi.mock('../../engine/agentClient', () => {
       switchMode(mode: string) {
         this.mode = mode;
       }
-
-      private emit(event: any) {
-        for (const h of this.handlers) h(event);
-      }
-
-      _simulateEvent(event: any) {
-        this.emit(event);
-      }
     },
   };
 });
+
+function simulateAgentEvent(event: any) {
+  if (lastMockHandlers) for (const h of lastMockHandlers) h(event);
+}
 
 import { useAgentStore } from '../agentStore';
 import { useUIStore } from '../uiStore';
@@ -67,7 +63,7 @@ describe('agentStore', () => {
       error: null,
     });
     useUIStore.getState().removeDegradedReason('session_expired');
-    lastMockClient = null;
+    lastMockHandlers = null;
   });
 
   it('initializes with default state', () => {
@@ -126,7 +122,7 @@ describe('agentStore', () => {
     store.connect();
     expect(useUIStore.getState().degradedReasons.has('session_expired')).toBe(false);
 
-    lastMockClient._simulateEvent({
+    simulateAgentEvent({
       type: 'error',
       message: 'Agent authentication failed (code 4001). The WebSocket token may not be configured correctly.',
     });
@@ -139,7 +135,7 @@ describe('agentStore', () => {
     const store = useAgentStore.getState();
     store.connect();
 
-    lastMockClient._simulateEvent({
+    simulateAgentEvent({
       type: 'error',
       message: 'Tool execution failed: timeout after 30s',
     });

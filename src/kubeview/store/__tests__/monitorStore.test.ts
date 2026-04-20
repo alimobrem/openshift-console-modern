@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock MonitorClient
+let lastMonitorHandlers: Set<(e: any) => void> | null = null;
 vi.mock('../../engine/monitorClient', () => {
   return {
     MonitorClient: class MockMonitorClient {
@@ -9,7 +10,7 @@ vi.mock('../../engine/monitorClient', () => {
       private handlers = new Set<(e: any) => void>();
 
       constructor() {
-        lastMonitorClient = this;
+        lastMonitorHandlers = this.handlers;
       }
 
       on(handler: (e: any) => void) {
@@ -19,7 +20,7 @@ vi.mock('../../engine/monitorClient', () => {
 
       connect() {
         this.connected = true;
-        this.emit({ type: 'connected' });
+        for (const h of this.handlers) h({ type: 'connected' });
       }
 
       disconnect() {
@@ -30,18 +31,13 @@ vi.mock('../../engine/monitorClient', () => {
       approveAction = vi.fn();
       rejectAction = vi.fn();
       requestFixHistory = vi.fn();
-
-      private emit(event: any) {
-        for (const h of this.handlers) h(event);
-      }
-
-      // Test helper: simulate incoming event
-      _simulateEvent(event: any) {
-        this.emit(event);
-      }
     },
   };
 });
+
+function simulateMonitorEvent(event: any) {
+  if (lastMonitorHandlers) for (const h of lastMonitorHandlers) h(event);
+}
 
 // Mock fetchFixHistory
 vi.mock('../../engine/fixHistory', () => ({
@@ -72,8 +68,6 @@ vi.mock('../../engine/fixHistory', () => ({
 import { useMonitorStore } from '../monitorStore';
 import { useUIStore } from '../uiStore';
 
-let lastMonitorClient: any = null;
-
 describe('monitorStore', () => {
   beforeEach(() => {
     const { disconnect } = useMonitorStore.getState();
@@ -98,7 +92,7 @@ describe('monitorStore', () => {
       notificationCenterOpen: false,
     });
     useUIStore.getState().removeDegradedReason('session_expired');
-    lastMonitorClient = null;
+    lastMonitorHandlers = null;
   });
 
   it('initializes with default state', () => {
@@ -260,7 +254,7 @@ describe('monitorStore', () => {
     useMonitorStore.getState().connect();
     expect(useUIStore.getState().degradedReasons.has('session_expired')).toBe(false);
 
-    lastMonitorClient._simulateEvent({
+    simulateMonitorEvent({
       type: 'error',
       message: 'Monitor authentication failed (code 4001). The WebSocket token may not be configured correctly.',
     });
@@ -272,7 +266,7 @@ describe('monitorStore', () => {
   it('does not trigger session_expired on non-auth errors', () => {
     useMonitorStore.getState().connect();
 
-    lastMonitorClient._simulateEvent({
+    simulateMonitorEvent({
       type: 'error',
       message: 'Monitor connection lost',
     });
