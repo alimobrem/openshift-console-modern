@@ -19,6 +19,32 @@ import { buildApiPath } from './useResourceUrl';
 import { queryInstant, queryRange } from '../components/metrics/prometheus';
 import { getColumnsForResource } from '../engine/enhancers';
 
+function formatMetricValue(value: number, unit?: string): string {
+  if (unit === 'MiB' || unit === 'Mi') {
+    if (value > 1048576) return `${(value / 1048576).toFixed(1)} GiB`;
+    if (value > 1024) return `${(value / 1024).toFixed(1)} MiB`;
+    if (value > 1) return `${value.toFixed(0)} KiB`;
+    return `${value.toFixed(2)} ${unit}`;
+  }
+  if (unit === 'KB/s') {
+    if (value > 1024) return `${(value / 1024).toFixed(1)} MB/s`;
+    return `${value.toFixed(1)} KB/s`;
+  }
+  if (unit === 'm' || unit === 'cores') {
+    if (unit === 'm' && value > 1000) return `${(value / 1000).toFixed(2)} cores`;
+    return `${value.toFixed(2)} ${unit}`;
+  }
+  if (!unit) {
+    if (value >= 1e9) return `${(value / 1e9).toFixed(1)}G`;
+    if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M`;
+    if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K`;
+    return value.toFixed(2);
+  }
+  if (value >= 1e6) return `${(value / 1e6).toFixed(1)}M ${unit}`;
+  if (value >= 1e3) return `${(value / 1e3).toFixed(1)}K ${unit}`;
+  return `${value.toFixed(2)} ${unit}`;
+}
+
 function Sparkline({ values, width = 48, height = 16 }: { values: number[]; width?: number; height?: number }) {
   if (values.length < 2) return null;
   const min = Math.min(...values);
@@ -309,9 +335,7 @@ export function useMultiSourceTable(
           };
           const match = results.find(matchRow);
           if (match) {
-            enriched[ds.columnId] = ds.unit
-              ? `${match.value.toFixed(2)} ${ds.unit}`
-              : match.value.toFixed(2);
+            enriched[ds.columnId] = formatMetricValue(match.value, ds.unit);
           } else {
             enriched[ds.columnId] = '-';
           }
