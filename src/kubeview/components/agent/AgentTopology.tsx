@@ -3,29 +3,43 @@
  *
  * Reuses the GraphRenderer from the topology view, scoped to the nodes/edges
  * returned by the agent tool (e.g. get_topology_graph).
- * Includes perspective quick-launch pills for one-click view switching.
+ * Perspective pills fetch directly from /topology REST endpoint and swap in-place.
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { Network, Plus } from 'lucide-react';
-import type { TopologySpec, ComponentSpec } from '../../engine/agentComponents';
+import { Network, Plus, Loader2 } from 'lucide-react';
+import type { TopologySpec, ComponentSpec, LayoutHint } from '../../engine/agentComponents';
 import GraphRenderer, { getKindColor } from '../topology/GraphRenderer';
 import { PromptPill } from './AIBranding';
-import { useAgentStore } from '../../store/agentStore';
 
-const PERSPECTIVES = [
-  { label: 'Physical', prompt: 'Show physical topology with hardware metrics' },
-  { label: 'Logical', prompt: 'Show logical app structure topology' },
-  { label: 'Network', prompt: 'Show network flow topology' },
-  { label: 'Multi-Tenant', prompt: 'Show multi-tenant topology grouped by namespace' },
-  { label: 'Helm', prompt: 'Show Helm release topology' },
-] as const;
+const AGENT_BASE = '/api/agent';
 
-export default function AgentTopology({ spec, onAddToView }: { spec: TopologySpec; onAddToView?: (spec: ComponentSpec) => void }) {
+interface PerspectiveDef {
+  label: string;
+  kinds: string;
+  relationships: string;
+  layout_hint: LayoutHint;
+  include_metrics: boolean;
+  group_by: string;
+}
+
+const PERSPECTIVES: PerspectiveDef[] = [
+  { label: 'Physical', kinds: 'Node,Pod', relationships: 'schedules', layout_hint: 'grouped', include_metrics: true, group_by: 'node' },
+  { label: 'Logical', kinds: 'Deployment,ReplicaSet,Pod,ConfigMap,Secret,PVC,ServiceAccount', relationships: 'owns,references,mounts,uses', layout_hint: 'top-down', include_metrics: false, group_by: '' },
+  { label: 'Network', kinds: 'Route,Ingress,Service,Pod,NetworkPolicy', relationships: 'routes_to,selects,applies_to', layout_hint: 'left-to-right', include_metrics: false, group_by: '' },
+  { label: 'Multi-Tenant', kinds: 'Pod,Node', relationships: 'schedules', layout_hint: 'grouped', include_metrics: true, group_by: 'namespace' },
+  { label: 'Helm', kinds: 'HelmRelease,Deployment,StatefulSet,Service,ConfigMap,Secret', relationships: 'manages,owns', layout_hint: 'grouped', include_metrics: false, group_by: '' },
+];
+
+export default function AgentTopology({ spec: initialSpec, onAddToView }: { spec: TopologySpec; onAddToView?: (spec: ComponentSpec) => void }) {
+  const [currentSpec, setCurrentSpec] = useState<TopologySpec>(initialSpec);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [selectedNode, setSelectedNode] = useState<string | null>(null);
-  const sendMessage = useAgentStore((s) => s.sendMessage);
+  const [loading, setLoading] = useState(false);
+  const [activePerspective, setActivePerspective] = useState<string | null>(null);
+
+  const spec = currentSpec;
 
   const healthCounts = useMemo(() => {
     const c = { healthy: 0, warning: 0, error: 0 };
@@ -37,7 +51,33 @@ export default function AgentTopology({ spec, onAddToView }: { spec: TopologySpe
     return c;
   }, [spec.nodes]);
 
-  if (spec.nodes.length === 0) {
+  const fetchPerspective = useCallback(async (p: PerspectiveDef) => {
+    const ns = spec.nodes[0]?.namespace || '';
+    const params = new URLSearchParams();
+    if (ns) params.set('namespace', ns);
+    params.set('kinds', p.kinds);
+    params.set('relationships', p.relationships);
+    params.set('layout_hint', p.layout_hint);
+    if (p.include_metrics) params.set('include_metrics', 'true');
+    if (p.group_by) params.set('group_by', p.group_by);
+
+    setLoading(true);
+    setSelectedNode(null);
+    try {
+      const res = await fetch(`${AGENT_BASE}/topology?${params.toString()}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.error || !data.nodes) return;
+      setCurrentSpec(data as TopologySpec);
+      setActivePerspective(p.label);
+    } catch {
+      // silently fail — keep current view
+    } finally {
+      setLoading(false);
+    }
+  }, [spec.nodes]);
+
+  if (spec.nodes.length === 0 && !loading) {
     return (
       <div className="my-2 border border-slate-700 rounded-lg p-6 text-center text-xs text-slate-500">
         No topology data available
@@ -53,6 +93,7 @@ export default function AgentTopology({ spec, onAddToView }: { spec: TopologySpe
           <Network className="w-3.5 h-3.5 text-cyan-400" />
           <span>{spec.title || 'Resource Topology'}</span>
           {spec.description && <span className="text-[10px] text-slate-500 ml-1">{spec.description}</span>}
+          {loading && <Loader2 className="w-3 h-3 text-cyan-400 animate-spin" />}
         </div>
         <div className="flex items-center gap-2 text-[10px] text-slate-500">
           <span>{spec.nodes.length} resources</span>
@@ -84,15 +125,15 @@ export default function AgentTopology({ spec, onAddToView }: { spec: TopologySpe
       {/* Perspective pills */}
       <div className="px-3 py-1.5 border-b border-slate-800 flex flex-wrap items-center gap-1.5">
         <span className="text-[10px] text-slate-600 mr-1">View:</span>
-        {PERSPECTIVES.map((p) => {
-          const ns = spec.nodes[0]?.namespace;
-          const prompt = ns ? `${p.prompt} for namespace ${ns}` : p.prompt;
-          return (
-            <PromptPill key={p.label} onClick={() => sendMessage(prompt)}>
-              {p.label}
-            </PromptPill>
-          );
-        })}
+        {PERSPECTIVES.map((p) => (
+          <PromptPill
+            key={p.label}
+            onClick={() => fetchPerspective(p)}
+            className={activePerspective === p.label ? 'ring-1 ring-violet-500/50 bg-violet-500/10' : ''}
+          >
+            {p.label}
+          </PromptPill>
+        ))}
       </div>
 
       {/* Graph */}
@@ -133,7 +174,6 @@ export default function AgentTopology({ spec, onAddToView }: { spec: TopologySpe
                 <span className="text-[10px] px-1 py-0.5 bg-slate-800 text-slate-400 rounded mb-2 inline-block">{node.namespace}</span>
               )}
 
-              {/* Metrics detail */}
               {node.metrics && (
                 <div className="mt-2 text-[10px] text-slate-400 space-y-0.5">
                   <div>CPU: {node.metrics.cpu_usage}/{node.metrics.cpu_capacity} ({node.metrics.cpu_percent}%)</div>
