@@ -47,10 +47,16 @@ export function positionsToLayout(positions: Record<string | number, { x: number
     if (pos) {
       return { i: String(i), x: pos.x, y: pos.y, w: pos.w, h: pos.h || 8, minW: 1, minH: 2 };
     }
-    // Missing position — append below existing widgets
-    const fallbackY = maxY > 0 ? maxY : i * 8;
-    maxY = fallbackY + 8;
-    return { i: String(i), x: 0, y: fallbackY, w: 4, h: 8, minW: 1, minH: 2 };
+    // Missing position — append below existing widgets with kind-aware heights
+    const kind = specs[i]?.kind || '';
+    const kindHeights: Record<string, number> = {
+      topology: 24, chart: 12, data_table: 12, node_map: 12,
+      grid: 7, info_card_grid: 5, resource_counts: 4, section: 10,
+    };
+    const h = kindHeights[kind] || 8;
+    const fallbackY = maxY > 0 ? maxY : i * h;
+    maxY = fallbackY + h;
+    return { i: String(i), x: 0, y: fallbackY, w: 4, h, minW: 1, minH: 2 };
   });
 }
 
@@ -373,7 +379,7 @@ export default function CustomView() {
             compactType="vertical"
           >
             {view.layout.map((spec, i) => (
-              <div key={String(i)} className={`rounded-lg border bg-slate-900/80 p-3 relative group overflow-y-auto transition-all duration-200 ${editMode ? 'border-slate-700 border-dashed' : 'border-slate-800 hover:border-slate-600 hover:shadow-[0_0_15px_rgba(37,99,235,0.06)]'}`} style={{ animationDelay: `${i * 50}ms` }}>
+              <div key={String(i)} className={`rounded-lg border bg-slate-900/80 p-3 relative group overflow-hidden transition-all duration-200 ${editMode ? 'border-slate-700 border-dashed' : 'border-slate-800 hover:border-slate-600 hover:shadow-[0_0_15px_rgba(37,99,235,0.06)]'}`} style={{ animationDelay: `${i * 50}ms` }}>
                 {editMode && (
                   <>
                     <div className="widget-drag-handle absolute inset-x-0 top-0 h-6 cursor-grab active:cursor-grabbing flex items-center px-2 bg-slate-800/30 rounded-t-lg z-10">

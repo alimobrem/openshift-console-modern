@@ -20,7 +20,7 @@ describe('positionsToLayout', () => {
     expect(layout[1].w).toBe(2);
   });
 
-  it('falls back to full-width stacking for missing positions', () => {
+  it('falls back to full-width stacking with kind-aware heights', () => {
     const specs: ComponentSpec[] = [
       { kind: 'chart', title: 'A' },
       { kind: 'data_table', title: 'B' },
@@ -28,8 +28,9 @@ describe('positionsToLayout', () => {
     const layout = positionsToLayout({}, specs);
     expect(layout[0].x).toBe(0);
     expect(layout[0].w).toBe(4);
-    expect(layout[0].h).toBe(8);
-    expect(layout[1].y).toBe(8);
+    expect(layout[0].h).toBe(12);
+    expect(layout[1].y).toBe(12);
+    expect(layout[1].h).toBe(12);
   });
 
   it('appends missing widgets below existing ones', () => {
