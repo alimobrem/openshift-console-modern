@@ -13,6 +13,7 @@ interface PromptStats {
   avg_dynamic_chars: number;
   total_prompts: number;
   section_avg: Record<string, number>;
+  skill_names?: string[];
 }
 
 interface PromptVersion {
@@ -79,9 +80,8 @@ export function PromptAuditSection() {
     ? `${Math.round((sc / (sc + dc)) * 100)}% / ${Math.round((dc / (sc + dc)) * 100)}%`
     : '- / -';
 
-  const statsAny = promptStats as unknown as Record<string, unknown>;
-  const skillNames = Array.isArray(statsAny.skill_names)
-    ? (statsAny.skill_names as string[])
+  const skillNames = Array.isArray(promptStats.skill_names)
+    ? promptStats.skill_names
     : [...new Set(sectionEntries.map(([name]) => name.split('.')[0]).filter(Boolean))];
 
   return (

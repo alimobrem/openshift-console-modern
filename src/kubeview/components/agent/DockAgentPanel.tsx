@@ -355,7 +355,8 @@ export function DockAgentPanel() {
       // Replace current messages via store
       useAgentStore.setState({ messages: agentMessages, error: null });
       setActiveSessionId(sessionId);
-    } catch {
+    } catch (e) {
+      console.error('chat session load failed:', e);
       setLoadError('Failed to load session. Please try again.');
     }
   }, []);

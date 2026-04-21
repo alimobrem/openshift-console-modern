@@ -565,8 +565,8 @@ export async function enrichDiagnosesWithLogs(
             };
           });
         }
-      } catch {
-        // Events fetch failed — return original diagnoses
+      } catch (e) {
+        console.error('PVC events fetch failed:', e);
       }
     }
     return diagnoses;
@@ -604,8 +604,8 @@ export async function enrichDiagnosesWithLogs(
           };
         });
       }
-    } catch {
-      // Events fetch failed
+    } catch (e) {
+      console.error('pod events fetch failed:', e);
     }
   }
 
@@ -662,7 +662,8 @@ export async function enrichDiagnosesWithLogs(
     });
 
     return enriched;
-  } catch {
+  } catch (e) {
+    console.error('pod log enrichment failed:', e);
     return diagnoses;
   }
 }

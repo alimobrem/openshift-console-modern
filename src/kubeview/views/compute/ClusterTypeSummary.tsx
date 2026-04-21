@@ -10,14 +10,13 @@ import { cn } from '@/lib/utils';
 import { Card } from '../../components/primitives/Card';
 import { queryInstant } from '../../components/metrics/prometheus';
 import { safeQuery } from '../../engine/safeQuery';
-import type { K8sResource } from '../../engine/renderers';
 import type { NodePool, Condition } from '../../engine/types';
 import type { NodeDetail } from './types';
 
 interface Props {
   isHyperShift: boolean;
   nodeDetails: NodeDetail[];
-  nodePools: K8sResource[];
+  nodePools: NodePool[];
   clusterVersion: string | null;
   platform: string | null;
 }
@@ -42,9 +41,9 @@ export function ClusterTypeSummary({ isHyperShift, nodeDetails, nodePools, clust
 }
 
 function HyperShiftSummary({ nodePools, clusterVersion, platform, nodeDetails }: {
-  nodePools: K8sResource[]; clusterVersion: string | null; platform: string | null; nodeDetails: NodeDetail[];
+  nodePools: NodePool[]; clusterVersion: string | null; platform: string | null; nodeDetails: NodeDetail[];
 }) {
-  const nps = nodePools as unknown as NodePool[];
+  const nps = nodePools;
   const totalDesired = nps.reduce((s, np) => s + (np.spec?.replicas ?? 0), 0);
   const totalReady = nps.reduce((s, np) => s + (np.status?.replicas ?? 0), 0);
   const unhealthy = nps.filter(np => {

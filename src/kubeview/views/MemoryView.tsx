@@ -123,7 +123,8 @@ export default function MemoryView({ embedded = false }: { embedded?: boolean })
       a.download = `pulse-memory-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       URL.revokeObjectURL(url);
-    } catch {
+    } catch (e) {
+      console.error('memory export failed:', e);
       setImportStatus({ type: 'error', message: 'Export failed' });
     }
   };
@@ -148,7 +149,8 @@ export default function MemoryView({ embedded = false }: { embedded?: boolean })
         type: 'success',
         message: `Imported ${result.runbooks_imported ?? 0} runbooks, ${result.patterns_imported ?? 0} patterns`,
       });
-    } catch {
+    } catch (e) {
+      console.error('memory import failed:', e);
       setImportStatus({ type: 'error', message: 'Invalid JSON file' });
     }
     // Reset file input so the same file can be re-imported

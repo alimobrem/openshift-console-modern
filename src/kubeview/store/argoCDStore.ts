@@ -161,8 +161,7 @@ export const useArgoCDStore = create<ArgoCDState>((set, get) => ({
         ? `/apis/argoproj.io/v1alpha1/namespaces/${namespace}/applications`
         : '/apis/argoproj.io/v1alpha1/applications';
 
-      const apps = await k8sList<K8sResource>(path);
-      const typed = apps as unknown as ArgoApplication[];
+      const typed = await k8sList<ArgoApplication>(path);
 
       set({
         applications: typed,

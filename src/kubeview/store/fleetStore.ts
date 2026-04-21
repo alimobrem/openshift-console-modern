@@ -184,7 +184,8 @@ export const useFleetStore = create<FleetState>((set, get) => ({
       } else {
         updateConnectionStatus(clusterId, 'unreachable');
       }
-    } catch {
+    } catch (e) {
+      console.error('cluster health fetch failed:', e);
       updateConnectionStatus(clusterId, 'unreachable');
     }
 

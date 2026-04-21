@@ -12,7 +12,7 @@ import { CHART_COLORS } from '../engine/colors';
 import { NodeHexMap } from './compute/NodeHexMap';
 import { MetricGrid } from '../components/primitives/MetricGrid';
 import type { K8sResource } from '../engine/renderers';
-import type { Node, Pod, Machine, NodePool, Condition } from '../engine/types';
+import type { Node, Pod, Machine, MachineSet, NodePool, Condition } from '../engine/types';
 import { getNodeStatus } from '../engine/renderers/statusUtils';
 import { parseResourceValue, formatBytes, formatCpu } from '../engine/formatting';
 import { useNavigateTab } from '../hooks/useNavigateTab';
@@ -42,19 +42,19 @@ export default function ComputeView() {
   const platform = useClusterStore((s) => s.platform);
   const clusterVersion = useClusterStore((s) => s.clusterVersion);
 
-  const { data: nodes = [] } = useK8sListWatch({ apiPath: '/api/v1/nodes' });
-  const { data: pods = [] } = useK8sListWatch({ apiPath: '/api/v1/pods' });
+  const { data: nodes = [] } = useK8sListWatch<Node>({ apiPath: '/api/v1/nodes' });
+  const { data: pods = [] } = useK8sListWatch<Pod>({ apiPath: '/api/v1/pods' });
 
-  const { data: machines = [] } = useQuery<K8sResource[]>({
+  const { data: machines = [] } = useQuery<Machine[]>({
     queryKey: ['k8s', 'list', '/apis/machine.openshift.io/v1beta1/machines'],
-    queryFn: async () => (await safeQuery(() => k8sList('/apis/machine.openshift.io/v1beta1/machines'))) ?? [],
+    queryFn: async () => (await safeQuery(() => k8sList<Machine>('/apis/machine.openshift.io/v1beta1/machines'))) ?? [],
     staleTime: 60000,
     enabled: !isHyperShift,
   });
 
-  const { data: machineSets = [] } = useQuery<K8sResource[]>({
+  const { data: machineSets = [] } = useQuery<MachineSet[]>({
     queryKey: ['k8s', 'list', '/apis/machine.openshift.io/v1beta1/machinesets'],
-    queryFn: async () => (await safeQuery(() => k8sList('/apis/machine.openshift.io/v1beta1/machinesets'))) ?? [],
+    queryFn: async () => (await safeQuery(() => k8sList<MachineSet>('/apis/machine.openshift.io/v1beta1/machinesets'))) ?? [],
     staleTime: 60000,
     enabled: !isHyperShift,
   });
@@ -81,9 +81,9 @@ export default function ComputeView() {
   });
 
   // NodePools (HyperShift only)
-  const { data: nodePools = [] } = useQuery<K8sResource[]>({
+  const { data: nodePools = [] } = useQuery<NodePool[]>({
     queryKey: ['compute', 'nodepools'],
-    queryFn: async () => (await safeQuery(() => k8sList('/apis/hypershift.openshift.io/v1beta1/nodepools'))) ?? [],
+    queryFn: async () => (await safeQuery(() => k8sList<NodePool>('/apis/hypershift.openshift.io/v1beta1/nodepools'))) ?? [],
     staleTime: 60000,
     enabled: isHyperShift,
   });
@@ -138,7 +138,7 @@ export default function ComputeView() {
   // Pods per node (count)
   const podsByNode = React.useMemo(() => {
     const map = new Map<string, number>();
-    for (const pod of pods as unknown as Pod[]) {
+    for (const pod of pods) {
       const nodeName = pod.spec?.nodeName;
       if (nodeName) map.set(nodeName, (map.get(nodeName) || 0) + 1);
     }
@@ -148,7 +148,7 @@ export default function ComputeView() {
   // Pod details per node (for hex map clickable dots)
   const podDetailsByNode = React.useMemo(() => {
     const map: Record<string, Array<{ name: string; namespace: string; status: string; restarts: number }>> = {};
-    for (const pod of pods as unknown as Pod[]) {
+    for (const pod of pods) {
       const nodeName = pod.spec?.nodeName;
       if (!nodeName) continue;
       if (!map[nodeName]) map[nodeName] = [];
@@ -167,7 +167,7 @@ export default function ComputeView() {
   // Cluster capacity totals
   const clusterCapacity = React.useMemo(() => {
     let cpuCores = 0, memBytes = 0, podCapacity = 0;
-    for (const n of nodes as unknown as Node[]) {
+    for (const n of nodes) {
       const cap = n.status?.capacity;
       cpuCores += parseResourceValue(cap?.cpu);
       memBytes += parseResourceValue(cap?.memory);
@@ -178,7 +178,7 @@ export default function ComputeView() {
 
   // Node details with metrics
   const nodeDetails: NodeDetail[] = React.useMemo(() => {
-    return (nodes as unknown as Node[]).map((node) => {
+    return nodes.map((node) => {
       const status = getNodeStatus(node as K8sResource);
       const nodeInfo = node.status?.nodeInfo || {};
       const capacity = node.status?.capacity || {};
@@ -217,7 +217,7 @@ export default function ComputeView() {
       if (status.pressure?.pid) pressures.push('PID');
 
       // Machine ref
-      const machineRef = (machines as Machine[]).find((m) => m.status?.nodeRef?.name === nodeName);
+      const machineRef = machines.find((m) => m.status?.nodeRef?.name === nodeName);
       const instanceType = (machineRef?.spec?.providerSpec?.value?.instanceType as string)
         || node.metadata.labels?.['node.kubernetes.io/instance-type']
         || '';
@@ -396,13 +396,11 @@ export default function ComputeView() {
 
 // ===== Compute Health Audit =====
 
-/** Item in an audit check list — may be a full resource, a node detail, or a placeholder */
-interface AuditItem {
-  metadata?: { name?: string; namespace?: string; uid?: string };
-  name?: string;
-  _pressureTypes?: string;
-  _kubeletVersion?: string;
-  [key: string]: unknown;
+import type { AuditItem } from '../components/audit/types';
+
+/** Convert a NodeDetail to an AuditItem for health-audit check lists. */
+function nodeDetailToAuditItem(nd: NodeDetail): AuditItem {
+  return { metadata: nd.node.metadata, name: nd.name };
 }
 
 
@@ -415,12 +413,12 @@ function ComputeHealthAudit({
   nodePools,
   go,
 }: {
-  nodes: K8sResource[];
+  nodes: Node[];
   healthChecks: K8sResource[];
   clusterAutoscaler: K8sResource[];
   machineAutoscalers: K8sResource[];
   nodeDetails: NodeDetail[];
-  nodePools: K8sResource[];
+  nodePools: NodePool[];
   go: (path: string, title: string) => void;
 }) {
   const isHyperShift = useClusterStore((s) => s.isHyperShift);
@@ -438,8 +436,8 @@ function ComputeHealthAudit({
         title: 'HA Control Plane',
         description: 'Production clusters should have 3+ control plane nodes for high availability',
         why: 'etcd requires an odd-numbered quorum (3 or 5 nodes). With fewer than 3 masters, losing a single node causes cluster failure. 3 masters can tolerate 1 failure; 5 can tolerate 2.',
-        passing: hasHA ? (masterNodes as unknown as AuditItem[]) : [],
-        failing: hasHA ? [] : (masterNodes as unknown as AuditItem[]),
+        passing: hasHA ? masterNodes.map(nodeDetailToAuditItem) : [],
+        failing: hasHA ? [] : masterNodes.map(nodeDetailToAuditItem),
         yamlExample: `# Control plane nodes are provisioned during cluster installation.
 # To scale control plane nodes post-install, you must:
 # 1. Create new master Machines via MachineSet
@@ -459,8 +457,8 @@ function ComputeHealthAudit({
       title: isHyperShift ? 'Worker Nodes' : 'Dedicated Worker Nodes',
       description: isHyperShift ? 'Worker nodes for workload scheduling (all nodes are workers on hosted clusters)' : 'Production workloads should run on 2+ dedicated worker nodes (not on masters)',
       why: isHyperShift ? 'On HyperShift clusters, all visible nodes are workers. The control plane runs externally in a management cluster.' : 'Running application pods on control plane nodes creates resource contention with etcd and apiserver. Control plane stability is critical — separating workloads protects cluster availability.',
-      passing: hasWorkers ? (workerNodes as unknown as AuditItem[]) : [],
-      failing: hasWorkers ? [] : (workerNodes as unknown as AuditItem[]),
+      passing: hasWorkers ? workerNodes.map(nodeDetailToAuditItem) : [],
+      failing: hasWorkers ? [] : workerNodes.map(nodeDetailToAuditItem),
       yamlExample: `# Worker nodes are created via MachineSets.
 # View existing MachineSets and scale them up:
 #   oc get machinesets -n openshift-machine-api
@@ -513,7 +511,7 @@ spec:
       passing: nodeDetails.filter(nd => {
         const s = nd.status;
         return s.ready && !s.pressure?.disk && !s.pressure?.memory && !s.pressure?.pid;
-      }) as unknown as AuditItem[],
+      }).map(nodeDetailToAuditItem),
       failing: pressureNodes.map(nd => {
         const pressures: string[] = [];
         if (nd.status.pressure?.disk) pressures.push('Disk');
@@ -615,7 +613,7 @@ spec:
 
     // 7. NodePool Health (HyperShift only)
     if (isHyperShift && nodePools.length > 0) {
-      const nps = nodePools as unknown as NodePool[];
+      const nps = nodePools;
       const unhealthyPools = nps.filter(np => {
         const desired = np.spec?.replicas ?? 0;
         const ready = np.status?.replicas ?? 0;
@@ -628,8 +626,8 @@ spec:
         title: 'NodePool Health',
         description: 'All NodePools should have desired replicas ready and no degraded conditions',
         why: 'NodePools manage worker node lifecycle on HyperShift clusters. Unhealthy NodePools mean nodes are not being provisioned or replaced correctly.',
-        passing: healthyPools.map(np => ({ metadata: np.metadata, node: np as unknown as K8sResource, status: { ready: true } })) as AuditItem[],
-        failing: unhealthyPools.map(np => ({ metadata: np.metadata, node: np as unknown as K8sResource, status: { ready: false } })) as AuditItem[],
+        passing: healthyPools.map(np => ({ metadata: np.metadata, node: np as K8sResource, status: { ready: true } })),
+        failing: unhealthyPools.map(np => ({ metadata: np.metadata, node: np as K8sResource, status: { ready: false } })),
         yamlExample: `apiVersion: hypershift.openshift.io/v1beta1
 kind: NodePool
 metadata:

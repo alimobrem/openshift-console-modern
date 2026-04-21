@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { K8sResource } from '../../engine/renderers';
-import type { ClusterVersion, ClusterOperator, Node, Condition } from '../../engine/types';
+import type { ClusterOperator, Node, Condition } from '../../engine/types';
 import { Panel } from '../../components/primitives/Panel';
 import { Card } from '../../components/primitives/Card';
 import { MetricGrid } from '../../components/primitives/MetricGrid';
@@ -35,11 +35,11 @@ export interface OverviewTabProps {
   overviewError: boolean;
   firingAlerts: Array<{ labels: Record<string, string>; annotations: Record<string, string>; state: string }>;
   alertCounts: { critical: number; warning: number; info: number };
-  operators: K8sResource[];
+  operators: ClusterOperator[];
   opDegraded: number;
   opProgressing: number;
   degradedOperators: Array<{ name: string; message: string }>;
-  nodes: K8sResource[];
+  nodes: Node[];
   nodeRoles: Array<[string, number]>;
   cvVersion: string;
   cvChannel: string;
@@ -369,8 +369,7 @@ export function OverviewTab({
             ))}
             {(() => {
               const readyNodes = nodes.filter((n) => {
-                const node = n as unknown as Node;
-                const conditions: Condition[] = node.status?.conditions || [];
+                const conditions: Condition[] = n.status?.conditions || [];
                 return conditions.some((c) => c.type === 'Ready' && c.status === 'True');
               });
               const unready = nodes.length - readyNodes.length;

@@ -12,6 +12,8 @@ export interface ToolInfo {
   description: string;
   requires_confirmation: boolean;
   category: string | null;
+  skills?: string[];
+  source?: string;
 }
 
 export interface AgentInfo {
@@ -104,7 +106,7 @@ export interface UsageFilters {
 }
 
 interface ToolUsageState {
-  tools: { sre: ToolInfo[]; security: ToolInfo[]; write_tools: string[] } | null;
+  tools: { sre: ToolInfo[]; security: ToolInfo[]; write_tools: string[]; mcp?: (ToolInfo & { mcp_server?: string })[] } | null;
   agents: AgentInfo[];
   usage: { entries: ToolUsageEntry[]; total: number; page: number; per_page: number } | null;
   stats: UsageStats | null;
@@ -128,7 +130,8 @@ async function apiFetch<T>(path: string): Promise<T | null> {
     const res = await fetch(`${AGENT_BASE}${path}`);
     if (!res.ok) return null;
     return res.json();
-  } catch {
+  } catch (e) {
+    console.error('agent API fetch failed:', e);
     return null;
   }
 }

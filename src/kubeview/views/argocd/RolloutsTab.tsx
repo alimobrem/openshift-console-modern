@@ -54,7 +54,7 @@ export function RolloutsTab({ rollouts, go }: RolloutsTabProps) {
     <Card>
       <div className="divide-y divide-slate-800">
         {rollouts.map((raw) => {
-          const rollout = raw as unknown as Rollout;
+          const rollout = raw as Rollout;
           const phase = rollout.status?.phase || 'Unknown';
           const strategy = getStrategyType(rollout);
           const PhaseIcon = PHASE_STYLES[phase]?.icon || HelpCircle;

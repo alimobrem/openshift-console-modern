@@ -35,6 +35,7 @@ import type {
   ConfidenceBadgeSpec,
   ResolutionTrackerSpec,
   BlastRadiusSpec,
+  StatusPipelineSpec,
 } from '../../engine/agentComponents';
 const LazyAgentNodeMap = lazy(() => import('./AgentNodeMap').then(m => ({ default: m.AgentNodeMap })));
 const LazyAgentTopology = lazy(() => import('./AgentTopology'));
@@ -42,6 +43,7 @@ import { AgentActionButton } from './AgentActionButton';
 import { AgentConfidenceBadge } from './AgentConfidenceBadge';
 import { AgentResolutionTracker } from './AgentResolutionTracker';
 import { AgentBlastRadius } from './AgentBlastRadius';
+import { AgentStatusPipeline } from './AgentStatusPipeline';
 import { DynamicComponent } from './DynamicComponent';
 import { Badge } from '../primitives/Badge';
 import { InfoCard } from '../primitives/InfoCard';
@@ -114,6 +116,8 @@ export function AgentComponentRenderer({ spec, depth = 0, onAddToView, refreshIn
       return <AgentResolutionTracker spec={spec as ResolutionTrackerSpec} />;
     case 'blast_radius':
       return <AgentBlastRadius spec={spec as BlastRadiusSpec} />;
+    case 'status_pipeline':
+      return <AgentStatusPipeline spec={spec as StatusPipelineSpec} />;
     default:
       // Dynamic rendering for unknown kinds — uses layout templates from component registry
       return <DynamicComponentFallback spec={spec} />;

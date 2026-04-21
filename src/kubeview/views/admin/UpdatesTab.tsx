@@ -37,10 +37,10 @@ export interface UpdatesTabProps {
   platform: string;
   availableUpdates: AvailableUpdate[];
   isUpdating: boolean;
-  operators: K8sResource[];
-  nodes: K8sResource[];
-  deployments: K8sResource[];
-  pdbs: K8sResource[];
+  operators: ClusterOperator[];
+  nodes: Node[];
+  deployments: Deployment[];
+  pdbs: PodDisruptionBudget[];
   etcdBackupExists: boolean | undefined;
   isHyperShift: boolean;
 }
@@ -184,25 +184,22 @@ export function UpdatesTab({
           <div className="space-y-2">
             {(() => {
               const readyNodes = nodes.filter((n) => {
-                const node = n as unknown as Node;
-                const conds: Condition[] = node.status?.conditions || [];
+                const conds: Condition[] = n.status?.conditions || [];
                 return conds.some((c) => c.type === 'Ready' && c.status === 'True');
               });
               const allNodesReady = readyNodes.length === nodes.length;
-              const degradedOps = operators.filter((o) => ((o as unknown as ClusterOperator).status?.conditions || []).some((c: Condition) => c.type === 'Degraded' && c.status === 'True'));
+              const degradedOps = operators.filter((o) => (o.status?.conditions || []).some((c: Condition) => c.type === 'Degraded' && c.status === 'True'));
               const allOpsHealthy = degradedOps.length === 0;
               const channelStable = cvChannel?.includes('stable') || cvChannel?.includes('eus');
 
               // Real PDB check: user deployments with >1 replica that have PDBs
               const userDeploys = deployments.filter((d) => {
-                const dep = d as unknown as Deployment;
-                const ns = dep.metadata?.namespace || '';
-                return !ns.startsWith('openshift-') && !ns.startsWith('kube-') && (dep.spec?.replicas ?? 0) > 1;
+                const ns = d.metadata?.namespace || '';
+                return !ns.startsWith('openshift-') && !ns.startsWith('kube-') && (d.spec?.replicas ?? 0) > 1;
               });
-              const pdbSelectors = (pdbs as unknown as PodDisruptionBudget[]).map((p) => p.spec?.selector?.matchLabels || {});
+              const pdbSelectors = pdbs.map((p) => p.spec?.selector?.matchLabels || {});
               const deploysWithPDB = userDeploys.filter((d) => {
-                const dep = d as unknown as Deployment;
-                const podLabels = dep.spec?.template?.metadata?.labels || {};
+                const podLabels = d.spec?.template?.metadata?.labels || {};
                 return pdbSelectors.some((sel) => Object.entries(sel).every(([k, v]) => podLabels[k] === v));
               });
               const pdbCoverage = userDeploys.length === 0 || deploysWithPDB.length >= userDeploys.length * 0.5;
@@ -274,15 +271,14 @@ export function UpdatesTab({
         <Panel title="Operator Update Progress" icon={<Puzzle className="w-4 h-4 text-violet-500" />}>
           <div className="space-y-1 max-h-64 overflow-auto">
             {operators.map((op) => {
-              const co = op as unknown as ClusterOperator;
-              const conds: Condition[] = co.status?.conditions || [];
+              const conds: Condition[] = op.status?.conditions || [];
               const progressing = conds.find((c) => c.type === 'Progressing');
               const available = conds.find((c) => c.type === 'Available');
               const degraded = conds.find((c) => c.type === 'Degraded');
               const isProgressing = progressing?.status === 'True';
               const isDegraded = degraded?.status === 'True';
               const isAvailable = available?.status === 'True';
-              const version = co.status?.versions?.find((v) => v.name === 'operator')?.version || '';
+              const version = op.status?.versions?.find((v) => v.name === 'operator')?.version || '';
               return (
                 <div key={op.metadata.uid} className="flex items-center justify-between py-1.5 px-2 hover:bg-slate-800/30 rounded">
                   <div className="flex items-center gap-2">

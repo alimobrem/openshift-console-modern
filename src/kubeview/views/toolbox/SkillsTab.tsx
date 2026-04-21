@@ -67,7 +67,8 @@ export function SkillsTab() {
       } else {
         setTestResult(null);
       }
-    } catch {
+    } catch (e) {
+      console.error('skill routing test failed:', e);
       setTestResult(null);
     }
   };

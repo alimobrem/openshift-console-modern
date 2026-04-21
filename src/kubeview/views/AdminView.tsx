@@ -12,7 +12,7 @@ import { k8sList, k8sGet } from '../engine/query';
 import { safeQuery } from '../engine/safeQuery';
 import { useK8sListWatch } from '../hooks/useK8sListWatch';
 import type { K8sResource } from '../engine/renderers';
-import type { ClusterVersion, ClusterOperator, Node, Condition } from '../engine/types';
+import type { ClusterVersion, ClusterOperator, Node, Deployment, Condition, Namespace } from '../engine/types';
 import { useNavigateTab } from '../hooks/useNavigateTab';
 import { useClusterStore } from '../store/clusterStore';
 import ClusterConfig from '../components/ClusterConfig';
@@ -68,6 +68,34 @@ interface CustomResourceDefinition extends K8sResource {
   };
 }
 
+/** ResourceQuota resource */
+interface ResourceQuota extends K8sResource {
+  spec?: { hard?: Record<string, string>; [key: string]: unknown };
+  status?: { hard?: Record<string, string>; used?: Record<string, string>; [key: string]: unknown };
+}
+
+/** LimitRange resource */
+interface LimitRange extends K8sResource {
+  spec?: {
+    limits?: Array<{
+      type: string;
+      default?: Record<string, string>;
+      defaultRequest?: Record<string, string>;
+      max?: Record<string, string>;
+      min?: Record<string, string>;
+    }>;
+    [key: string]: unknown;
+  };
+}
+
+/** PDB resource */
+interface PodDisruptionBudget extends K8sResource {
+  spec?: {
+    selector?: { matchLabels?: Record<string, string> };
+    [key: string]: unknown;
+  };
+}
+
 /** Available update entry */
 interface AvailableUpdate {
   version: string;
@@ -114,11 +142,11 @@ export default function AdminView() {
     staleTime: 60000,
   });
 
-  const { data: nodes = [], isLoading: nodesLoading, isError: nodesError } = useK8sListWatch<K8sResource>({
+  const { data: nodes = [], isLoading: nodesLoading, isError: nodesError } = useK8sListWatch<Node>({
     apiPath: '/api/v1/nodes',
   });
 
-  const { data: operators = [], isLoading: opsLoading, isError: opsError } = useK8sListWatch<K8sResource>({
+  const { data: operators = [], isLoading: opsLoading, isError: opsError } = useK8sListWatch<ClusterOperator>({
     apiPath: '/apis/config.openshift.io/v1/clusteroperators',
   });
 
@@ -164,21 +192,21 @@ export default function AdminView() {
     staleTime: 300000,
   });
 
-  const { data: crds = [] } = useQuery<K8sResource[]>({
+  const { data: crds = [] } = useQuery<CustomResourceDefinition[]>({
     queryKey: ['k8s', 'list', '/apis/apiextensions.k8s.io/v1/customresourcedefinitions'],
-    queryFn: () => k8sList('/apis/apiextensions.k8s.io/v1/customresourcedefinitions'),
+    queryFn: () => k8sList<CustomResourceDefinition>('/apis/apiextensions.k8s.io/v1/customresourcedefinitions'),
     staleTime: 60000,
   });
 
-  const { data: quotas = [] } = useQuery<K8sResource[]>({
+  const { data: quotas = [] } = useQuery<ResourceQuota[]>({
     queryKey: ['k8s', 'list', '/api/v1/resourcequotas'],
-    queryFn: () => k8sList('/api/v1/resourcequotas'),
+    queryFn: () => k8sList<ResourceQuota>('/api/v1/resourcequotas'),
     staleTime: 60000,
   });
 
-  const { data: limitRanges = [] } = useQuery<K8sResource[]>({
+  const { data: limitRanges = [] } = useQuery<LimitRange[]>({
     queryKey: ['k8s', 'list', '/api/v1/limitranges'],
-    queryFn: () => k8sList('/api/v1/limitranges'),
+    queryFn: () => k8sList<LimitRange>('/api/v1/limitranges'),
     staleTime: 60000,
   });
 
@@ -218,15 +246,15 @@ export default function AdminView() {
     staleTime: 300000,
   });
 
-  const { data: pdbs = [] } = useQuery<K8sResource[]>({
+  const { data: pdbs = [] } = useQuery<PodDisruptionBudget[]>({
     queryKey: ['k8s', 'list', '/apis/policy/v1/poddisruptionbudgets'],
-    queryFn: async () => (await safeQuery(() => k8sList('/apis/policy/v1/poddisruptionbudgets'))) ?? [],
+    queryFn: async () => (await safeQuery(() => k8sList<PodDisruptionBudget>('/apis/policy/v1/poddisruptionbudgets'))) ?? [],
     staleTime: 60000,
   });
 
-  const { data: deployments = [] } = useQuery<K8sResource[]>({
+  const { data: deployments = [] } = useQuery<Deployment[]>({
     queryKey: ['k8s', 'list', '/apis/apps/v1/deployments'],
-    queryFn: async () => (await safeQuery(() => k8sList('/apis/apps/v1/deployments'))) ?? [],
+    queryFn: async () => (await safeQuery(() => k8sList<Deployment>('/apis/apps/v1/deployments'))) ?? [],
     staleTime: 60000,
   });
 
@@ -252,15 +280,14 @@ export default function AdminView() {
   const isUpdating = (clusterVersion?.status?.conditions || []).some((c: Condition) => c.type === 'Progressing' && c.status === 'True');
 
   const degradedOperators = React.useMemo(() =>
-    operators.filter((o) => (o as unknown as ClusterOperator).status?.conditions?.some((c: Condition) => c.type === 'Degraded' && c.status === 'True'))
+    operators.filter((o) => o.status?.conditions?.some((c: Condition) => c.type === 'Degraded' && c.status === 'True'))
       .map(o => {
-        const op = o as unknown as ClusterOperator;
-        const degradedCond = op.status?.conditions?.find((c: Condition) => c.type === 'Degraded' && c.status === 'True');
+        const degradedCond = o.status?.conditions?.find((c: Condition) => c.type === 'Degraded' && c.status === 'True');
         return { name: o.metadata.name, message: degradedCond?.message || degradedCond?.reason || '' };
       }),
   [operators]);
   const opDegraded = degradedOperators.length;
-  const opProgressing = operators.filter((o) => (o as unknown as ClusterOperator).status?.conditions?.find((c: Condition) => c.type === 'Progressing' && c.status === 'True')).length;
+  const opProgressing = operators.filter((o) => o.status?.conditions?.find((c: Condition) => c.type === 'Progressing' && c.status === 'True')).length;
 
   const alertCounts = React.useMemo(() => {
     const counts = { critical: 0, warning: 0, info: 0 };
@@ -298,8 +325,7 @@ export default function AdminView() {
 
   const clusterCapacity = React.useMemo(() => {
     let cpuAllocatable = 0, memAllocatable = 0, cpuCapacity = 0, memCapacity = 0, pods = 0;
-    for (const n of nodes) {
-      const node = n as unknown as Node;
+    for (const node of nodes) {
       const alloc = node.status?.allocatable || {};
       const cap = node.status?.capacity || {};
       cpuAllocatable += parseCpu(alloc.cpu || '0');
@@ -349,7 +375,7 @@ export default function AdminView() {
 
   const crdGroupCount = React.useMemo(() => {
     const groups = new Set<string>();
-    for (const crd of crds) groups.add((crd as unknown as CustomResourceDefinition).spec?.group || 'unknown');
+    for (const crd of crds) groups.add(crd.spec?.group || 'unknown');
     return groups.size;
   }, [crds]);
 
@@ -359,9 +385,9 @@ export default function AdminView() {
 
   const quotaHotSpots = React.useMemo(() => {
     const spots: Array<{ namespace: string; resource: string; pct: number }> = [];
-    for (const q of quotas as K8sResource[]) {
-      const spec = (q as any).spec?.hard || {};
-      const status = (q as any).status?.used || {};
+    for (const q of quotas) {
+      const spec = q.spec?.hard || {};
+      const status = q.status?.used || {};
       for (const [key, hardVal] of Object.entries(spec)) {
         const hard = parseResourceValue(String(hardVal));
         const used = parseResourceValue(String(status[key] || '0'));

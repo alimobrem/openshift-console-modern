@@ -29,7 +29,8 @@ export type ComponentSpec =
   | ActionButtonSpec
   | ConfidenceBadgeSpec
   | ResolutionTrackerSpec
-  | BlastRadiusSpec;
+  | BlastRadiusSpec
+  | StatusPipelineSpec;
 
 export interface RelationshipTreeSpec {
   kind: 'relationship_tree';
@@ -448,6 +449,12 @@ export interface BlastRadiusSpec {
   title?: string;
   items: BlastItem[];
   perspective?: 'physical' | 'logical' | 'network' | 'multi_tenant' | 'helm';
+}
+
+export interface StatusPipelineSpec {
+  kind: 'status_pipeline';
+  steps: string[];
+  current: number;
 }
 
 export interface ResourceCountsSpec {

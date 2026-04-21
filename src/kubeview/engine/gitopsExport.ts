@@ -204,7 +204,8 @@ export async function* exportClusterToGit(
       effectiveNamespaces = allNs
         .map((ns) => ns.metadata.name)
         .filter(isUserNamespace);
-    } catch {
+    } catch (e) {
+      console.error('namespace auto-discovery failed:', e);
       effectiveNamespaces = [];
     }
   }

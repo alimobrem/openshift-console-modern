@@ -108,7 +108,7 @@ export function getPodStatus(pod: K8sResource): {
     restartCount: number;
   }>;
 } {
-  const p = pod as unknown as Pod;
+  const p = pod as Pod;
   const phase = p.status?.phase ?? 'Unknown';
   const reason = p.status?.reason;
 

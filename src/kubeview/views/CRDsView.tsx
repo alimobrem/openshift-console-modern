@@ -11,9 +11,9 @@ import { Panel } from '../components/primitives/Panel';
 import { timeAgo } from '../engine/dateUtils';
 import { Card } from '../components/primitives/Card';
 import { MetricGrid } from '../components/primitives/MetricGrid';
+import type { K8sResource } from '../engine/renderers';
 
-interface CRDResource {
-  metadata: { name: string; uid: string; creationTimestamp: string };
+interface CRDResource extends K8sResource {
   spec: {
     group: string;
     names: { kind: string; plural: string; singular: string; shortNames?: string[] };
@@ -33,11 +33,9 @@ export default function CRDsView() {
   const [scopeFilter, setScopeFilter] = useState<'all' | 'Namespaced' | 'Cluster'>('all');
   const [groupFilter, setGroupFilter] = useState<string>('all');
 
-  const { data: crds = [], isLoading } = useK8sListWatch({
+  const { data: typedCRDs = [], isLoading } = useK8sListWatch<CRDResource>({
     apiPath: '/apis/apiextensions.k8s.io/v1/customresourcedefinitions',
   });
-
-  const typedCRDs = crds as unknown as CRDResource[];
 
   // Group names for filter
   const apiGroups = useMemo(() => {
@@ -199,7 +197,7 @@ export default function CRDsView() {
                           <span>Versions: {servedVersions.map(v => (
                             <span key={v.name} className={cn('mr-1', v.storage ? 'text-blue-400' : '')}>{v.name}{v.storage ? ' (storage)' : ''}</span>
                           ))}</span>
-                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {timeAgo(crd.metadata.creationTimestamp)}</span>
+                          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {timeAgo(crd.metadata.creationTimestamp || '')}</span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">

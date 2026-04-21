@@ -36,7 +36,8 @@ async function detectProtocol(): Promise<'2' | '1' | null> {
     if (!res.ok) return '1'; // old agent without proper /version
     const data = await res.json();
     return data.protocol === '2' ? '2' : '1';
-  } catch {
+  } catch (e) {
+    console.error('agent protocol detection failed:', e);
     return null; // agent unavailable
   }
 }
@@ -215,8 +216,8 @@ async function poll() {
         },
       });
     }
-  } catch {
-    // Silently skip — agent may be unavailable
+  } catch (e) {
+    console.error('agent notification poll failed:', e);
   } finally {
     polling = false;
   }

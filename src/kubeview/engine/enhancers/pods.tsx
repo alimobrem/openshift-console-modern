@@ -52,7 +52,7 @@ export const podEnhancer: ResourceEnhancer = {
       id: 'ready',
       header: 'Ready',
       accessorFn: (resource) => {
-        const p = resource as unknown as Pod;
+        const p = resource as Pod;
         const containerStatuses = p.status?.containerStatuses ?? [];
         const ready = containerStatuses.filter((c) => c.ready).length;
         const total = containerStatuses.length;
@@ -97,7 +97,7 @@ export const podEnhancer: ResourceEnhancer = {
       id: 'node',
       header: 'Node',
       accessorFn: (resource) => {
-        const p = resource as unknown as Pod;
+        const p = resource as Pod;
         return p.spec?.nodeName ?? '-';
       },
       render: (value) => {
@@ -122,7 +122,7 @@ export const podEnhancer: ResourceEnhancer = {
       id: 'ip',
       header: 'IP',
       accessorFn: (resource) => {
-        const p = resource as unknown as Pod;
+        const p = resource as Pod;
         return p.status?.podIP ?? '-';
       },
       render: (value) => {

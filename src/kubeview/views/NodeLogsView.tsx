@@ -52,7 +52,8 @@ export default function NodeLogsView() {
           .reverse();
         setFiles(links);
         if (links.length > 0) setSelectedFile(links[0]);
-      } catch {
+      } catch (e) {
+        console.error('node log file list fetch failed:', e);
         setFiles([]);
       }
     };

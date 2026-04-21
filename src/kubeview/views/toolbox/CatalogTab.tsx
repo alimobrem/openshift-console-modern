@@ -38,11 +38,11 @@ export function CatalogTab() {
     const result: EnrichedTool[] = [];
     if (!tools) return result;
     const seen = new Set<string>();
-    for (const t of tools.sre) { seen.add(t.name); result.push({ ...t, source: (t as unknown as { source?: string }).source || 'native' }); }
+    for (const t of tools.sre) { seen.add(t.name); result.push({ ...t, source: t.source || 'native' }); }
     for (const t of tools.security) {
-      if (!seen.has(t.name)) { seen.add(t.name); result.push({ ...t, source: (t as unknown as { source?: string }).source || 'native' }); }
+      if (!seen.has(t.name)) { seen.add(t.name); result.push({ ...t, source: t.source || 'native' }); }
     }
-    const mcpTools = (tools as unknown as { mcp?: McpToolInfo[] }).mcp;
+    const mcpTools = (tools as { mcp?: McpToolInfo[] }).mcp;
     if (mcpTools) {
       for (const t of mcpTools) {
         if (!seen.has(t.name)) { seen.add(t.name); result.push({ ...t, source: 'mcp', mcp_server: t.mcp_server }); }

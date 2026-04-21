@@ -8,7 +8,7 @@ export function ToolCard({ tool, source, mcpServer, onClick }: {
   mcpServer?: string;
   onClick?: () => void;
 }) {
-  const skills = (tool as unknown as { skills?: string[] }).skills || [];
+  const skills = tool.skills || [];
   return (
     <button
       onClick={onClick}

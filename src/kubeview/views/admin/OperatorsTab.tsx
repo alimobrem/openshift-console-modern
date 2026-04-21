@@ -3,27 +3,25 @@ import {
   CheckCircle, XCircle, RefreshCw, ArrowRight, AlertCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { K8sResource } from '../../engine/renderers';
 import type { ClusterOperator, Condition } from '../../engine/types';
 import { Card } from '../../components/primitives/Card';
 import { SearchInput } from '../../components/primitives/SearchInput';
 
 export interface OperatorsTabProps {
-  operators: K8sResource[];
+  operators: ClusterOperator[];
   go: (path: string, title: string) => void;
 }
 
 export function OperatorsTab({ operators, go }: OperatorsTabProps) {
   const [search, setSearch] = React.useState('');
-  const operatorList = operators.map((co) => {
-    const op = co as unknown as ClusterOperator;
+  const operatorList = operators.map((op) => {
     const conditions: Condition[] = op.status?.conditions || [];
     const available = conditions.find((c) => c.type === 'Available')?.status === 'True';
     const degraded = conditions.find((c) => c.type === 'Degraded')?.status === 'True';
     const progressing = conditions.find((c) => c.type === 'Progressing')?.status === 'True';
     const version = op.status?.versions?.find((v) => v.name === 'operator')?.version || '';
     const message = degraded ? conditions.find((c) => c.type === 'Degraded')?.message || '' : progressing ? conditions.find((c) => c.type === 'Progressing')?.message || '' : '';
-    return { name: co.metadata.name, available, degraded, progressing, version, message };
+    return { name: op.metadata.name, available, degraded, progressing, version, message };
   }).sort((a, b) => {
     if (a.degraded && !b.degraded) return -1;
     if (!a.degraded && b.degraded) return 1;

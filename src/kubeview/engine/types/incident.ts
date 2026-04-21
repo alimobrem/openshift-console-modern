@@ -67,7 +67,7 @@ export interface IncidentItem {
   investigationPhases?: InvestigationPhase[];
   planName?: string;
   /** Original object for drill-down / detail views. */
-  sourceData?: Record<string, unknown>;
+  sourceData?: Finding | PrometheusAlert | TrackedError | TimelineEntry | FleetAlert | Record<string, unknown>;
 }
 
 export interface PrometheusAlert {
@@ -123,7 +123,7 @@ export function findingToIncident(f: Finding, now = Date.now()): IncidentItem {
     sourceRef: `finding:${f.id}`,
     investigationPhases: f.investigationPhases,
     planName: f.planName,
-    sourceData: f as unknown as Record<string, unknown>,
+    sourceData: f,
   };
 }
 
@@ -164,7 +164,7 @@ export function prometheusAlertToIncident(
       ? `${resources[0].kind}/${resources[0].name}/${namespace ?? '_'}`
       : `prom:${alertName}`,
     sourceRef: `prometheus:${alertName}:${labelsHash(alert.labels)}`,
-    sourceData: alert as unknown as Record<string, unknown>,
+    sourceData: alert,
   };
 }
 
@@ -205,7 +205,7 @@ export function trackedErrorToIncident(
       ? `${resources[0].kind}/${resources[0].name}/${err.namespace ?? '_'}`
       : `error:${err.id}`,
     sourceRef: `error:${err.id}`,
-    sourceData: err as unknown as Record<string, unknown>,
+    sourceData: err,
   };
 }
 
@@ -234,7 +234,7 @@ export function timelineEntryToIncident(
         ? `${entry.resource.kind}/${entry.resource.name}/${entry.resource.namespace ?? '_'}`
         : `timeline:${entry.id}`),
     sourceRef: `timeline:${entry.id}`,
-    sourceData: entry as unknown as Record<string, unknown>,
+    sourceData: entry,
   };
 }
 
@@ -273,6 +273,6 @@ export function fleetAlertToIncident(
     correlationKey: `fleet:${alert.clusterId}:${alert.alertName}`,
     sourceRef: `fleet:${alert.clusterId}:${alert.alertName}`,
     clusterId: alert.clusterId,
-    sourceData: alert as unknown as Record<string, unknown>,
+    sourceData: alert,
   };
 }

@@ -24,14 +24,10 @@ export default function NetworkingView() {
   const nsFilter = selectedNamespace !== '*' ? selectedNamespace : undefined;
 
   // Real-time data
-  const { data: rawServices = [], isLoading: svcLoading } = useK8sListWatch({ apiPath: '/api/v1/services', namespace: nsFilter });
-  const services = rawServices as unknown as Service[];
-  const { data: rawIngresses = [], isLoading: ingLoading } = useK8sListWatch({ apiPath: '/apis/networking.k8s.io/v1/ingresses', namespace: nsFilter });
-  const ingresses = rawIngresses as unknown as Ingress[];
-  const { data: rawRoutes = [] } = useK8sListWatch({ apiPath: '/apis/route.openshift.io/v1/routes', namespace: nsFilter });
-  const routes = rawRoutes as unknown as Route[];
-  const { data: rawNetpols = [] } = useK8sListWatch({ apiPath: '/apis/networking.k8s.io/v1/networkpolicies', namespace: nsFilter });
-  const netpols = rawNetpols as unknown as NetworkPolicy[];
+  const { data: services = [], isLoading: svcLoading } = useK8sListWatch<Service>({ apiPath: '/api/v1/services', namespace: nsFilter });
+  const { data: ingresses = [], isLoading: ingLoading } = useK8sListWatch<Ingress>({ apiPath: '/apis/networking.k8s.io/v1/ingresses', namespace: nsFilter });
+  const { data: routes = [] } = useK8sListWatch<Route>({ apiPath: '/apis/route.openshift.io/v1/routes', namespace: nsFilter });
+  const { data: netpols = [] } = useK8sListWatch<NetworkPolicy>({ apiPath: '/apis/networking.k8s.io/v1/networkpolicies', namespace: nsFilter });
 
   // Cluster-scoped: endpoints, ingress controller
   const { data: endpoints = [] } = useQuery<K8sResource[]>({
@@ -121,7 +117,7 @@ export default function NetworkingView() {
           </div>
         </div>
 
-        {(svcLoading || ingLoading) && rawServices.length === 0 && (
+        {(svcLoading || ingLoading) && services.length === 0 && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[1, 2, 3, 4].map((i) => (
               <div key={i} className="bg-slate-900 rounded-lg border border-slate-800 p-3 animate-pulse">

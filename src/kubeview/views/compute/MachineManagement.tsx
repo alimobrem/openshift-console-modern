@@ -8,12 +8,12 @@ import type { MachineAutoscalerResource, ClusterAutoscalerResource, MachineHealt
 
 interface MachineManagementProps {
   isHyperShift: boolean;
-  machines: K8sResource[];
-  machineSets: K8sResource[];
+  machines: Machine[];
+  machineSets: MachineSet[];
   healthChecks: K8sResource[];
   machineAutoscalers: K8sResource[];
   clusterAutoscaler: K8sResource[];
-  nodePools: K8sResource[];
+  nodePools: NodePool[];
   go: (path: string, title: string) => void;
 }
 
@@ -35,7 +35,7 @@ export function MachineManagement({
   );
 }
 
-function HyperShiftSection({ nodePools, go }: { nodePools: K8sResource[]; go: (path: string, title: string) => void }) {
+function HyperShiftSection({ nodePools, go }: { nodePools: NodePool[]; go: (path: string, title: string) => void }) {
   return (
     <div className="space-y-6">
       <Card>
@@ -52,7 +52,7 @@ function HyperShiftSection({ nodePools, go }: { nodePools: K8sResource[]; go: (p
           </div>
         ) : (
           <div className="divide-y divide-slate-800">
-            {(nodePools as unknown as NodePool[]).map((np) => {
+            {nodePools.map((np) => {
               const desired = np.spec?.replicas ?? 0;
               const ready = np.status?.replicas ?? 0;
               const autoScale = np.spec?.autoScaling;
@@ -104,7 +104,7 @@ function HyperShiftSection({ nodePools, go }: { nodePools: K8sResource[]; go: (p
   );
 }
 
-function MachineSetsCard({ machineSets, machineAutoscalers, go }: { machineSets: K8sResource[]; machineAutoscalers: K8sResource[]; go: (path: string, title: string) => void }) {
+function MachineSetsCard({ machineSets, machineAutoscalers, go }: { machineSets: MachineSet[]; machineAutoscalers: K8sResource[]; go: (path: string, title: string) => void }) {
   return (
     <Card>
       <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
@@ -112,7 +112,7 @@ function MachineSetsCard({ machineSets, machineAutoscalers, go }: { machineSets:
         <button onClick={() => go('/r/machine.openshift.io~v1beta1~machinesets', 'MachineSets')} className="text-xs text-blue-400 hover:text-blue-300">View all →</button>
       </div>
       <div className="divide-y divide-slate-800 max-h-64 overflow-auto">
-        {machineSets.length === 0 ? <div className="px-4 py-6 text-center text-sm text-slate-500">No MachineSets</div> : (machineSets as MachineSet[]).map((ms) => {
+        {machineSets.length === 0 ? <div className="px-4 py-6 text-center text-sm text-slate-500">No MachineSets</div> : machineSets.map((ms) => {
           const desired = ms.spec?.replicas ?? 0;
           const ready = ms.status?.readyReplicas ?? 0;
           const autoscaler = (machineAutoscalers as MachineAutoscalerResource[]).find((a) => a.spec?.scaleTargetRef?.name === ms.metadata.name);
@@ -133,7 +133,7 @@ function MachineSetsCard({ machineSets, machineAutoscalers, go }: { machineSets:
   );
 }
 
-function MachinesCard({ machines, go }: { machines: K8sResource[]; go: (path: string, title: string) => void }) {
+function MachinesCard({ machines, go }: { machines: Machine[]; go: (path: string, title: string) => void }) {
   return (
     <Card>
       <div className="px-4 py-3 border-b border-slate-800 flex items-center justify-between">
@@ -141,7 +141,7 @@ function MachinesCard({ machines, go }: { machines: K8sResource[]; go: (path: st
         <button onClick={() => go('/r/machine.openshift.io~v1beta1~machines', 'Machines')} className="text-xs text-blue-400 hover:text-blue-300">View all →</button>
       </div>
       <div className="divide-y divide-slate-800 max-h-64 overflow-auto">
-        {machines.length === 0 ? <div className="px-4 py-6 text-center text-sm text-slate-500">No Machines</div> : (machines as Machine[]).map((m) => {
+        {machines.length === 0 ? <div className="px-4 py-6 text-center text-sm text-slate-500">No Machines</div> : machines.map((m) => {
           const phase = m.status?.phase || 'Unknown';
           const instanceType = (m.spec?.providerSpec?.value?.instanceType as string) || '';
           const nodeRef = m.status?.nodeRef?.name || '';

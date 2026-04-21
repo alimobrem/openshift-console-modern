@@ -13,7 +13,7 @@ import { Card } from '../../components/primitives/Card';
 export function IncidentContext({ resource, managedPods, events, namespace, go }: {
   resource: K8sResource;
   managedPods: K8sResource[];
-  events: K8sResource[];
+  events: Event[];
   namespace?: string;
   go: (path: string, title: string) => void;
 }) {
@@ -51,7 +51,7 @@ export function IncidentContext({ resource, managedPods, events, namespace, go }
     return `/api/v1/namespaces/${worstPodNs}/events?fieldSelector=${fs}`;
   }, [worstPodName, worstPodNs]);
 
-  const { data: podEvents = [] } = useK8sListWatch({
+  const { data: podEvents = [] } = useK8sListWatch<Event>({
     apiPath: podEventsPath,
     enabled: !!worstPod && !isPod && !!worstPodName && !!podEventsPath,
   });
@@ -79,7 +79,7 @@ export function IncidentContext({ resource, managedPods, events, namespace, go }
   });
 
   const relevantEvents = React.useMemo(() => {
-    const all = [...(events as unknown as Event[]), ...(podEvents as unknown as Event[])];
+    const all = [...events, ...podEvents];
     const seen = new Set<string>();
     return all.filter(e => {
       const uid = e.metadata?.uid;

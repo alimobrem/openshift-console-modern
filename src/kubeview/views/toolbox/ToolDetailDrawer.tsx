@@ -35,7 +35,7 @@ export function ToolDetailDrawer({ tool, onClose }: ToolDetailDrawerProps) {
 
   const toolStats = statsData?.by_tool?.find((t: { tool_name: string }) => t.tool_name === tool.name);
   const recentCalls = usageData?.entries ?? usageData?.calls ?? [];
-  const skills = (tool as unknown as { skills?: string[] }).skills ?? [];
+  const skills = tool.skills ?? [];
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end" onClick={onClose}>

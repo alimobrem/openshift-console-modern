@@ -5,6 +5,10 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { K8sResource } from '../engine/renderers';
+import type { Node, Pod, Event } from '../engine/types';
+import type { ClusterOperator } from '../engine/types/openshift';
+import type { Deployment } from '../engine/types/apps';
+import type { PersistentVolumeClaim } from '../engine/types/core';
 import { useUIStore } from '../store/uiStore';
 import { useFleetStore } from '../store/fleetStore';
 import { useShallow } from 'zustand/react/shallow';
@@ -120,12 +124,12 @@ export default function PulseView() {
   const fleetMode = useFleetStore((s) => s.fleetMode);
 
   const nsFilter = selectedNamespace !== '*' ? selectedNamespace : undefined;
-  const { data: nodes = [], isLoading: nodesLoading } = useK8sListWatch({ apiPath: '/api/v1/nodes' });
-  const { data: pods = [], isLoading: podsLoading } = useK8sListWatch({ apiPath: '/api/v1/pods', namespace: nsFilter });
-  const { data: deployments = [], isLoading: deploysLoading } = useK8sListWatch({ apiPath: '/apis/apps/v1/deployments', namespace: nsFilter });
-  const { data: pvcs = [], isLoading: pvcsLoading } = useK8sListWatch({ apiPath: '/api/v1/persistentvolumeclaims', namespace: nsFilter });
-  const { data: operators = [], isLoading: opsLoading } = useK8sListWatch({ apiPath: '/apis/config.openshift.io/v1/clusteroperators' });
-  const { data: events = [] } = useK8sListWatch({ apiPath: '/api/v1/events', namespace: nsFilter });
+  const { data: nodes = [], isLoading: nodesLoading } = useK8sListWatch<Node>({ apiPath: '/api/v1/nodes' });
+  const { data: pods = [], isLoading: podsLoading } = useK8sListWatch<Pod>({ apiPath: '/api/v1/pods', namespace: nsFilter });
+  const { data: deployments = [], isLoading: deploysLoading } = useK8sListWatch<Deployment>({ apiPath: '/apis/apps/v1/deployments', namespace: nsFilter });
+  const { data: pvcs = [], isLoading: pvcsLoading } = useK8sListWatch<PersistentVolumeClaim>({ apiPath: '/api/v1/persistentvolumeclaims', namespace: nsFilter });
+  const { data: operators = [], isLoading: opsLoading } = useK8sListWatch<ClusterOperator>({ apiPath: '/apis/config.openshift.io/v1/clusteroperators' });
+  const { data: events = [] } = useK8sListWatch<Event>({ apiPath: '/api/v1/events', namespace: nsFilter });
 
   const isLoading = nodesLoading || podsLoading || deploysLoading || pvcsLoading || opsLoading;
   const { monitorConnected, activeSkill, monitorEnabled, setMonitorEnabled, triggerScan, findings, lastScanTime } =
@@ -164,9 +168,8 @@ export default function PulseView() {
     }
   }, [lastScanTime, scanning]);
 
-  const typedNodes = nodes as K8sResource[];
-  const readyNodes = typedNodes.filter(n => {
-    const conds = ((n as any).status?.conditions || []) as Array<{ type: string; status: string }>;
+  const readyNodeCount = nodes.filter(n => {
+    const conds = n.status?.conditions || [];
     return conds.some(c => c.type === 'Ready' && c.status === 'True');
   }).length;
 
@@ -197,8 +200,8 @@ export default function PulseView() {
           <div className="flex items-center gap-2">
             <StatPill
               icon={<Shield className="w-3 h-3" />}
-              label={`${readyNodes}/${typedNodes.length} nodes`}
-              color={readyNodes === typedNodes.length ? 'emerald' : 'amber'}
+              label={`${readyNodeCount}/${nodes.length} nodes`}
+              color={readyNodeCount === nodes.length ? 'emerald' : 'amber'}
               onClick={() => go('/compute', 'Compute')}
             />
             <button
@@ -229,10 +232,10 @@ export default function PulseView() {
           <div className="h-[420px] bg-slate-900 rounded-lg border border-slate-800 animate-pulse" />
         }>
           <ClusterResourceMap
-            nodes={nodes as K8sResource[]}
-            pods={pods as K8sResource[]}
-            operators={operators as K8sResource[]}
-            events={events as K8sResource[]}
+            nodes={nodes}
+            pods={pods}
+            operators={operators}
+            events={events}
             go={go}
           />
         </Suspense>
@@ -250,11 +253,11 @@ export default function PulseView() {
           </div>
         ) : (
           <ReportTab
-            nodes={nodes as K8sResource[]}
-            allPods={pods as K8sResource[]}
-            deployments={deployments as K8sResource[]}
-            pvcs={pvcs as K8sResource[]}
-            operators={operators as K8sResource[]}
+            nodes={nodes}
+            allPods={pods}
+            deployments={deployments}
+            pvcs={pvcs}
+            operators={operators}
             go={go}
           />
         )}

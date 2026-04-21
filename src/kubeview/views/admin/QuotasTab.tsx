@@ -30,7 +30,7 @@ interface LimitRange extends K8sResource {
   };
 }
 
-export function QuotasTab({ quotas, limitRanges, go }: { quotas: K8sResource[]; limitRanges: K8sResource[]; go: (path: string, title: string) => void }) {
+export function QuotasTab({ quotas, limitRanges, go }: { quotas: ResourceQuota[]; limitRanges: LimitRange[]; go: (path: string, title: string) => void }) {
   const { data: namespaces = [] } = useQuery<K8sResource[]>({
     queryKey: ['k8s', 'list', '/api/v1/namespaces'],
     queryFn: () => k8sList('/api/v1/namespaces'),
@@ -51,7 +51,7 @@ export function QuotasTab({ quotas, limitRanges, go }: { quotas: K8sResource[]; 
   // Aggregate usage across all quotas
   const totalResources = React.useMemo(() => {
     const agg: Record<string, { hard: number; used: number; display: string }> = {};
-    for (const q of quotas as unknown as ResourceQuota[]) {
+    for (const q of quotas) {
       const hard = q.spec?.hard || {};
       const used = q.status?.used || {};
       for (const [key, hardVal] of Object.entries(hard)) {
@@ -135,7 +135,7 @@ export function QuotasTab({ quotas, limitRanges, go }: { quotas: K8sResource[]; 
           </div>
         ) : (
           <div className="space-y-4">
-            {(quotas as unknown as ResourceQuota[]).map((q) => {
+            {quotas.map((q) => {
               const hard = q.spec?.hard || {};
               const used = q.status?.used || {};
               const resources = Object.keys(hard);
@@ -187,7 +187,7 @@ export function QuotasTab({ quotas, limitRanges, go }: { quotas: K8sResource[]; 
           </div>
         ) : (
           <div className="space-y-4">
-            {(limitRanges as unknown as LimitRange[]).map((lr) => {
+            {limitRanges.map((lr) => {
               const limits = lr.spec?.limits || [];
               return (
                 <div key={lr.metadata?.uid} className="border border-slate-800 rounded-lg overflow-hidden">
