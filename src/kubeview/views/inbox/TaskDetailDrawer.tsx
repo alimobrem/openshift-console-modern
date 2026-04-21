@@ -6,6 +6,7 @@ import { formatRelativeTime } from '../../engine/formatters';
 import { escalateInboxItem } from '../../engine/inboxApi';
 import type { InboxItem } from '../../engine/inboxApi';
 import { useInboxStore } from '../../store/inboxStore';
+import { InboxLifecycleStepper } from './InboxLifecycle';
 import { useAgentStore } from '../../store/agentStore';
 import { useUIStore } from '../../store/uiStore';
 
@@ -55,8 +56,9 @@ export function TaskDetailDrawer({
   return (
     <DrawerShell title={item.title} onClose={onClose}>
       <div className="space-y-4 p-4">
+        <InboxLifecycleStepper itemType={item.item_type} status={item.status} />
+
         <div className="flex items-center gap-2 flex-wrap">
-          <Badge variant="outline" className="capitalize">{item.status.replace('_', ' ')}</Badge>
           {item.namespace && (
             <Badge variant="outline">
               <Tag className="w-3 h-3 mr-1" />

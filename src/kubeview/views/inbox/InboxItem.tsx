@@ -10,6 +10,7 @@ import { Badge } from '../../components/primitives/Badge';
 import { Dropdown } from '../../components/primitives/Dropdown';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
 import { Tooltip } from '../../components/primitives/Tooltip';
+import { InboxLifecycleBadge } from './InboxLifecycle';
 import type { InboxItem as InboxItemType, InboxSeverity } from '../../engine/inboxApi';
 import { useInboxStore } from '../../store/inboxStore';
 
@@ -120,12 +121,8 @@ export function InboxItem({
                   </span>
                 </>
               )}
-              {item.status !== 'new' && (
-                <>
-                  <span>·</span>
-                  <Badge variant="outline" className="text-xs capitalize">{item.status.replace('_', ' ')}</Badge>
-                </>
-              )}
+              <span>·</span>
+              <InboxLifecycleBadge itemType={item.item_type} status={item.status} />
             </div>
           </div>
 
