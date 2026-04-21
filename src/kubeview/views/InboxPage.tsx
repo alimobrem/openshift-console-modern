@@ -41,7 +41,7 @@ export function InboxPage() {
       .then((item) => { if (!cancelled) setDrawerItem(item); })
       .catch(() => { if (!cancelled) setDrawerItem(null); });
     return () => { cancelled = true; };
-  }, [selectedItemId]);
+  }, [selectedItemId, items]);
 
   const handleCloseDrawer = useCallback(() => {
     setSelectedItem(null);

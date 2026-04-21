@@ -150,6 +150,7 @@ export const useInboxStore = create<InboxState>((set, get) => ({
     try {
       await claimInboxItem(id);
       get().refresh();
+      _toast('success', 'Claimed — you own this item');
       return true;
     } catch {
       _toast('error', 'Failed to claim');
