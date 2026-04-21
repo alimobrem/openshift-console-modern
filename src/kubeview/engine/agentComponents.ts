@@ -313,6 +313,10 @@ export interface TimelineSpec {
   timeRange?: { start: number; end: number };
 }
 
+export type ViewType = 'custom' | 'incident' | 'plan' | 'assessment';
+export type TriggerSource = 'user' | 'monitor' | 'agent';
+export type ViewVisibility = 'private' | 'team';
+
 export interface ViewSpec {
   id: string;
   title: string;
@@ -323,6 +327,13 @@ export interface ViewSpec {
   generatedAt: number;
   owner?: string;
   templateId?: string;
+  view_type?: ViewType;
+  status?: string;
+  trigger_source?: TriggerSource;
+  finding_id?: string;
+  claimed_by?: string;
+  claimed_at?: string;
+  visibility?: ViewVisibility;
 }
 
 /** Max rows persisted to localStorage to prevent bloat */
