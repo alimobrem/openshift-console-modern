@@ -53,6 +53,11 @@ export function TaskDetailDrawer({
     onClose();
   };
 
+  const triaged = !!item.metadata?.triaged;
+  const triageAssessment = String(item.metadata?.triage_assessment || '');
+  const triageAction = String(item.metadata?.triage_action || 'monitor');
+  const triageUrgency = String(item.metadata?.triage_urgency || 'can-wait');
+
   return (
     <DrawerShell title={item.title} onClose={onClose}>
       <div className="space-y-4 p-4">
@@ -69,6 +74,32 @@ export function TaskDetailDrawer({
 
         {item.summary && (
           <p className="text-sm text-slate-400 leading-relaxed">{item.summary}</p>
+        )}
+
+        {triaged && (
+          <div className="rounded-lg border border-violet-800/50 bg-violet-950/30 p-3 space-y-2">
+            <div className="flex items-center gap-2 text-xs font-medium text-violet-400">
+              <Bot className="w-3.5 h-3.5" />
+              AI Triage
+            </div>
+            {triageAssessment && (
+              <p className="text-sm text-slate-300">{triageAssessment}</p>
+            )}
+            <div className="flex items-center gap-3 text-xs">
+              <Badge variant={
+                triageAction === 'investigate' ? 'warning' :
+                triageAction === 'dismiss' ? 'info' : 'default'
+              }>
+                {triageAction}
+              </Badge>
+              <Badge variant={
+                triageUrgency === 'immediate' ? 'error' :
+                triageUrgency === 'soon' ? 'warning' : 'default'
+              }>
+                {triageUrgency}
+              </Badge>
+            </div>
+          </div>
         )}
 
         <div className="space-y-2 text-sm text-slate-500">

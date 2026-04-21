@@ -100,6 +100,11 @@ export function InboxItem({
               {item.namespace && (
                 <Badge variant="outline" className="text-xs">{item.namespace}</Badge>
               )}
+              {!!item.metadata?.triaged && (
+                <Tooltip content={`AI: ${(item.metadata.triage_action as string) || 'triaged'} · ${(item.metadata.triage_urgency as string) || ''}`}>
+                  <span className="w-2 h-2 rounded-full bg-violet-500 flex-shrink-0" />
+                </Tooltip>
+              )}
               {hasApproval && (
                 <span className="w-2 h-2 rounded-full bg-orange-500 flex-shrink-0" title="Pending approval" />
               )}
