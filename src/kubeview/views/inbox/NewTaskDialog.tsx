@@ -2,9 +2,7 @@ import { useState } from 'react';
 import { X } from 'lucide-react';
 import { Button } from '../../components/primitives/Button';
 import { Input } from '../../components/primitives/Input';
-import { createInboxTask } from '../../engine/inboxApi';
 import { useInboxStore } from '../../store/inboxStore';
-import { useUIStore } from '../../store/uiStore';
 
 export function NewTaskDialog({
   open,
@@ -17,8 +15,7 @@ export function NewTaskDialog({
   const [description, setDescription] = useState('');
   const [namespace, setNamespace] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const refresh = useInboxStore((s) => s.refresh);
-  const addToast = useUIStore((s) => s.addToast);
+  const createTask = useInboxStore((s) => s.createTask);
 
   if (!open) return null;
 
@@ -28,19 +25,17 @@ export function NewTaskDialog({
 
     setSubmitting(true);
     try {
-      await createInboxTask({
+      const ok = await createTask({
         title: title.trim(),
         summary: description.trim() || undefined,
         namespace: namespace.trim() || undefined,
       });
-      addToast({ type: 'success', title: 'Task created' });
-      refresh();
-      setTitle('');
-      setDescription('');
-      setNamespace('');
+      if (ok) {
+        setTitle('');
+        setDescription('');
+        setNamespace('');
       onClose();
-    } catch {
-      addToast({ type: 'error', title: 'Failed to create task' });
+      }
     } finally {
       setSubmitting(false);
     }

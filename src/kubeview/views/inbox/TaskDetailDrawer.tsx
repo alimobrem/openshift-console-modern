@@ -3,10 +3,8 @@ import { DrawerShell } from '../../components/primitives/DrawerShell';
 import { Badge } from '../../components/primitives/Badge';
 import { Button } from '../../components/primitives/Button';
 import { formatRelativeTime } from '../../engine/formatters';
-import { resolveInboxItem, claimInboxItem } from '../../engine/inboxApi';
 import type { InboxItem } from '../../engine/inboxApi';
 import { useInboxStore } from '../../store/inboxStore';
-import { useUIStore } from '../../store/uiStore';
 
 function formatDueDate(ts: number): string {
   const date = new Date(ts * 1000);
@@ -20,27 +18,8 @@ export function TaskDetailDrawer({
   item: InboxItem;
   onClose: () => void;
 }) {
-  const refresh = useInboxStore((s) => s.refresh);
-  const addToast = useUIStore((s) => s.addToast);
-
-  const handleResolve = async () => {
-    try {
-      await resolveInboxItem(item.id);
-      refresh();
-      addToast({ type: 'success', title: 'Task resolved' });
-    } catch {
-      addToast({ type: 'error', title: 'Failed to resolve' });
-    }
-  };
-
-  const handleClaim = async () => {
-    try {
-      await claimInboxItem(item.id);
-      refresh();
-    } catch {
-      addToast({ type: 'error', title: 'Failed to claim' });
-    }
-  };
+  const resolve = useInboxStore((s) => s.resolve);
+  const claim = useInboxStore((s) => s.claim);
 
   return (
     <DrawerShell title={item.title} onClose={onClose}>
@@ -94,10 +73,10 @@ export function TaskDetailDrawer({
 
         <div className="flex gap-2 pt-4 border-t border-slate-800">
           {!item.claimed_by && (
-            <Button size="sm" variant="ghost" onClick={handleClaim}>Claim</Button>
+            <Button size="sm" variant="ghost" onClick={() => claim(item.id)}>Claim</Button>
           )}
           {item.status !== 'resolved' && (
-            <Button size="sm" onClick={handleResolve}>Mark Resolved</Button>
+            <Button size="sm" onClick={() => resolve(item.id)}>Mark Resolved</Button>
           )}
         </div>
       </div>

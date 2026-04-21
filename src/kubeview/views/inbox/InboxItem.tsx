@@ -1,47 +1,40 @@
 import { useState } from 'react';
 import {
-  XCircle, AlertTriangle, Info, CheckCircle2, Clock,
+  XCircle, AlertTriangle, Info, CheckCircle2,
   User, Pin, Eye, PauseCircle, Trash2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatRelativeTime } from '../../engine/formatters';
 import { Card } from '../../components/primitives/Card';
 import { Badge } from '../../components/primitives/Badge';
+import { Dropdown } from '../../components/primitives/Dropdown';
 import { ConfirmDialog } from '../../components/feedback/ConfirmDialog';
-import {
-  acknowledgeInboxItem,
-  claimInboxItem,
-  dismissInboxItem,
-  pinInboxItem,
-  snoozeInboxItem,
-} from '../../engine/inboxApi';
-import type { InboxItem as InboxItemType } from '../../engine/inboxApi';
+import type { InboxItem as InboxItemType, InboxSeverity } from '../../engine/inboxApi';
 import { useInboxStore } from '../../store/inboxStore';
-import { useUIStore } from '../../store/uiStore';
 
-const SEVERITY_ICON: Record<string, typeof XCircle> = {
+const SEVERITY_ICON: Record<InboxSeverity, typeof XCircle> = {
   critical: XCircle,
   warning: AlertTriangle,
   info: Info,
 };
 
-const SEVERITY_COLOR: Record<string, string> = {
+const SEVERITY_COLOR: Record<InboxSeverity, string> = {
   critical: 'border-l-red-500',
   warning: 'border-l-yellow-500',
   info: 'border-l-blue-500',
 };
 
-const SEVERITY_ICON_COLOR: Record<string, string> = {
+const SEVERITY_ICON_COLOR: Record<InboxSeverity, string> = {
   critical: 'text-red-500',
   warning: 'text-yellow-500',
   info: 'text-blue-500',
 };
 
-const SNOOZE_OPTIONS = [
-  { label: '4 hours', hours: 4 },
-  { label: '24 hours', hours: 24 },
-  { label: '3 days', hours: 72 },
-  { label: '1 week', hours: 168 },
+const SNOOZE_ITEMS = [
+  { id: '4', label: '4 hours', onClick: () => {} },
+  { id: '24', label: '24 hours', onClick: () => {} },
+  { id: '72', label: '3 days', onClick: () => {} },
+  { id: '168', label: '1 week', onClick: () => {} },
 ];
 
 const TYPE_LABELS: Record<string, string> = {
@@ -59,64 +52,21 @@ export function InboxItem({
   focused?: boolean;
 }) {
   const [confirmDismiss, setConfirmDismiss] = useState(false);
-  const [snoozeOpen, setSnoozeOpen] = useState(false);
   const setSelectedItem = useInboxStore((s) => s.setSelectedItem);
-  const refresh = useInboxStore((s) => s.refresh);
-  const addToast = useUIStore((s) => s.addToast);
+  const acknowledge = useInboxStore((s) => s.acknowledge);
+  const claim = useInboxStore((s) => s.claim);
+  const snooze = useInboxStore((s) => s.snooze);
+  const dismiss = useInboxStore((s) => s.dismiss);
+  const pin = useInboxStore((s) => s.pin);
 
-  const severity = item.severity || 'info';
+  const severity: InboxSeverity = (item.severity as InboxSeverity) || 'info';
   const SeverityIcon = SEVERITY_ICON[severity] || Info;
   const isPinned = item.pinned_by.length > 0;
   const hasApproval = !!item.metadata?.has_pending_approval;
 
-  const handleAck = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await acknowledgeInboxItem(item.id);
-      refresh();
-    } catch {
-      addToast({ type: 'error', title: 'Failed to acknowledge' });
-    }
-  };
-
-  const handleClaim = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await claimInboxItem(item.id);
-      refresh();
-    } catch {
-      addToast({ type: 'error', title: 'Failed to claim' });
-    }
-  };
-
-  const handleSnooze = async (hours: number) => {
-    setSnoozeOpen(false);
-    try {
-      await snoozeInboxItem(item.id, hours);
-      refresh();
-    } catch {
-      addToast({ type: 'error', title: 'Failed to snooze' });
-    }
-  };
-
-  const handleDismiss = async () => {
+  const handleDismiss = () => {
     setConfirmDismiss(false);
-    try {
-      await dismissInboxItem(item.id);
-      refresh();
-    } catch {
-      addToast({ type: 'error', title: 'Failed to dismiss' });
-    }
-  };
-
-  const handlePin = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await pinInboxItem(item.id);
-      refresh();
-    } catch {
-      addToast({ type: 'error', title: 'Failed to pin' });
-    }
+    dismiss(item.id);
   };
 
   const onDismissClick = (e: React.MouseEvent) => {
@@ -124,9 +74,14 @@ export function InboxItem({
     if (severity === 'critical') {
       setConfirmDismiss(true);
     } else {
-      handleDismiss();
+      dismiss(item.id);
     }
   };
+
+  const snoozeItems = SNOOZE_ITEMS.map((opt) => ({
+    ...opt,
+    onClick: () => snooze(item.id, Number(opt.id)),
+  }));
 
   return (
     <>
@@ -180,51 +135,45 @@ export function InboxItem({
           <div className="flex items-center gap-1 flex-shrink-0">
             {item.status === 'new' && (
               <button
-                onClick={handleAck}
+                onClick={(e) => { e.stopPropagation(); acknowledge(item.id); }}
                 className="p-1.5 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
                 title="Acknowledge"
+                aria-label="Acknowledge"
               >
                 <Eye className="w-4 h-4" />
               </button>
             )}
             {!item.claimed_by && (
               <button
-                onClick={handleClaim}
+                onClick={(e) => { e.stopPropagation(); claim(item.id); }}
                 className="p-1.5 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
                 title="Claim"
+                aria-label="Claim"
               >
                 <CheckCircle2 className="w-4 h-4" />
               </button>
             )}
-            <div className="relative">
-              <button
-                onClick={(e) => { e.stopPropagation(); setSnoozeOpen(!snoozeOpen); }}
-                className="p-1.5 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
-                title="Snooze"
-              >
-                <PauseCircle className="w-4 h-4" />
-              </button>
-              {snoozeOpen && (
-                <div className="absolute right-0 top-full mt-1 z-50 bg-slate-800 border border-slate-700 rounded-lg shadow-lg py-1 min-w-[120px]">
-                  {SNOOZE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.hours}
-                      onClick={(e) => { e.stopPropagation(); handleSnooze(opt.hours); }}
-                      className="block w-full text-left px-3 py-1.5 text-sm text-slate-300 hover:bg-slate-700 transition-colors"
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <Dropdown
+              trigger={
+                <button
+                  className="p-1.5 rounded hover:bg-slate-800 text-slate-500 hover:text-slate-300 transition-colors"
+                  title="Snooze"
+                  aria-label="Snooze"
+                >
+                  <PauseCircle className="w-4 h-4" />
+                </button>
+              }
+              items={snoozeItems}
+              align="right"
+            />
             <button
-              onClick={handlePin}
+              onClick={(e) => { e.stopPropagation(); pin(item.id); }}
               className={cn(
                 'p-1.5 rounded hover:bg-slate-800 transition-colors',
                 isPinned ? 'text-yellow-500' : 'text-slate-500 hover:text-slate-300',
               )}
               title={isPinned ? 'Unpin' : 'Pin'}
+              aria-label={isPinned ? 'Unpin' : 'Pin'}
             >
               <Pin className="w-4 h-4" />
             </button>
@@ -232,6 +181,7 @@ export function InboxItem({
               onClick={onDismissClick}
               className="p-1.5 rounded hover:bg-slate-800 text-slate-500 hover:text-red-400 transition-colors"
               title="Dismiss"
+              aria-label="Dismiss"
             >
               <Trash2 className="w-4 h-4" />
             </button>

@@ -5,13 +5,21 @@
 
 // ---- Types ----
 
+export type InboxItemType = 'finding' | 'task' | 'alert' | 'assessment';
+export type InboxSeverity = 'critical' | 'warning' | 'info';
+export type FindingStatus = 'new' | 'acknowledged' | 'investigating' | 'action_taken' | 'verifying' | 'resolved' | 'archived';
+export type TaskStatus = 'new' | 'in_progress' | 'resolved' | 'archived';
+export type AlertStatus = 'new' | 'acknowledged' | 'resolved' | 'archived';
+export type AssessmentStatus = 'new' | 'acknowledged' | 'escalated';
+export type InboxStatus = FindingStatus | TaskStatus | AlertStatus | AssessmentStatus;
+
 export interface InboxItem {
   id: string;
-  item_type: 'finding' | 'task' | 'alert' | 'assessment';
-  status: string;
+  item_type: InboxItemType;
+  status: InboxStatus;
   title: string;
   summary: string;
-  severity: string | null;
+  severity: InboxSeverity | null;
   priority_score: number;
   confidence: number;
   noise_score: number;

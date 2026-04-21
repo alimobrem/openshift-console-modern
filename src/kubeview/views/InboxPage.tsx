@@ -35,9 +35,11 @@ export function InboxPage() {
       setDrawerItem(null);
       return;
     }
+    let cancelled = false;
     fetchInboxItem(selectedItemId)
-      .then(setDrawerItem)
-      .catch(() => setDrawerItem(null));
+      .then((item) => { if (!cancelled) setDrawerItem(item); })
+      .catch(() => { if (!cancelled) setDrawerItem(null); });
+    return () => { cancelled = true; };
   }, [selectedItemId]);
 
   const handleCloseDrawer = useCallback(() => {
@@ -128,9 +130,7 @@ export function InboxPage() {
       </Tabs>
 
       {drawerItem && (
-        <div className="fixed inset-y-0 right-0 w-[400px] z-40 border-l border-slate-800 bg-slate-950 shadow-2xl overflow-y-auto">
-          <TaskDetailDrawer item={drawerItem} onClose={handleCloseDrawer} />
-        </div>
+        <TaskDetailDrawer item={drawerItem} onClose={handleCloseDrawer} />
       )}
 
       <NewTaskDialog open={newTaskOpen} onClose={() => setNewTaskOpen(false)} />
