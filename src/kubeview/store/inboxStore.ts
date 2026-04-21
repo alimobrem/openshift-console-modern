@@ -27,7 +27,7 @@ import { useUIStore } from './uiStore';
 type Preset = 'needs_attention' | 'agent_cleared' | 'my_items' | 'all' | null;
 
 const PRESET_FILTERS: Record<string, InboxFilters> = {
-  needs_attention: {},
+  needs_attention: { status: '__needs_attention__' },
   agent_cleared: { status: 'agent_cleared' },
   my_items: { claimed_by: '__current_user__' },
   all: {},
