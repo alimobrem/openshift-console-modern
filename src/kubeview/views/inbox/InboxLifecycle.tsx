@@ -1,34 +1,27 @@
 import { cn } from '@/lib/utils';
 import type { InboxItemType, InboxStatus } from '../../engine/inboxApi';
 
-const LIFECYCLES: Record<string, Array<{ key: string; label: string }>> = {
-  finding: [
-    { key: 'new', label: 'New' },
-    { key: 'agent_reviewing', label: 'AI Review' },
-    { key: 'acknowledged', label: 'Ack' },
-    { key: 'investigating', label: 'Investigating' },
-    { key: 'action_taken', label: 'Action' },
-    { key: 'verifying', label: 'Verifying' },
-    { key: 'resolved', label: 'Resolved' },
-  ],
-  task: [
-    { key: 'new', label: 'New' },
-    { key: 'agent_reviewing', label: 'AI Review' },
-    { key: 'in_progress', label: 'In Progress' },
-    { key: 'resolved', label: 'Done' },
-  ],
-  alert: [
-    { key: 'new', label: 'New' },
-    { key: 'agent_reviewing', label: 'AI Review' },
-    { key: 'acknowledged', label: 'Ack' },
-    { key: 'resolved', label: 'Resolved' },
-  ],
-  assessment: [
-    { key: 'new', label: 'New' },
-    { key: 'agent_reviewing', label: 'AI Review' },
-    { key: 'acknowledged', label: 'Ack' },
-    { key: 'escalated', label: 'Escalated' },
-  ],
+const UNIVERSAL_LIFECYCLE: Array<{ key: string; label: string }> = [
+  { key: 'new', label: 'New' },
+  { key: 'agent_reviewing', label: 'AI Review' },
+  { key: 'acknowledged', label: 'Attention' },
+  { key: 'in_progress', label: 'In Progress' },
+  { key: 'resolved', label: 'Resolved' },
+];
+
+const STATUS_MAP: Record<string, string> = {
+  new: 'new',
+  agent_reviewing: 'agent_reviewing',
+  acknowledged: 'acknowledged',
+  investigating: 'in_progress',
+  action_taken: 'in_progress',
+  verifying: 'in_progress',
+  in_progress: 'in_progress',
+  escalated: 'in_progress',
+  resolved: 'resolved',
+  archived: 'resolved',
+  agent_cleared: 'resolved',
+  agent_review_failed: 'new',
 };
 
 export function InboxLifecycleBadge({
@@ -38,9 +31,10 @@ export function InboxLifecycleBadge({
   itemType: InboxItemType;
   status: InboxStatus;
 }) {
-  const steps = LIFECYCLES[itemType] || LIFECYCLES.finding;
+  const steps = UNIVERSAL_LIFECYCLE;
   const isCleared = status === 'agent_cleared';
-  const currentIdx = isCleared ? steps.length : steps.findIndex((s) => s.key === status);
+  const mappedStatus = STATUS_MAP[status] || status;
+  const currentIdx = isCleared ? steps.length : steps.findIndex((s) => s.key === mappedStatus);
 
   return (
     <div className="inline-flex items-center gap-px rounded-md bg-slate-800/80 border border-slate-700/50 px-1 py-0.5">
@@ -59,8 +53,8 @@ export function InboxLifecycleBadge({
             <span
               className={cn(
                 'px-1.5 py-0.5 text-[10px] leading-none rounded-sm',
-                isCurrent && step.key === 'agent_reviewing' && 'bg-violet-600 text-white font-medium animate-pulse',
-                isCurrent && step.key !== 'agent_reviewing' && 'bg-violet-600 text-white font-medium',
+                isCurrent && mappedStatus === 'agent_reviewing' && 'bg-violet-600 text-white font-medium animate-pulse',
+                isCurrent && mappedStatus !== 'agent_reviewing' && 'bg-violet-600 text-white font-medium',
                 isPast && 'text-emerald-400',
                 !isCurrent && !isPast && 'text-slate-600',
               )}
@@ -84,14 +78,15 @@ export function InboxLifecycleStepper({
   itemType: InboxItemType;
   status: InboxStatus;
 }) {
-  const steps = LIFECYCLES[itemType] || LIFECYCLES.finding;
+  const steps = UNIVERSAL_LIFECYCLE;
   const isCleared = status === 'agent_cleared';
-  const currentIdx = isCleared ? steps.length : steps.findIndex((s) => s.key === status);
+  const mappedStatus = STATUS_MAP[status] || status;
+  const currentIdx = isCleared ? steps.length : steps.findIndex((s) => s.key === mappedStatus);
 
   return (
     <div className="flex items-center gap-1">
       {steps.map((step, idx) => {
-        const isCurrent = !isCleared && step.key === status;
+        const isCurrent = !isCleared && step.key === mappedStatus;
         const isPast = isCleared || idx < currentIdx;
         const isLast = idx === steps.length - 1;
 

@@ -337,7 +337,6 @@ export function TaskDetailDrawer({
     useAgentStore.getState().connectAndSend(buildInvestigatePrompt(item));
     useUIStore.getState().expandAISidebar();
     useUIStore.getState().setAISidebarMode('chat');
-    onClose();
   };
 
   const handleEscalate = async () => {
