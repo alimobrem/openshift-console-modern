@@ -5,7 +5,7 @@
 
 // ---- Types ----
 
-export type InboxItemType = 'finding' | 'task' | 'alert' | 'assessment';
+export type InboxItemType = 'task';
 export type InboxSeverity = 'critical' | 'warning' | 'info';
 export type AgentStatus = 'agent_reviewing' | 'agent_cleared' | 'agent_review_failed';
 export type InboxStatus = 'new' | 'triaged' | 'claimed' | 'in_progress' | 'resolved' | 'archived' | AgentStatus;

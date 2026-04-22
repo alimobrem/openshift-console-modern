@@ -3,12 +3,11 @@ import { cn } from '@/lib/utils';
 import { Tooltip } from '../../components/primitives/Tooltip';
 import { useInboxStore } from '../../store/inboxStore';
 
-const TYPE_OPTIONS = [
-  { value: '', label: 'All types' },
-  { value: 'finding', label: 'Findings' },
-  { value: 'task', label: 'Tasks' },
-  { value: 'alert', label: 'Alerts' },
-  { value: 'assessment', label: 'Assessments' },
+const SOURCE_OPTIONS = [
+  { value: '', label: 'All sources' },
+  { value: 'system:monitor', label: 'Monitor' },
+  { value: 'system:agent', label: 'AI Agent' },
+  { value: '__user__', label: 'Manual' },
 ];
 
 const UNIFIED_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -83,34 +82,33 @@ export function InboxFilterBar() {
   const groupBy = useInboxStore((s) => s.groupBy);
   const setGroupBy = useInboxStore((s) => s.setGroupBy);
 
-  const currentType = filters.type || '';
+  const currentSource = filters.claimed_by || '';
   const currentStatus = filters.status || '';
   const currentSeverity = filters.severity || '';
-  const statusOptions = STATUS_OPTIONS[currentType] || STATUS_OPTIONS.default;
+  const statusOptions = STATUS_OPTIONS.default;
 
-  const hasActiveFilters = currentType || currentStatus || currentSeverity;
+  const hasActiveFilters = currentSource || currentStatus || currentSeverity;
 
   return (
     <div className="flex items-center gap-2 px-4 py-2 border-b border-slate-800">
       <FilterSelect
-        label="Filter by type"
-        value={currentType}
-        options={TYPE_OPTIONS}
-        onChange={(v) => setFilters({ ...filters, type: v || undefined, status: undefined })}
-        active={!!currentType}
+        label="Filter by source"
+        value={currentSource}
+        options={SOURCE_OPTIONS}
+        onChange={(v) => setFilters({ ...filters, claimed_by: v || undefined })}
+        active={!!currentSource}
       />
       <Tooltip
         content={
           <div className="space-y-1.5 max-w-xs">
-            <div><span className="font-medium text-slate-200">Finding</span> — something is broken now (crashloop, OOM)</div>
-            <div><span className="font-medium text-slate-200">Assessment</span> — something will need attention (cert expiry, RBAC drift)</div>
-            <div><span className="font-medium text-slate-200">Alert</span> — Prometheus alert fired (threshold breach)</div>
-            <div><span className="font-medium text-slate-200">Task</span> — manually created to-do item</div>
+            <div><span className="font-medium text-slate-200">Monitor</span> — detected by cluster scanning (crashloop, OOM, degraded)</div>
+            <div><span className="font-medium text-slate-200">AI Agent</span> — recommended by the agent during investigation</div>
+            <div><span className="font-medium text-slate-200">Manual</span> — created by you via New Task</div>
           </div>
         }
         side="bottom"
       >
-        <button className="text-slate-600 hover:text-slate-400 transition-colors" aria-label="Item type definitions">
+        <button className="text-slate-600 hover:text-slate-400 transition-colors" aria-label="Source definitions">
           <HelpCircle className="w-3.5 h-3.5" />
         </button>
       </Tooltip>

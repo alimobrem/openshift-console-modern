@@ -39,12 +39,12 @@ const SNOOZE_ITEMS = [
   { id: '168', label: '1 week', onClick: () => {} },
 ];
 
-const TYPE_LABELS: Record<string, string> = {
-  finding: 'Finding',
-  task: 'Task',
-  alert: 'Alert',
-  assessment: 'Assessment',
-};
+function getSourceLabel(createdBy: string): string {
+  if (createdBy === 'system:monitor') return 'Monitor';
+  if (createdBy === 'system:agent') return 'AI';
+  if (createdBy?.startsWith('system:')) return 'Proactive';
+  return 'Manual';
+}
 
 export function InboxItem({
   item,
@@ -129,7 +129,7 @@ export function InboxItem({
             </div>
 
             <div className="flex items-center gap-3 mt-1 text-xs text-slate-500">
-              <span>{TYPE_LABELS[item.item_type] || item.item_type}</span>
+              <span>{getSourceLabel(item.created_by)}</span>
               <span>·</span>
               <span>{formatRelativeTime(item.created_at * 1000)}</span>
               {item.claimed_by && (
