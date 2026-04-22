@@ -474,6 +474,41 @@ const STATUS_LIST_BG: Record<string, string> = {
 
 function AgentStatusList({ spec }: { spec: StatusListSpec }) {
   const navigate = useNavigate();
+  const [fetchedItems, setFetchedItems] = useState<Array<{ name: string; status: string; detail?: string }>>([]);
+
+  // Auto-fetch pod status when spec has resources instead of items
+  const extra = spec as unknown as Record<string, unknown>;
+  const resources = (extra.resources || (extra.props as Record<string, unknown>)?.resources || []) as Array<{ kind: string; name: string; namespace: string }>;
+
+  useEffect(() => {
+    if ((spec.items || []).length > 0 || resources.length === 0) return;
+    let cancelled = false;
+    const fetches = resources.map(async (r) => {
+      try {
+        const apiPath = r.kind === 'Pod' ? 'v1' : r.kind === 'Deployment' ? 'apis/apps/v1' : 'v1';
+        const plural = r.kind.toLowerCase() + 's';
+        const res = await fetch(`/api/kubernetes/${apiPath}/namespaces/${r.namespace}/${plural}/${r.name}`);
+        if (!res.ok) return { name: `${r.kind}/${r.name}`, status: 'unknown' as const, detail: r.namespace };
+        const data = await res.json();
+        const phase = data.status?.phase || '';
+        const status = phase === 'Running' || phase === 'Active' ? 'healthy'
+          : phase === 'Pending' ? 'pending'
+          : phase === 'Failed' || phase === 'CrashLoopBackOff' ? 'error'
+          : data.status?.conditions?.find((c: { type: string; status: string }) => c.type === 'Available')?.status === 'True' ? 'healthy'
+          : data.status?.conditions?.find((c: { type: string; status: string }) => c.type === 'Available')?.status === 'False' ? 'error'
+          : 'warning';
+        const restarts = data.status?.containerStatuses?.[0]?.restartCount;
+        const detail = restarts != null ? `${r.namespace} · ${restarts} restarts` : r.namespace;
+        return { name: `${r.kind}/${r.name}`, status, detail };
+      } catch {
+        return { name: `${r.kind}/${r.name}`, status: 'unknown' as const, detail: r.namespace };
+      }
+    });
+    Promise.all(fetches).then(items => { if (!cancelled) setFetchedItems(items); });
+    return () => { cancelled = true; };
+  }, [resources.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const effectiveItems = (spec.items || []).length > 0 ? spec.items : fetchedItems;
 
   // Map status list item names to navigable resource paths
   const KIND_GVR_MAP: Record<string, string> = {
@@ -539,8 +574,8 @@ function AgentStatusList({ spec }: { spec: StatusListSpec }) {
         </div>
       )}
       <div className="divide-y divide-slate-800/60">
-        {(spec.items || []).map((item, i) => {
-          const Icon = STATUS_ICONS[item.status] || HelpCircle;
+        {(effectiveItems || []).map((item, i) => {
+          const Icon = STATUS_ICONS[item.status as keyof typeof STATUS_ICONS] || HelpCircle;
           const clickTarget = resolveClickTarget(item);
           return (
             <div
@@ -978,11 +1013,33 @@ function AgentProgressList({ spec }: { spec: ProgressListSpec }) {
   );
 }
 
-/** Single big number with trend indicator */
+/** Single big number with trend indicator — auto-fetches from Prometheus when query prop is present */
 function AgentStatCard({ spec }: { spec: StatCardSpec }) {
   const extra = spec as unknown as Record<string, unknown>;
+  const query = extra.query as string || '';
   const title = spec.title || extra.label as string || '';
-  const value = spec.value || (extra.query ? String(extra.query).slice(0, 40) : '') || '';
+  const [liveValue, setLiveValue] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!query) return;
+    let cancelled = false;
+    fetch(`/api/prometheus/api/v1/query?query=${encodeURIComponent(query)}`)
+      .then(r => r.json())
+      .then(data => {
+        if (cancelled) return;
+        const results = data?.data?.result || [];
+        if (results.length > 0) {
+          const raw = parseFloat(results[0].value?.[1] || '0');
+          setLiveValue(Number.isInteger(raw) ? String(raw) : raw.toFixed(2));
+        } else {
+          setLiveValue('0');
+        }
+      })
+      .catch(() => { if (!cancelled) setLiveValue(null); });
+    return () => { cancelled = true; };
+  }, [query]);
+
+  const value = spec.value || liveValue || (query ? '...' : '—');
   const goodDir = spec.trendGood || 'down';
   const trendIsGood = spec.trend === goodDir;
   const trendColor = !spec.trend || spec.trend === 'stable'

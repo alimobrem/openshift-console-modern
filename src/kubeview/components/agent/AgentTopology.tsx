@@ -50,6 +50,28 @@ export default function AgentTopology({ spec: initialSpec, onAddToView }: { spec
     edges: currentSpec.edges || [],
   }), [currentSpec]);
 
+  // Auto-fetch when spec has namespace/kinds but no nodes (agent-designed view)
+  useEffect(() => {
+    const extra = initialSpec as unknown as Record<string, unknown>;
+    const props = (extra.props || {}) as Record<string, unknown>;
+    const ns = extra.namespace as string || props.namespace as string || '';
+    const kinds = extra.kinds as string[] || props.kinds as string[] || [];
+    const perspective = (extra.perspective as string || props.perspective as string || '').toLowerCase();
+
+    if (spec.nodes.length === 0 && (ns || kinds.length > 0)) {
+      const match = PERSPECTIVES.find(p => p.label.toLowerCase() === perspective) || PERSPECTIVES[2];
+      const synthPerspective: PerspectiveDef = {
+        ...match,
+        kinds: kinds.length > 0 ? kinds.join(',') : match.kinds,
+      };
+      // Inject namespace into a dummy node so fetchPerspective can find it
+      if (ns) {
+        setCurrentSpec(prev => ({ ...prev, nodes: [{ id: '__ns__', kind: 'Namespace', name: ns, namespace: ns, status: 'healthy' }] }));
+      }
+      fetchPerspective(synthPerspective);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const healthCounts = useMemo(() => {
     const c = { healthy: 0, warning: 0, error: 0 };
     for (const n of spec.nodes || []) {
@@ -66,7 +88,9 @@ export default function AgentTopology({ spec: initialSpec, onAddToView }: { spec
     abortRef.current = controller;
     const timeout = setTimeout(() => controller.abort(), 10000);
 
-    const ns = initialSpec.nodes.find(n => n.namespace)?.namespace || '';
+    const extra = initialSpec as unknown as Record<string, unknown>;
+    const ns = (initialSpec.nodes || []).find(n => n.namespace)?.namespace
+      || extra.namespace as string || (extra.props as Record<string, unknown>)?.namespace as string || '';
     const params = new URLSearchParams();
     if (ns) params.set('namespace', ns);
     params.set('kinds', p.kinds);
