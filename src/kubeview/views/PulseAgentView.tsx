@@ -1,7 +1,7 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import {
-  Bot, List, BarChart3, History,
+  Bot, List, BarChart3, History, Brain,
   Puzzle, Layers, Cable, Target,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -14,7 +14,9 @@ import { ComponentsTab } from './toolbox/ComponentsTab';
 import { UsageTab } from './toolbox/UsageTab';
 import { AnalyticsTab } from './toolbox/AnalyticsTab';
 
-type AgentTab = 'overview' | 'tools' | 'skills' | 'plans' | 'mcp' | 'components' | 'usage' | 'analytics';
+const MemoryView = lazy(() => import('./MemoryView'));
+
+type AgentTab = 'overview' | 'tools' | 'skills' | 'plans' | 'mcp' | 'components' | 'usage' | 'analytics' | 'memory';
 
 const TABS: Array<{ id: AgentTab; label: string; icon: React.ReactNode; activeIcon: React.ReactNode }> = [
   { id: 'overview', label: 'Overview', icon: <Bot className="w-3.5 h-3.5 text-violet-400" />, activeIcon: <Bot className="w-3.5 h-3.5" /> },
@@ -25,6 +27,7 @@ const TABS: Array<{ id: AgentTab; label: string; icon: React.ReactNode; activeIc
   { id: 'components', label: 'Components', icon: <Layers className="w-3.5 h-3.5 text-emerald-400" />, activeIcon: <Layers className="w-3.5 h-3.5" /> },
   { id: 'usage', label: 'Usage', icon: <History className="w-3.5 h-3.5 text-amber-400" />, activeIcon: <History className="w-3.5 h-3.5" /> },
   { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-3.5 h-3.5 text-cyan-400" />, activeIcon: <BarChart3 className="w-3.5 h-3.5" /> },
+  { id: 'memory', label: 'Memory', icon: <Brain className="w-3.5 h-3.5 text-pink-400" />, activeIcon: <Brain className="w-3.5 h-3.5" /> },
 ];
 
 const TAB_IDS = TABS.map((t) => t.id);
@@ -95,6 +98,7 @@ export default function PulseAgentView() {
         {activeTab === 'components' && <ComponentsTab />}
         {activeTab === 'usage' && <UsageTab />}
         {activeTab === 'analytics' && <AnalyticsTab />}
+        {activeTab === 'memory' && <Suspense fallback={<div className="text-slate-500 text-sm p-4">Loading...</div>}><MemoryView embedded /></Suspense>}
       </div>
     </div>
   );
