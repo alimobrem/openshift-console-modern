@@ -94,6 +94,8 @@ function subscribeToMonitorToasts() {
 // --- v2: Toast notifications for action reports ---
 
 let unsubscribeActionReports: (() => void) | null = null;
+const _recentFailureToasts = new Map<string, number>();
+const _FAILURE_TOAST_COOLDOWN = 300_000; // 5min dedup for repeated failures
 
 function subscribeToActionReportToasts() {
   const toastedActionIds = new Set(
@@ -119,12 +121,17 @@ function subscribeToActionReportToasts() {
             duration: 10000,
           });
         } else if (action.status === 'failed') {
-          store.addToast({
-            type: 'error',
-            title: `Auto-fix failed: ${action.error ?? 'Unknown error'}`,
-            detail: `Tool: ${action.tool}`,
-            duration: 15000,
-          });
+          const failKey = `${action.tool}:${action.error ?? ''}`;
+          const lastShown = _recentFailureToasts.get(failKey) || 0;
+          if (Date.now() - lastShown > _FAILURE_TOAST_COOLDOWN) {
+            _recentFailureToasts.set(failKey, Date.now());
+            store.addToast({
+              type: 'error',
+              title: `Auto-fix failed: ${action.error ?? 'Unknown error'}`,
+              detail: `Tool: ${action.tool}`,
+              duration: 15000,
+            });
+          }
         }
       }
     }
