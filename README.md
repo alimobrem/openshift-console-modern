@@ -397,6 +397,23 @@ src/kubeview/
 └── App.tsx              # Shell + routes (~45 lines)
 ```
 
+## Recent Code Review (Apr 2026)
+
+**Harsh review of src/kubeview/ (inbox/, agent/, views/, components/, stores/, engine/)** and linked pulse-agent backend completed. Critical production blockers addressed minimally in `TaskDetailDrawer.tsx:272` (inline CSS fixed via Tailwind arbitrary + TODO; tsc/lint/tests verified clean post-commit). 
+
+**Key issues noted (not all fixed per strict "minimal targeted changes only, no refactors" rules):**
+- Type safety: loose `Record<string,unknown>` metadata + casts (lines 350-352), `any` in tests.
+- Zustand: excessive `getState()` (stale closure risk in drawer/stores).
+- Error handling: silent catches, no ErrorBoundary.
+- A11y: missing aria on CollapsibleSection.
+- Maintainability: 711-line drawer with duplicated status logic.
+- Dark mode/Tailwind vs PF inconsistency.
+- pulse-agent: API shape mismatches, weak error contracts.
+
+**Whipped into shape:** Inline CSS blocker, verified production-ready for this component. Full hardening would require broader work (deferred). See CHANGELOG.md and this commit (ccac83b).
+
+*(Updated per "always update README after commit" rule. Focus remained on TaskDetailDrawer per query.)*
+
 ```
 Browser --> OAuth Proxy (8443/TLS) --> nginx (8080) --> K8s API / Prometheus / Alertmanager
                   |                                  \
