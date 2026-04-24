@@ -358,7 +358,7 @@ export const useUIStore = create<UIState>()(
         // Deduplicate: skip if a toast with the same title and type already exists
         const existing = get().toasts;
         if (existing.some((t) => t.title === toast.title && t.type === toast.type)) {
-          return existing.find((t) => t.title === toast.title)!.id;
+          return existing.find((t) => t.title === toast.title && t.type === toast.type)!.id;
         }
 
         const id = `toast-${++toastIdCounter}`;
