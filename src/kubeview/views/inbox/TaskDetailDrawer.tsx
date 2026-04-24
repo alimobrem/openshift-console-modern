@@ -694,7 +694,13 @@ export function TaskDetailDrawer({
       <ConfirmDialog
         open={confirmDismiss}
         onClose={() => setConfirmDismiss(false)}
-        onConfirm={() => { dismiss(item.id); setConfirmDismiss(false); onClose(); }}
+        onConfirm={() => {
+          dismiss(item.id);
+          const ps = useActionPlanStore.getState();
+          if (ps.execution?.itemId === item.id) ps.clearExecution();
+          setConfirmDismiss(false);
+          onClose();
+        }}
         title="Dismiss item?"
         description="This item will be archived and removed from your active inbox. You can restore it later if needed."
         confirmLabel="Dismiss"
