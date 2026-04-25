@@ -32,7 +32,9 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'storage', label: 'Storage', icon: 'HardDrive', path: '/storage', group: 'cluster', subtitle: 'PVCs, storage classes, CSI drivers', keywords: ['pvs', 'pvcs', 'storageclasses', 'csi', 'persistent', 'volumes'], color: 'text-orange-400' },
 
   // Operations
+  { id: 'alerts', label: 'Alerts', icon: 'Bell', path: '/alerts', group: 'cluster', subtitle: 'Firing alerts, alert rules, silences', keywords: ['alerts', 'alertmanager', 'silences', 'rules', 'firing', 'prometheus'], color: 'text-red-400' },
   { id: 'inbox', label: 'Inbox', icon: 'Inbox', path: '/inbox', group: 'operations', subtitle: 'Unified SRE worklist — findings, tasks, alerts, assessments', keywords: ['inbox', 'incidents', 'tasks', 'alerts', 'findings', 'queue', 'triage'], color: 'text-violet-400' },
+  { id: 'timeline', label: 'Timeline', icon: 'Clock', path: '/timeline', group: 'operations', subtitle: 'Cluster event timeline — correlate changes, alerts, incidents', keywords: ['timeline', 'events', 'history', 'changes', 'audit', 'correlation'], color: 'text-amber-400' },
   { id: 'topology', label: 'Impact Analysis', icon: 'Network', path: '/topology', group: 'operations', subtitle: 'Dependency graph and blast radius', keywords: ['topology', 'graph', 'dependencies', 'blast', 'radius', 'impact'], color: 'text-cyan-400' },
   { id: 'security', label: 'Security', icon: 'ShieldCheck', path: '/security', group: 'operations', subtitle: 'Pod security, RBAC analysis, image scanning', keywords: ['security', 'audit', 'sccs', 'rbac', 'network', 'policies', 'access', 'scanning'], color: 'text-red-400' },
   { id: 'gitops', label: 'GitOps', icon: 'GitBranch', path: '/gitops', group: 'operations', subtitle: 'ArgoCD applications, sync status, rollouts', keywords: ['argocd', 'sync', 'drift', 'detection', 'rollouts', 'git'], color: 'text-green-400' },
@@ -40,7 +42,8 @@ export const NAV_ITEMS: NavItem[] = [
   { id: 'slo', label: 'Service Levels', icon: 'Activity', path: '/slo', group: 'operations', subtitle: 'SLO burn rates and service health targets', keywords: ['slo', 'service level', 'burn rate', 'error budget', 'availability'], color: 'text-teal-400' },
 
   // Administration
-  { id: 'admin', label: 'Administration', icon: 'Settings', path: '/admin', group: 'administration', subtitle: 'Operators, config, updates, snapshots, quotas, certificates', keywords: ['operators', 'config', 'updates', 'quotas', 'certificates', 'crds'], color: 'text-slate-400' },
+  { id: 'operators', label: 'Operators', icon: 'Puzzle', path: '/operators', group: 'administration', subtitle: 'OperatorHub — browse, install, manage cluster operators', keywords: ['operators', 'operatorhub', 'install', 'olm', 'catalog', 'subscriptions'], color: 'text-purple-400' },
+  { id: 'admin', label: 'Administration', icon: 'Settings', path: '/admin', group: 'administration', subtitle: 'Config, updates, snapshots, quotas, certificates', keywords: ['config', 'updates', 'quotas', 'certificates', 'crds'], color: 'text-slate-400' },
   { id: 'identity', label: 'Identity & Access', icon: 'Shield', path: '/identity', group: 'administration', subtitle: 'Users, groups, RBAC, impersonation', keywords: ['users', 'groups', 'service', 'accounts', 'rbac', 'impersonation'], color: 'text-teal-400' },
   { id: 'readiness', label: 'Production Readiness', icon: 'Rocket', path: '/readiness', group: 'administration', subtitle: 'Readiness wizard — security, reliability, observability gates', keywords: ['readiness', 'wizard', 'reliability', 'observability', 'gates', 'production'], color: 'text-amber-400' },
 
