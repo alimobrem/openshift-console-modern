@@ -34,7 +34,7 @@ ORCA UI Surfaces release matching Agent v2.3.0.
 ### Stats
 - **1,934 tests** across 163 test files, **53 E2E scenarios**
 - **122 tools** (86 native + 36 MCP), **7 skills**, **18 scanners**
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 
 ---
 
@@ -60,7 +60,7 @@ Major release matching Agent v2.0.0.
 ### Stats
 - **1,934 tests** across 162 test files
 - **111 tools** (75 native + 36 MCP), **4 skills**, **19 component types**
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 
 ---
 
@@ -82,7 +82,7 @@ Major release matching Agent v2.0.0.
 
 ### Stats
 - **1,934 tests** across 162 test files (+52 new tests)
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 
 ---
 
@@ -109,7 +109,7 @@ Major release matching Agent v2.0.0.
 
 ### Stats
 - **1687 tests** across 125 test files (+81 new tests)
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 
 ---
 
@@ -138,7 +138,7 @@ Major release matching Agent v2.0.0.
 - **1472 tests** across 97 test files
 - **17 views**, 45+ routes
 - **54 agent tools** with dynamic selection harness
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 - **13-check integration test** for deployment verification
 
 ---
@@ -149,7 +149,7 @@ Major release matching Agent v2.0.0.
 - **Dynamic UI Generation** — Agent tools render rich interactive components inline in chat:
   - `ComponentSpec` protocol: data_table, info_card_grid, badge_list, status_list, key_value, chart
   - `AgentComponentRenderer` maps specs to existing primitives (DataTable, InfoCard, Badge, MetricsChart)
-  - `MarkdownRenderer` for text responses (headers, bold, code blocks, lists) — no npm dependency
+  - `MarkdownRenderer` for text responses (headers, bold, code blocks, lists) — no external dependency
   - 4 tools enhanced: `list_pods`, `list_deployments`, `get_events`, `top_pods_by_restarts` return structured tables
   - Auto-colored status/severity columns in rendered tables
   - New WebSocket event type: `component` with tool-emitted specs
@@ -167,7 +167,7 @@ Major release matching Agent v2.0.0.
 - **1472 tests** across 97 test files
 - **17 views**, 45+ routes
 - **54 agent tools** with 4 returning rich UI component specs
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 
 ---
 
@@ -214,7 +214,7 @@ Major release matching Agent v2.0.0.
 - **1472 tests** across 97 test files
 - **17 views**, 45+ routes
 - **54 agent tools** (39 read + 9 write + 6 audit)
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 
 ---
 
@@ -245,7 +245,7 @@ Major release matching Agent v2.0.0.
 ### Stats
 - **1438 tests** across 94 test files
 - **16+ views**, 40+ routes
-- **0 npm CVEs**, all Red Hat UBI images
+- **0 package CVEs**, all Red Hat UBI images
 - **6 custom agents**, 4 automated hooks
 
 ---
@@ -299,7 +299,7 @@ Major release matching Agent v2.0.0.
 - **AdminView split** — 1412→488 lines, extracted OverviewTab, OperatorsTab, UpdatesTab, SnapshotsTab
 - **CSS cleanup** — Removed dead PatternFly deps (4 packages), centralized chart colors (`engine/colors.ts`), Card primitive adopted (89 replacements), terminal theme extracted to CSS variables
 - **Container images** — All Red Hat UBI (replaced Docker Hub nginx), pinned tags (ose-oauth-proxy:v4.17, nginx:1.26-ubi9)
-- **Dependencies** — Replaced deprecated `xterm` with `@xterm/xterm`, resolved 6 high-severity CVEs, npm audit: 0 vulnerabilities
+- **Dependencies** — Replaced deprecated `xterm` with `@xterm/xterm`, resolved 6 high-severity CVEs, pnpm audit: 0 vulnerabilities
 - **Logo** — Replaced "P" letter with pulse/heartbeat line design
 - **README** — Professional redesign with comparison table, collapsible sections, for-the-badge badges
 
@@ -319,7 +319,7 @@ Major release matching Agent v2.0.0.
 - **1308 tests** across 76 test files (up from 1162/63 in v4.1.0)
 - **77 health checks** (31 cluster + 46 domain)
 - **15 views**, 35 routes
-- **0 npm CVEs**
+- **0 package CVEs**
 
 ---
 

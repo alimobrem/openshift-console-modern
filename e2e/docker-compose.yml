@@ -1,6 +1,6 @@
 # Integration test stack: UI + Agent + Mock K8s API
 # Usage: docker compose -f e2e/docker-compose.yml up --build
-#        PULSE_URL=http://localhost:9000 npm run e2e
+#        PULSE_URL=http://localhost:9000 pnpm run e2e
 
 services:
   # Mock K8s API — serves static JSON responses

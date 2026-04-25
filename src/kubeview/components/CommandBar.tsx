@@ -6,8 +6,6 @@ import { useUIStore } from '../store/uiStore';
 import { useClusterStore } from '../store/clusterStore';
 import { useFleetStore } from '../store/fleetStore';
 import { isMultiCluster } from '../engine/clusterConnection';
-import { k8sList } from '../engine/query';
-import { getPodStatus } from '../engine/renderers/statusUtils';
 import { cn } from '@/lib/utils';
 import { performLogout } from '../engine/auth';
 

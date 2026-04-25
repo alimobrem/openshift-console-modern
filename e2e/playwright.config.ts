@@ -39,7 +39,7 @@ export default defineConfig({
         timeout: 120_000,
       },
       {
-        command: 'npm run dev',
+        command: 'pnpm run dev',
         url: 'http://localhost:9000',
         reuseExistingServer: !process.env.CI,
         timeout: 60_000,

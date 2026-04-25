@@ -339,7 +339,7 @@ pnpm build && podman build --platform linux/amd64 -t ${PULSE_UI_IMAGE:-quay.io/y
 
 ### Security
 
-OAuth proxy with per-user auth. Non-root containers, read-only filesystem, CSP headers, TLS verification. 15/15 audit findings resolved. 0 npm CVEs. All images from Red Hat registries. Secret rotation procedures documented. See **[SECURITY.md](SECURITY.md)** for full details.
+OAuth proxy with per-user auth. Non-root containers, read-only filesystem, CSP headers, TLS verification. 15/15 audit findings resolved. 0 package CVEs. All images from Red Hat registries. Secret rotation procedures documented. See **[SECURITY.md](SECURITY.md)** for full details.
 
 <details>
 <summary><strong>Troubleshooting</strong></summary>

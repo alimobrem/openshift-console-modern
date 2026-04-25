@@ -14,7 +14,7 @@ import { ConfirmDialog } from '../components/feedback/ConfirmDialog';
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ComponentSpec } from '../engine/agentComponents';
 
-// react-grid-layout (npm install react-grid-layout @types/react-grid-layout)
+// react-grid-layout (pnpm add react-grid-layout @types/react-grid-layout)
 import { Responsive, WidthProvider } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
