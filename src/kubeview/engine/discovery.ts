@@ -173,14 +173,21 @@ async function discoverAPIGroups(registry: ResourceRegistry, base: string = BASE
 
     const data: APIGroupList = await response.json();
 
-    // Fetch resources for preferred version only (reduces requests by 50-70%)
     const promises = data.groups.map(group =>
       discoverGroupVersion(registry, group.name, group.preferredVersion.version, base)
     );
 
-    await Promise.allSettled(promises);
+    const results = await Promise.allSettled(promises);
+    const failed = results.filter(r => r.status === 'rejected');
+    if (failed.length > 0) {
+      console.warn(`Discovery: ${failed.length}/${data.groups.length} API groups failed`);
+      if (failed.length > data.groups.length * 0.1) {
+        throw new Error(`Discovery too incomplete: ${failed.length}/${data.groups.length} groups failed`);
+      }
+    }
   } catch (error) {
     console.error('Failed to discover API groups:', error);
+    throw error;
   }
 }
 

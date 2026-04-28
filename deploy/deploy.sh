@@ -470,8 +470,8 @@ agent:
     repository: $AGENT_IMAGE
     tag: "$AGENT_TAG"
   rbac:
-    allowWriteOperations: true
-    allowSecretAccess: true
+    allowWriteOperations: ${AGENT_ALLOW_WRITES:-false}
+    allowSecretAccess: ${AGENT_ALLOW_SECRETS:-false}
   wsAuth:
     existingSecret: $WS_SECRET
 $AI_VALUES

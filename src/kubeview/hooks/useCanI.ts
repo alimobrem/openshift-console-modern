@@ -61,21 +61,6 @@ export function useCanI(verb: string, group: string, resource: string, namespace
 }
 
 /**
- * Check multiple permissions at once.
- * Returns a map of "verb:group:resource" => boolean.
- */
-export function useCanIBatch(checks: Array<{ verb: string; group: string; resource: string; namespace?: string }>) {
-  const results = checks.map((check) => {
-    const key = `${check.verb}:${check.group}:${check.resource}`;
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    const { allowed } = useCanI(check.verb, check.group, check.resource, check.namespace);
-    return [key, allowed] as const;
-  });
-
-  return Object.fromEntries(results);
-}
-
-/**
  * Common permission checks
  */
 export function useCanDelete(group: string, resource: string, namespace?: string) {

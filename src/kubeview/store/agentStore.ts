@@ -143,15 +143,17 @@ export const useAgentStore = create<AgentState>()(
         } else {
           // Connect first, queue message for delivery on connect
           state.connect();
+          let safetyTimeout: ReturnType<typeof setTimeout> | null = null;
+
           const unsub = useAgentStore.subscribe((s) => {
             if (s.connected) {
               unsub();
-              clearTimeout(safetyTimeout);
+              if (safetyTimeout) clearTimeout(safetyTimeout);
               s.sendMessage(content, context);
             }
           });
-          // Safety timeout — warn user instead of silently dropping
-          const safetyTimeout = setTimeout(() => {
+
+          safetyTimeout = setTimeout(() => {
             unsub();
             console.warn('Agent connection timed out after 15s — message not sent');
           }, 15000);

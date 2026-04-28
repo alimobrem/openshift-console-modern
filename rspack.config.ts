@@ -210,11 +210,20 @@ export default defineConfig({
           pathRewrite: (path: string) => {
             const stripped = path.replace(/^\/api\/agent/, '');
             if (!agentToken) return stripped;
-            const sep = stripped.includes('?') ? '&' : '?';
-            return `${stripped}${sep}token=${agentToken}`;
+            // WS connections need query-param token (no header support in browser WS API).
+            // REST requests use Authorization header (added below) — query param kept
+            // only for WS upgrade compatibility.
+            if (stripped.startsWith('/ws/')) {
+              const sep = stripped.includes('?') ? '&' : '?';
+              return `${stripped}${sep}token=${agentToken}`;
+            }
+            return stripped;
           },
           ...(agentToken ? {
-            headers: { 'X-Forwarded-Access-Token': 'e2e-test-user' },
+            headers: {
+              'Authorization': `Bearer ${agentToken}`,
+              'X-Forwarded-Access-Token': 'e2e-test-user',
+            },
           } : {}),
         }];
       })(),

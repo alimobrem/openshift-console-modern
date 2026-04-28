@@ -132,6 +132,7 @@ export async function k8sCreate<T>(apiPath: string, body: T, clusterId?: string)
   }
 
   if (!response.ok) {
+    checkSessionExpiry(response);
     throw await parseK8sErrorResponse(response, { operation: 'create', apiPath });
   }
 
@@ -157,6 +158,7 @@ export async function k8sUpdate<T>(apiPath: string, body: T, clusterId?: string)
   }
 
   if (!response.ok) {
+    checkSessionExpiry(response);
     throw await parseK8sErrorResponse(response, { operation: 'update', apiPath });
   }
 
@@ -187,6 +189,7 @@ export async function k8sPatch<T>(
   }
 
   if (!response.ok) {
+    checkSessionExpiry(response);
     throw await parseK8sErrorResponse(response, { operation: 'patch', apiPath });
   }
 
@@ -232,6 +235,7 @@ export async function k8sDelete(apiPath: string, clusterId?: string): Promise<vo
   }
 
   if (!response.ok && response.status !== 404) {
+    checkSessionExpiry(response);
     throw await parseK8sErrorResponse(response, { operation: 'delete', apiPath });
   }
 }
