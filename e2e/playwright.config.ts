@@ -8,7 +8,6 @@ export default defineConfig({
   workers: process.env.CI ? 1 : undefined,
   reporter: process.env.CI ? 'github' : 'html',
   timeout: 30_000,
-  updateSnapshots: process.env.CI ? 'missing' : 'none',
   use: {
     baseURL: process.env.PULSE_URL || 'http://localhost:9000',
     trace: 'on-first-retry',

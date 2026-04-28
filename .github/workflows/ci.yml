@@ -188,18 +188,19 @@ jobs:
       - name: Run E2E tests
         env:
           PULSE_AGENT_WS_TOKEN: e2e-test-token
-        run: pnpm exec playwright test --config e2e/playwright.config.ts
+        run: pnpm exec playwright test --config e2e/playwright.config.ts --update-snapshots
 
       - name: Stop mock agent stack
         if: always()
         run: docker compose -f e2e/docker-compose.agent.yml down
 
-      - name: Upload test results
-        if: failure()
+      - name: Upload snapshots and report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: playwright-report
+          name: playwright-snapshots
           path: |
+            e2e/tests/visual-regression.spec.ts-snapshots/
             playwright-report/
             test-results/
           retention-days: 14
