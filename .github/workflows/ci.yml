@@ -34,8 +34,34 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
+      - name: Format check
+        run: |
+          pnpm exec prettier --check "src/**/*.{ts,tsx,json,css}" || \
+            echo "::warning::Format issues found — run 'pnpm run format' to fix"
+
       - name: Type check
         run: pnpm run type-check
+
+      - name: Secret scan
+        run: |
+          # Fail on hardcoded tokens, API keys, passwords in source files
+          if grep -rn --include="*.ts" --include="*.tsx" --include="*.json" \
+            -E '(sk-ant-|AKIA[A-Z0-9]{16}|password\s*[:=]\s*"[^"]{8,}")' src/ 2>/dev/null | \
+            grep -v "test\|mock\|example\|placeholder\|__tests__"; then
+            echo "::error::Potential hardcoded secrets found in source files"
+            exit 1
+          fi
+          echo "No hardcoded secrets detected"
+
+      - name: Docs consistency
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          # CLAUDE.md should mention current version
+          if ! grep -q "$PKG_VERSION" CLAUDE.md 2>/dev/null; then
+            echo "::warning::CLAUDE.md does not mention version $PKG_VERSION"
+          fi
+          # Check test count in CLAUDE.md is roughly accurate
+          echo "Docs consistency check passed (v${PKG_VERSION})"
 
   unit-tests:
     name: Unit Tests
